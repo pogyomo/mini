@@ -30,7 +30,7 @@ All program must uses either of above two signature.
 The mini programming language support a few types described below:
 
 | type    | description                 |
-+---------+-----------------------------+
+| ------- | --------------------------- |
 | int     | signed 64-bit integer       |
 | uint    | unsigned 64-bit integer     |
 | struct  | a collection of value       |
