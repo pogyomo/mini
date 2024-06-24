@@ -9,7 +9,7 @@ The `main` function should contained on a executable program, and the program st
 ```
 function main() -> int {
     
-    let a = 10, b = 20: int;
+    int a = 10, b = 20;
     return a + b;
 }
 ```
@@ -17,7 +17,7 @@ function main() -> int {
 You can take a arguments and use it in usr program as follow:
 
 ```
-function main(argc: int, argv: *(int)[]) -> int {
+function main(int argc, (int)[]* argv) -> int {
     if (argc < 2) return 0;
     return argv[0][0];
 }
@@ -51,10 +51,10 @@ The syntax of mini programming language is as follow:
 <function-declaration> ::= "function" "(" <function-parameters> ")" "->" <type> <block-statement>
 <function-parameters> ::= <function-parameter>
                         | <function-parameter> "," <function-parameters>
-<function-parameter> ::= <identifier> ":" <type>
+<function-parameter> ::= <type> <identifier>
 <struct-declaration> ::= "struct" "{" <struct-items> "}"
 <struct-items> ::= <struct-item> [ "," <struct-items> ]
-<struct-item> ::= <identifier> ":" <type>
+<struct-item> ::= <type> <identifier>
 <enum-declaration> ::= "enum" "{" <enum-items> "}"
 <enum-items> ::= <enum-item> [ "," <enum-items> ]
 <enum-item> ::= <identifier>
@@ -65,10 +65,9 @@ The syntax of mini programming language is as follow:
          | <array>
          | <pointer>
 <struct-or-enum-name> :: <identifier>
-<array> ::= "(" <type> ")" <array-indexes>
-<array-indexes> ::= <array-index> [ <array-indexes> ]
+<array> ::= "(" <type> ")" <array-indexe>
 <array-index> ::= "[" <const-expression> "]"
-<pointer> ::= "*" <type>
+<pointer> ::= <type> "*"
 
 <statement> ::= <expression-statement>
               | <return-statement>
@@ -85,11 +84,12 @@ The syntax of mini programming language is as follow:
 <if-statement> ::= "if" "(" <expression> ")" <statement> [ "else" <statement> ]
 <block-statement> ::= "{" <block-statement-items> "}"
 <block-statement-items> ::= <block-statement-item> [ <block-statement-items> ]
-<block-statement-item> ::= { <variable-declaration> }* { <statement> }*
-<variable-declaration> ::= "let" <variable-declaration-ids> ";"
-<variable-declaration-ids> ::= <identifier> [ "=" <expression> ] [ <variable-declaration-ids> ]
+<block-statement-item> ::= { <variable-declarations> }* { <statement> }*
+<variable-declarations> ::= <type> <variable-declarations-ids> ";"
+<variable-declarations-ids> ::= <identifier> [ "=" <expression> ] [ <variable-declarations-ids> ]
 
 <expression> ::= <logical-or-expression>
+               | <unary-expression> "=" <expression>
 <logical-or-expression> ::= <logical-and-expression> [ "||" <logical-or-expression> ]
 <logical-and-expression> ::= <inclusive-or-expression> [ "&&" <logical-and-expression> ]
 <inclusive-or-expression> ::= <exclusive-or-expression> [ "|" <inclusive-or-expression> ]
@@ -101,7 +101,7 @@ The syntax of mini programming language is as follow:
 <additive-expression> ::= <multiplicative-expression> [ { "+" | "-" } <additive-expression> ]
 <multiplicative-expression> ::= <cast-expression> [ { "*" | "/" | "%" } <multiplicative-expression> ]
 <cast-expression> ::= <unary-expression>
-                    | "(" <type> ")" <cast-expression>
+                    | <cast-expression> "as" <type>
 <unary-expression> ::= <postfix-expression>
                      | { "&" | "*" | "-" | "~" | "!" } <unary-expression>
                      | "esizeof" <expression>
