@@ -7,4 +7,5 @@ add_executable(${PROJECT_NAME})
 target_sources(${PROJECT_NAME} PRIVATE
     src/ast/stmt.cc
     src/main.cc
+    src/report.cc
 )

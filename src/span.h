@@ -2,6 +2,7 @@
 #define MINI_SPAN_H_
 
 #include <algorithm>
+#include <cassert>
 #include <cstddef>
 
 class Position {
@@ -35,14 +36,19 @@ private:
 
 class Span {
 public:
-    Span(Position start, Position end) : start_(start), end_(end) {}
+    Span(size_t id, Position start, Position end)
+        : id_(id), start_(start), end_(end) {}
     Span operator+(const Span& rhs) const {
-        return Span(std::min(start_, rhs.start_), std::max(end_, rhs.end_));
+        assert(id_ == rhs.id_);
+        return Span(id_, std::min(start_, rhs.start_),
+                    std::max(end_, rhs.end_));
     }
+    inline size_t id() const { return id_; }
     inline Position start() const { return start_; }
     inline Position end() const { return end_; }
 
 private:
+    const size_t id_;
     const Position start_;
     const Position end_;
 };
