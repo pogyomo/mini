@@ -1,7 +1,7 @@
 #include "context.h"
-#include "lexer.h"
+#include "parser.h"
 
 int main() {
     Context ctx;
-    auto ts = lex_file(ctx, "main.mini");
+    auto ds = parse_file(ctx, "main.mini");
 }

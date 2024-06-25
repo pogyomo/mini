@@ -8,7 +8,6 @@ The `main` function should contained on a executable program, and the program st
 
 ```
 function main() -> int {
-    
     int a = 10, b = 20;
     return a + b;
 }
@@ -17,7 +16,7 @@ function main() -> int {
 You can take a arguments and use it in usr program as follow:
 
 ```
-function main(int argc, (int)[]* argv) -> int {
+function main(argc: int, argv: *(int)[]) -> int {
     if (argc < 2) return 0;
     return argv[0][0];
 }
@@ -51,10 +50,10 @@ The syntax of mini programming language is as follow:
 <function-declaration> ::= "function" "(" <function-parameters> ")" "->" <type> <block-statement>
 <function-parameters> ::= <function-parameter>
                         | <function-parameter> "," <function-parameters>
-<function-parameter> ::= <type> <identifier>
+<function-parameter> ::= <identifier> ":" <type>
 <struct-declaration> ::= "struct" "{" <struct-items> "}"
 <struct-items> ::= <struct-item> [ "," <struct-items> ]
-<struct-item> ::= <type> <identifier>
+<struct-item> ::= <identifier> ":" <type>
 <enum-declaration> ::= "enum" "{" <enum-items> "}"
 <enum-items> ::= <enum-item> [ "," <enum-items> ]
 <enum-item> ::= <identifier>
@@ -67,7 +66,7 @@ The syntax of mini programming language is as follow:
 <struct-or-enum-name> :: <identifier>
 <array> ::= "(" <type> ")" <array-indexe>
 <array-index> ::= "[" <const-expression> "]"
-<pointer> ::= <type> "*"
+<pointer> ::= "*" <type>
 
 <statement> ::= <expression-statement>
               | <return-statement>
@@ -85,7 +84,7 @@ The syntax of mini programming language is as follow:
 <block-statement> ::= "{" <block-statement-items> "}"
 <block-statement-items> ::= <block-statement-item> [ <block-statement-items> ]
 <block-statement-item> ::= { <variable-declarations> }* { <statement> }*
-<variable-declarations> ::= <type> <variable-declarations-ids> ";"
+<variable-declarations> ::= "let" <variable-declarations-ids> ":" <type> ";"
 <variable-declarations-ids> ::= <identifier> [ "=" <expression> ] [ <variable-declarations-ids> ]
 
 <expression> ::= <logical-or-expression>

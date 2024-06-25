@@ -28,7 +28,11 @@ static int digits(int n) {
     return res;
 }
 
-void report(Context &ctx, ReportLevel level, ReportInfo &&info) {
+void report(Context &ctx, ReportLevel level, const ReportInfo &info) {
+    if (ctx.suppress_report()) {
+        return;
+    }
+
     auto entry = ctx.input_cache().fetch(info.span().id());
     auto start = info.span().start();
     auto end = info.span().end();

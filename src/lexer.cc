@@ -1,7 +1,6 @@
 #include "lexer.h"
 
 #include <cctype>
-#include <iostream>
 #include <iterator>
 #include <string>
 
@@ -153,6 +152,9 @@ LexResult lex_line(Context &ctx, size_t id, size_t row,
         } else if (stream.accept("::", end)) {
             res.push_back(std::make_unique<PunctToken>(
                 PunctTokenKind::ColonColon, Span(id, start, end)));
+        } else if (stream.accept(":", end)) {
+            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::Colon,
+                                                       Span(id, start, end)));
         } else if (stream.accept("as", end)) {
             res.push_back(std::make_unique<KeywordToken>(KeywordTokenKind::As,
                                                          Span(id, start, end)));
@@ -167,6 +169,12 @@ LexResult lex_line(Context &ctx, size_t id, size_t row,
                                                          Span(id, start, end)));
         } else if (stream.accept("if", end)) {
             res.push_back(std::make_unique<KeywordToken>(KeywordTokenKind::If,
+                                                         Span(id, start, end)));
+        } else if (stream.accept("int", end)) {
+            res.push_back(std::make_unique<KeywordToken>(KeywordTokenKind::Int,
+                                                         Span(id, start, end)));
+        } else if (stream.accept("let", end)) {
+            res.push_back(std::make_unique<KeywordToken>(KeywordTokenKind::Let,
                                                          Span(id, start, end)));
         } else if (stream.accept("return", end)) {
             res.push_back(std::make_unique<KeywordToken>(
@@ -186,6 +194,9 @@ LexResult lex_line(Context &ctx, size_t id, size_t row,
         } else if (stream.accept("struct", end)) {
             res.push_back(std::make_unique<KeywordToken>(
                 KeywordTokenKind::Struct, Span(id, start, end)));
+        } else if (stream.accept("uint", end)) {
+            res.push_back(std::make_unique<KeywordToken>(KeywordTokenKind::UInt,
+                                                         Span(id, start, end)));
         } else if (stream.accept("enum", end)) {
             res.push_back(std::make_unique<KeywordToken>(KeywordTokenKind::Enum,
                                                          Span(id, start, end)));
@@ -220,12 +231,12 @@ LexResult lex_line(Context &ctx, size_t id, size_t row,
                 success = false;
                 ReportInfo info(Span(id, start, end),
                                 "integer convertion failed", "");
-                report(ctx, ReportLevel::Error, std::move(info));
+                report(ctx, ReportLevel::Error, info);
             }
         } else {
             success = false;
             ReportInfo info(Span(id, start, end), "unexpected character", "");
-            report(ctx, ReportLevel::Error, std::move(info));
+            report(ctx, ReportLevel::Error, info);
             stream.advance();
         }
     }

@@ -39,6 +39,7 @@ enum class PunctTokenKind {
     RSquare,      // "]"
     Semicolon,    // ";"
     Comma,        // ","
+    Colon,        // ":"
     ColonColon,   // "::"
 };
 
@@ -46,16 +47,22 @@ enum class KeywordTokenKind {
     As,        // "as"
     Break,     // "break"
     Continue,  // "continue"
-    Else,      // "else"
-    If,        // "if"
-    Return,    // "return"
-    While,     // "while"
     ESizeof,   // "esizeof"
-    TSizeof,   // "tsizeof"
-    Function,  // "function"
-    Struct,    // "struct"
+    Else,      // "else"
     Enum,      // "enum"
+    Function,  // "function"
+    If,        // "if"
+    Int,       // "int"
+    Let,       // "let"
+    Return,    // "return"
+    Struct,    // "struct"
+    TSizeof,   // "tsizeof"
+    UInt,      // "uint"
+    While,     // "while"
 };
+
+std::string to_string(PunctTokenKind kind);
+std::string to_string(KeywordTokenKind kind);
 
 class Token {
 public:

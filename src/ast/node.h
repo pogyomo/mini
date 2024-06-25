@@ -30,6 +30,7 @@ GEN_NODE(RSquare);
 GEN_NODE(Semicolon);
 GEN_NODE(Star);
 GEN_NODE(Arrow);
+GEN_NODE(Colon);
 GEN_NODE(ColonColon);
 
 GEN_NODE(As);
@@ -37,6 +38,7 @@ GEN_NODE(Break);
 GEN_NODE(Continue);
 GEN_NODE(Else);
 GEN_NODE(If);
+GEN_NODE(Let);
 GEN_NODE(Return);
 GEN_NODE(While);
 GEN_NODE(ESizeof);

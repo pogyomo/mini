@@ -44,9 +44,13 @@ private:
 class Context {
 public:
     InputCache &input_cache() { return input_cache_; }
+    bool suppress_report() const { return suppress_report_; }
+    void enable_suppress_report() { suppress_report_ = true; }
+    void disable_suppress_report() { suppress_report_ = false; }
 
 private:
     InputCache input_cache_;
+    bool suppress_report_;
 };
 
 #endif  // MINI_CONTEXT_H_

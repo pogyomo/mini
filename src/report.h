@@ -26,6 +26,6 @@ private:
     const std::string info_;
 };
 
-void report(Context &ctx, ReportLevel level, ReportInfo &&info);
+void report(Context &ctx, ReportLevel level, const ReportInfo &info);
 
 #endif  // MINI_REPORT_H_

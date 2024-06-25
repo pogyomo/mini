@@ -152,7 +152,8 @@ private:
 class CallExpression : public Expression {
 public:
     CallExpression(std::unique_ptr<Expression>&& func, LParen lparen,
-                   std::vector<Expression>&& args, RParen rparen)
+                   std::vector<std::unique_ptr<Expression>>&& args,
+                   RParen rparen)
         : func_(std::move(func)),
           lparen_(lparen),
           args_(std::move(args)),
@@ -163,13 +164,15 @@ public:
     inline Span span() const override { return func_->span() + rparen_.span(); }
     inline const std::unique_ptr<Expression>& func() const { return func_; }
     inline LParen lparen() const { return lparen_; }
-    inline const std::vector<Expression>& args() const { return args_; }
+    inline const std::vector<std::unique_ptr<Expression>>& args() const {
+        return args_;
+    }
     inline RParen rparen() const { return rparen_; }
 
 private:
     const std::unique_ptr<Expression> func_;
     const LParen lparen_;
-    const std::vector<Expression> args_;
+    const std::vector<std::unique_ptr<Expression>> args_;
     const RParen rparen_;
 };
 

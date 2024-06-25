@@ -141,11 +141,55 @@ private:
     const std::unique_ptr<Statement> body_;
 };
 
+class IfStatementElseClause : public Node {
+public:
+    IfStatementElseClause(Else else_kw, std::unique_ptr<Statement>&& body)
+        : else_kw_(else_kw), body_(std::move(body)) {}
+    inline Span span() const override {
+        return else_kw_.span() + body_->span();
+    }
+    inline Else else_kw() const { return else_kw_; }
+    inline const std::unique_ptr<Statement>& body() const { return body_; }
+
+private:
+    const Else else_kw_;
+    std::unique_ptr<Statement> body_;
+};
+
 class IfStatement : public Statement {
 public:
+    IfStatement(If if_kw, LParen lparen, std::unique_ptr<Expression>&& cond,
+                RParen rparen, std::unique_ptr<Statement>&& body,
+                std::optional<IfStatementElseClause>&& else_clause)
+        : if_kw_(if_kw),
+          lparen_(lparen),
+          cond_(std::move(cond)),
+          rparen_(rparen),
+          body_(std::move(body)),
+          else_clause_(std::move(else_clause)) {}
     inline void accept(StatementVisitor& visitor) const override {
         visitor.visit(*this);
     }
+    inline Span span() const override {
+        return else_clause_ ? if_kw_.span() + else_clause_->span()
+                            : if_kw_.span() + body_->span();
+    }
+    inline If if_kw() const { return if_kw_; }
+    inline LParen lparen() const { return lparen_; }
+    inline const std::unique_ptr<Expression>& cond() const { return cond_; }
+    inline RParen rparen() const { return rparen_; }
+    inline const std::unique_ptr<Statement>& body() const { return body_; }
+    inline const std::optional<IfStatementElseClause>& else_clause() const {
+        return else_clause_;
+    }
+
+private:
+    const If if_kw_;
+    const LParen lparen_;
+    const std::unique_ptr<Expression> cond_;
+    const RParen rparen_;
+    const std::unique_ptr<Statement> body_;
+    const std::optional<IfStatementElseClause> else_clause_;
 };
 
 class VariableName : public Node {
@@ -185,15 +229,19 @@ public:
     inline const std::optional<VariableInit>& init() const { return init_; }
 
 private:
-    const VariableName name_;
-    const std::optional<VariableInit> init_;
+    VariableName name_;
+    std::optional<VariableInit> init_;
 };
 
 class VariableDeclarations : public Node {
 public:
-    VariableDeclarations(std::vector<VariableDeclarationBody>&& names,
-                         std::unique_ptr<Type>&& type, Semicolon semicolon)
-        : names_(std::move(names)),
+    VariableDeclarations(Let let_kw,
+                         std::vector<VariableDeclarationBody>&& names,
+                         Colon colon, std::unique_ptr<Type>&& type,
+                         Semicolon semicolon)
+        : let_kw_(let_kw),
+          names_(std::move(names)),
+          colon_(colon),
           type_(std::move(type)),
           semicolon_(semicolon) {}
     inline Span span() const override {
@@ -206,9 +254,11 @@ public:
     inline Semicolon semicolon() const { return semicolon_; }
 
 private:
-    const std::unique_ptr<Type> type_;
-    const std::vector<VariableDeclarationBody> names_;
-    const Semicolon semicolon_;
+    Let let_kw_;
+    std::vector<VariableDeclarationBody> names_;
+    Colon colon_;
+    std::unique_ptr<Type> type_;
+    Semicolon semicolon_;
 };
 
 class BlockStatement : public Statement {

@@ -51,18 +51,20 @@ private:
 
 class FunctionDeclarationParameter : public Node {
 public:
-    FunctionDeclarationParameter(std::unique_ptr<Type>&& type,
-                                 FunctionDeclarationParameterName&& name)
-        : type_(std::move(type)), name_(std::move(name)) {}
+    FunctionDeclarationParameter(FunctionDeclarationParameterName&& name,
+                                 Colon colon, std::unique_ptr<Type>&& type)
+        : name_(std::move(name)), colon_(colon), type_(std::move(type)) {}
     inline Span span() const override { return type_->span() + name_.span(); }
     inline const std::unique_ptr<Type>& type() const { return type_; }
+    inline Colon colon() const { return colon_; }
     inline const FunctionDeclarationParameterName& name() const {
         return name_;
     }
 
 private:
-    const std::unique_ptr<Type> type_;
-    const FunctionDeclarationParameterName name_;
+    FunctionDeclarationParameterName name_;
+    Colon colon_;
+    std::unique_ptr<Type> type_;
 };
 
 class FunctionDeclaration : public Declaration {
@@ -71,7 +73,8 @@ public:
                         LParen lparen,
                         std::vector<FunctionDeclarationParameter>&& params,
                         RParen rparen, Arrow arrow,
-                        std::unique_ptr<Type>&& type, BlockStatement body)
+                        std::unique_ptr<Type>&& type,
+                        std::unique_ptr<BlockStatement>&& body)
         : function_kw_(function_kw),
           name_(std::move(name)),
           lparen_(lparen),
@@ -79,12 +82,12 @@ public:
           rparen_(rparen),
           arrow_(arrow),
           type_(std::move(type)),
-          body_(body) {}
+          body_(std::move(body)) {}
     inline void accept(DeclarationVisitor& visitor) const override {
         visitor.visit(*this);
     }
     inline Span span() const override {
-        return function_kw_.span() + body_.span();
+        return function_kw_.span() + body_->span();
     }
     inline Function function_kw() const { return function_kw_; }
     inline const FunctionDeclarationName& name() const { return name_; }
@@ -95,7 +98,7 @@ public:
     inline RParen rparen() const { return rparen_; }
     inline Arrow arrow() const { return arrow_; }
     inline const std::unique_ptr<Type>& type() const { return type_; }
-    inline const BlockStatement& body() const { return body_; }
+    inline const std::unique_ptr<BlockStatement>& body() const { return body_; }
 
 private:
     const Function function_kw_;
@@ -105,7 +108,7 @@ private:
     const RParen rparen_;
     const Arrow arrow_;
     const std::unique_ptr<Type> type_;
-    const BlockStatement body_;
+    const std::unique_ptr<BlockStatement> body_;
 };
 
 class StructDeclarationName : public Node {
@@ -134,16 +137,17 @@ private:
 
 class StructDeclarationField : public Node {
 public:
-    StructDeclarationField(std::unique_ptr<Type>&& type,
-                           StructDeclarationFieldName&& name)
-        : type_(std::move(type)), name_(std::move(name)) {}
+    StructDeclarationField(StructDeclarationFieldName&& name, Colon colon,
+                           std::unique_ptr<Type>&& type)
+        : name_(std::move(name)), colon_(colon), type_(std::move(type)) {}
     inline Span span() const override { return type_->span() + name_.span(); }
     inline const std::unique_ptr<Type>& type() const { return type_; }
     inline const StructDeclarationFieldName& name() const { return name_; }
 
 private:
-    const std::unique_ptr<Type> type_;
-    const StructDeclarationFieldName name_;
+    StructDeclarationFieldName name_;
+    Colon colon_;
+    std::unique_ptr<Type> type_;
 };
 
 class StructDeclaration : public Declaration {
@@ -166,7 +170,7 @@ public:
     inline Struct struct_kw() const { return struct_kw_; }
     inline const StructDeclarationName name() const { return name_; }
     inline LCurly lcurly() const { return lcurly_; }
-    inline const std::vector<StructDeclarationField> fields() const {
+    inline const std::vector<StructDeclarationField>& fields() const {
         return fields_;
     }
     inline RCurly rcurly() const { return rcurly_; }
