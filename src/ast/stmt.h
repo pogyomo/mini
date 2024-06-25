@@ -219,17 +219,25 @@ private:
 
 class VariableDeclarationBody : public Node {
 public:
-    VariableDeclarationBody(VariableName&& name,
+    VariableDeclarationBody(VariableName&& name, Colon colon,
+                            std::unique_ptr<Type>&& type,
                             std::optional<VariableInit>&& init)
-        : name_(std::move(name)), init_(std::move(init)) {}
+        : name_(std::move(name)),
+          colon_(colon),
+          type_(std::move(type)),
+          init_(std::move(init)) {}
     inline Span span() const override {
         return init_.has_value() ? name_.span() + init_->span() : name_.span();
     }
     inline const VariableName& name() const { return name_; }
+    inline Colon colon() const { return colon_; }
+    inline const std::unique_ptr<Type>& type() const { return type_; }
     inline const std::optional<VariableInit>& init() const { return init_; }
 
 private:
     VariableName name_;
+    Colon colon_;
+    std::unique_ptr<Type> type_;
     std::optional<VariableInit> init_;
 };
 
@@ -237,17 +245,11 @@ class VariableDeclarations : public Node {
 public:
     VariableDeclarations(Let let_kw,
                          std::vector<VariableDeclarationBody>&& names,
-                         Colon colon, std::unique_ptr<Type>&& type,
                          Semicolon semicolon)
-        : let_kw_(let_kw),
-          names_(std::move(names)),
-          colon_(colon),
-          type_(std::move(type)),
-          semicolon_(semicolon) {}
+        : let_kw_(let_kw), names_(std::move(names)), semicolon_(semicolon) {}
     inline Span span() const override {
-        return type_->span() + semicolon_.span();
+        return let_kw_.span() + semicolon_.span();
     }
-    inline const std::unique_ptr<Type>& type() const { return type_; }
     inline const std::vector<VariableDeclarationBody>& names() const {
         return names_;
     }
@@ -256,8 +258,6 @@ public:
 private:
     Let let_kw_;
     std::vector<VariableDeclarationBody> names_;
-    Colon colon_;
-    std::unique_ptr<Type> type_;
     Semicolon semicolon_;
 };
 

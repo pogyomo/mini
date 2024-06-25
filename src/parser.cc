@@ -826,6 +826,13 @@ std::optional<std::unique_ptr<BlockStatement>> parse_block_stmt(
                 VariableName name(std::move(value), ts.token()->span());
                 ts.advance();
 
+                TRY(check_punct(ctx, ts, PunctTokenKind::Colon));
+                Colon colon(ts.token()->span());
+                ts.advance();
+
+                auto type = parse_type(ctx, ts);
+                if (!type) return std::nullopt;
+
                 std::optional<VariableInit> init;
                 if (!ts.is_eos() &&
                     ts.token()->is_punct_of(PunctTokenKind::Assign)) {
@@ -838,7 +845,8 @@ std::optional<std::unique_ptr<BlockStatement>> parse_block_stmt(
                     init.emplace(assign, std::move(*expr));
                 }
 
-                names.emplace_back(std::move(name), std::move(init));
+                names.emplace_back(std::move(name), colon, std::move(*type),
+                                   std::move(init));
 
                 TRY(check_eos(ctx, ts));
                 if (ts.token()->is_punct_of(PunctTokenKind::Comma)) {
@@ -848,19 +856,11 @@ std::optional<std::unique_ptr<BlockStatement>> parse_block_stmt(
                 }
             }
 
-            TRY(check_punct(ctx, ts, PunctTokenKind::Colon));
-            Colon colon(ts.token()->span());
-            ts.advance();
-
-            auto type = parse_type(ctx, ts);
-            if (!type) return std::nullopt;
-
             TRY(check_punct(ctx, ts, PunctTokenKind::Semicolon));
             Semicolon semicolon(ts.token()->span());
             ts.advance();
 
-            decls.emplace_back(let_kw, std::move(names), colon,
-                               std::move(*type), semicolon);
+            decls.emplace_back(let_kw, std::move(names), semicolon);
         } else {
             break;
         }

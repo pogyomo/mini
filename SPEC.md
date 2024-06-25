@@ -84,8 +84,8 @@ The syntax of mini programming language is as follow:
 <block-statement> ::= "{" <block-statement-items> "}"
 <block-statement-items> ::= <block-statement-item> [ <block-statement-items> ]
 <block-statement-item> ::= { <variable-declarations> }* { <statement> }*
-<variable-declarations> ::= "let" <variable-declarations-ids> ":" <type> ";"
-<variable-declarations-ids> ::= <identifier> [ "=" <expression> ] [ <variable-declarations-ids> ]
+<variable-declarations> ::= "let" <variable-declarations-ids> ";"
+<variable-declarations-ids> ::= <identifier> ":" <type> [ "=" <expression> ] [ <variable-declarations-ids> ]
 
 <expression> ::= <logical-or-expression>
                | <unary-expression> "=" <expression>
