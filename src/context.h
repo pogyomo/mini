@@ -1,6 +1,7 @@
 #ifndef MINI_CONTEXT_H_
 #define MINI_CONTEXT_H_
 
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -23,6 +24,16 @@ public:
         size_t id = entries_.size();
         entries_.emplace_back(std::move(name), std::move(lines));
         return id;
+    }
+    size_t cache(const std::string &path) {
+        std::string line;
+        std::vector<std::string> lines;
+        std::ifstream ifs(path);
+        while (std::getline(ifs, line)) {
+            lines.emplace_back(line);
+        }
+        std::string name = path;
+        return cache(std::move(name), std::move(lines));
     }
     const InputCacheEntry &fetch(size_t id) const { return entries_.at(id); }
 

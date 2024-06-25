@@ -6,6 +6,7 @@
 #define GEN_NODE(name)                                      \
     class name : public Node {                              \
     public:                                                 \
+        name(Span span) : span_(span) {}                    \
         inline Span span() const override { return span_; } \
                                                             \
     private:                                                \

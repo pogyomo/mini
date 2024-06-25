@@ -30,8 +30,8 @@ public:
     bool operator>=(const Position& rhs) const { return !(*this < rhs); }
 
 private:
-    const size_t row_;
-    const size_t offset_;
+    size_t row_;
+    size_t offset_;
 };
 
 class Span {
@@ -48,9 +48,9 @@ public:
     inline Position end() const { return end_; }
 
 private:
-    const size_t id_;
-    const Position start_;
-    const Position end_;
+    size_t id_;
+    Position start_;
+    Position end_;
 };
 
 #endif  // MINI_SPAN_H_
