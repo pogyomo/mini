@@ -35,9 +35,17 @@ bool check_ident(Context &ctx, TokenStream &ts) {
         return true;
     } else {
         if (!ts.token()->is_ident()) {
-            ReportInfo info(ts.token()->span(), "expected identifier", "");
-            report(ctx, ReportLevel::Error, info);
-            return true;
+            if (ts.has_prev()) {
+                ReportInfo info(ts.prev()->span(),
+                                "expected identifier after this", "");
+                report(ctx, ReportLevel::Error, info);
+                return true;
+            } else {
+                ReportInfo info(ts.token()->span(),
+                                "expected this to be identifier", "");
+                report(ctx, ReportLevel::Error, info);
+                return true;
+            }
         } else {
             return false;
         }
@@ -50,10 +58,19 @@ bool check_punct(Context &ctx, TokenStream &ts, PunctTokenKind kind) {
         return true;
     } else {
         if (!ts.token()->is_punct_of(kind)) {
-            ReportInfo info(ts.token()->span(),
-                            "expected `" + to_string(kind) + "`", "");
-            report(ctx, ReportLevel::Error, info);
-            return true;
+            if (ts.has_prev()) {
+                ReportInfo info(ts.prev()->span(),
+                                "expected `" + to_string(kind) + "` after this",
+                                "");
+                report(ctx, ReportLevel::Error, info);
+                return true;
+            } else {
+                ReportInfo info(ts.token()->span(),
+                                "expected this to be `" + to_string(kind) + "`",
+                                "");
+                report(ctx, ReportLevel::Error, info);
+                return true;
+            }
         } else {
             return false;
         }
@@ -66,10 +83,19 @@ bool check_keyword(Context &ctx, TokenStream &ts, KeywordTokenKind kind) {
         return true;
     } else {
         if (!ts.token()->is_keyword_of(kind)) {
-            ReportInfo info(ts.token()->span(),
-                            "expected `" + to_string(kind) + "`", "");
-            report(ctx, ReportLevel::Error, info);
-            return true;
+            if (ts.has_prev()) {
+                ReportInfo info(ts.prev()->span(),
+                                "expected `" + to_string(kind) + "` after this",
+                                "");
+                report(ctx, ReportLevel::Error, info);
+                return true;
+            } else {
+                ReportInfo info(ts.token()->span(),
+                                "expected this to be `" + to_string(kind) + "`",
+                                "");
+                report(ctx, ReportLevel::Error, info);
+                return true;
+            }
         } else {
             return false;
         }

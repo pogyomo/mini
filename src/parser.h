@@ -21,6 +21,10 @@ public:
     bool is_eos() const { return offset_ >= tokens_.size(); }
     void advance() { offset_++; }
     const std::unique_ptr<Token>& token() const { return tokens_.at(offset_); }
+    bool has_prev() const { return offset_ > 0; }
+    const std::unique_ptr<Token>& prev() const {
+        return tokens_.at(offset_ - 1);
+    }
     const std::unique_ptr<Token>& last() const {
         return tokens_.at(tokens_.size() - 1);
     }
