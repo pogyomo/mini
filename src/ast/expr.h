@@ -69,8 +69,8 @@ public:
     inline const std::unique_ptr<Expression>& expr() const { return expr_; }
 
 private:
-    const Op op_;
-    const std::unique_ptr<Expression> expr_;
+    Op op_;
+    std::unique_ptr<Expression> expr_;
 };
 
 class InfixExpression : public Expression {
@@ -103,8 +103,8 @@ public:
         inline Kind kind() const { return kind_; }
 
     private:
-        const Kind kind_;
-        const Span span_;
+        Kind kind_;
+        Span span_;
     };
     InfixExpression(Op op, std::unique_ptr<Expression>&& lhs,
                     std::unique_ptr<Expression>&& rhs)
@@ -118,9 +118,9 @@ public:
     inline const std::unique_ptr<Expression>& rhs() const { return rhs_; }
 
 private:
-    const Op op_;
-    const std::unique_ptr<Expression> lhs_;
-    const std::unique_ptr<Expression> rhs_;
+    Op op_;
+    std::unique_ptr<Expression> lhs_;
+    std::unique_ptr<Expression> rhs_;
 };
 
 class IndexExpression : public Expression {
@@ -143,10 +143,10 @@ public:
     inline RSquare rsquare() const { return rsquare_; }
 
 private:
-    const std::unique_ptr<Expression> expr_;
-    const LSquare lsquare_;
-    const std::unique_ptr<Expression> index_;
-    const RSquare rsquare_;
+    std::unique_ptr<Expression> expr_;
+    LSquare lsquare_;
+    std::unique_ptr<Expression> index_;
+    RSquare rsquare_;
 };
 
 class CallExpression : public Expression {
@@ -170,10 +170,10 @@ public:
     inline RParen rparen() const { return rparen_; }
 
 private:
-    const std::unique_ptr<Expression> func_;
-    const LParen lparen_;
-    const std::vector<std::unique_ptr<Expression>> args_;
-    const RParen rparen_;
+    std::unique_ptr<Expression> func_;
+    LParen lparen_;
+    std::vector<std::unique_ptr<Expression>> args_;
+    RParen rparen_;
 };
 
 class AccessExpressionField : public Node {
@@ -184,8 +184,8 @@ public:
     inline const std::string& name() const { return name_; }
 
 private:
-    const std::string name_;
-    const Span span_;
+    std::string name_;
+    Span span_;
 };
 
 class AccessExpression : public Expression {
@@ -202,9 +202,9 @@ public:
     inline const AccessExpressionField& field() const { return field_; }
 
 public:
-    const std::unique_ptr<Expression> expr_;
-    const Dot dot_;
-    const AccessExpressionField field_;
+    std::unique_ptr<Expression> expr_;
+    Dot dot_;
+    AccessExpressionField field_;
 };
 
 class CastExpression : public Expression {
@@ -221,9 +221,9 @@ public:
     inline const std::unique_ptr<Type>& type() const { return type_; }
 
 private:
-    const std::unique_ptr<Expression> expr_;
-    const As as_kw_;
-    const std::unique_ptr<Type> type_;
+    std::unique_ptr<Expression> expr_;
+    As as_kw_;
+    std::unique_ptr<Type> type_;
 };
 
 class ESizeofExpression : public Expression {
@@ -240,8 +240,8 @@ public:
     inline const std::unique_ptr<Expression>& expr() const { return expr_; }
 
 private:
-    const ESizeof esizeof_kw_;
-    const std::unique_ptr<Expression> expr_;
+    ESizeof esizeof_kw_;
+    std::unique_ptr<Expression> expr_;
 };
 
 class TSizeofExpression : public Expression {
@@ -258,8 +258,8 @@ public:
     inline const std::unique_ptr<Type>& type() const { return type_; }
 
 private:
-    const TSizeof tsizeof_kw_;
-    const std::unique_ptr<Type> type_;
+    TSizeof tsizeof_kw_;
+    std::unique_ptr<Type> type_;
 };
 
 class EnumSelectExpressionDst : public Node {
@@ -270,8 +270,8 @@ public:
     inline const std::string& name() const { return name_; }
 
 private:
-    const std::string name_;
-    const Span span_;
+    std::string name_;
+    Span span_;
 };
 
 class EnumSelectExpressionSrc : public Node {
@@ -282,8 +282,8 @@ public:
     inline const std::string& name() const { return name_; }
 
 private:
-    const std::string name_;
-    const Span span_;
+    std::string name_;
+    Span span_;
 };
 
 class EnumSelectExpression : public Expression {
@@ -302,9 +302,9 @@ public:
     inline const EnumSelectExpressionSrc& src() const { return src_; }
 
 public:
-    const EnumSelectExpressionDst dst_;
-    const ColonColon colon_colon_;
-    const EnumSelectExpressionSrc src_;
+    EnumSelectExpressionDst dst_;
+    ColonColon colon_colon_;
+    EnumSelectExpressionSrc src_;
 };
 
 class VariableExpression : public Expression {
@@ -318,8 +318,8 @@ public:
     inline const std::string& value() const { return value_; }
 
 private:
-    const std::string value_;
-    const Span span_;
+    std::string value_;
+    Span span_;
 };
 
 class IntegerExpression : public Expression {
@@ -332,8 +332,8 @@ public:
     inline uint64_t value() const { return value_; }
 
 private:
-    const uint64_t value_;
-    const Span span_;
+    uint64_t value_;
+    Span span_;
 };
 
 #endif  // MINI_AST_EXPR_H_

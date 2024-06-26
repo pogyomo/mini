@@ -33,8 +33,8 @@ public:
     inline const std::string& name() const { return name_; }
 
 private:
-    const std::string name_;
-    const Span span_;
+    std::string name_;
+    Span span_;
 };
 
 class FunctionDeclarationParameterName : public Node {
@@ -45,8 +45,8 @@ public:
     inline const std::string& name() const { return name_; }
 
 private:
-    const std::string name_;
-    const Span span_;
+    std::string name_;
+    Span span_;
 };
 
 class FunctionDeclarationParameter : public Node {
@@ -101,14 +101,14 @@ public:
     inline const std::unique_ptr<BlockStatement>& body() const { return body_; }
 
 private:
-    const Function function_kw_;
-    const FunctionDeclarationName name_;
-    const LParen lparen_;
-    const std::vector<FunctionDeclarationParameter> params_;
-    const RParen rparen_;
-    const Arrow arrow_;
-    const std::unique_ptr<Type> type_;
-    const std::unique_ptr<BlockStatement> body_;
+    Function function_kw_;
+    FunctionDeclarationName name_;
+    LParen lparen_;
+    std::vector<FunctionDeclarationParameter> params_;
+    RParen rparen_;
+    Arrow arrow_;
+    std::unique_ptr<Type> type_;
+    std::unique_ptr<BlockStatement> body_;
 };
 
 class StructDeclarationName : public Node {
@@ -119,8 +119,8 @@ public:
     inline const std::string& name() const { return name_; }
 
 private:
-    const std::string name_;
-    const Span span_;
+    std::string name_;
+    Span span_;
 };
 
 class StructDeclarationFieldName : public Node {
@@ -131,8 +131,8 @@ public:
     inline const std::string& name() const { return name_; }
 
 private:
-    const std::string name_;
-    const Span span_;
+    std::string name_;
+    Span span_;
 };
 
 class StructDeclarationField : public Node {
@@ -176,11 +176,11 @@ public:
     inline RCurly rcurly() const { return rcurly_; }
 
 private:
-    const Struct struct_kw_;
-    const StructDeclarationName name_;
-    const LCurly lcurly_;
-    const std::vector<StructDeclarationField> fields_;
-    const RCurly rcurly_;
+    Struct struct_kw_;
+    StructDeclarationName name_;
+    LCurly lcurly_;
+    std::vector<StructDeclarationField> fields_;
+    RCurly rcurly_;
 };
 
 class EnumDeclarationName : public Node {
@@ -191,8 +191,8 @@ public:
     inline const std::string& name() const { return name_; }
 
 private:
-    const std::string name_;
-    const Span span_;
+    std::string name_;
+    Span span_;
 };
 
 class EnumDeclarationField : public Node {
@@ -203,8 +203,8 @@ public:
     inline const std::string& name() const { return name_; }
 
 private:
-    const std::string name_;
-    const Span span_;
+    std::string name_;
+    Span span_;
 };
 
 class EnumDeclaration : public Declaration {
@@ -231,11 +231,11 @@ public:
     inline RCurly rcurly() const { return rcurly_; }
 
 private:
-    const Enum enum_kw_;
-    const EnumDeclarationName name_;
-    const LCurly lcurly_;
-    const std::vector<EnumDeclarationField> fields_;
-    const RCurly rcurly_;
+    Enum enum_kw_;
+    EnumDeclarationName name_;
+    LCurly lcurly_;
+    std::vector<EnumDeclarationField> fields_;
+    RCurly rcurly_;
 };
 
 #endif  // MINI_AST_DECL_H_

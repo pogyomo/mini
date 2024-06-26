@@ -39,7 +39,7 @@ public:
     inline Span span() const override { return span_; }
 
 private:
-    const Span span_;
+    Span span_;
 };
 
 class UIntType : public Type {
@@ -51,7 +51,7 @@ public:
     inline Span span() const override { return span_; }
 
 private:
-    const Span span_;
+    Span span_;
 };
 
 class PointerType : public Type {
@@ -66,8 +66,8 @@ public:
     inline const std::unique_ptr<Type>& of() const { return of_; }
 
 private:
-    const Star star_;
-    const std::unique_ptr<Type> of_;
+    Star star_;
+    std::unique_ptr<Type> of_;
 };
 
 class ArrayType : public Type {
@@ -95,12 +95,12 @@ public:
     inline RSquare rsquare() const { return rsquare_; }
 
 private:
-    const LParen lparen_;
-    const std::unique_ptr<Type> of_;
-    const RParen rparen_;
-    const LSquare lsquare_;
-    const std::unique_ptr<Expression> size_;
-    const RSquare rsquare_;
+    LParen lparen_;
+    std::unique_ptr<Type> of_;
+    RParen rparen_;
+    LSquare lsquare_;
+    std::unique_ptr<Expression> size_;
+    RSquare rsquare_;
 };
 
 class NameType : public Type {
@@ -113,8 +113,8 @@ public:
     inline Span span() const override { return span_; }
 
 private:
-    const std::string name_;
-    const Span span_;
+    std::string name_;
+    Span span_;
 };
 
 #endif  // MINI_AST_TYPE_H_

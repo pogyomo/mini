@@ -83,7 +83,7 @@ public:
     }
 
 private:
-    const Span span_;
+    Span span_;
 };
 
 class PunctToken : public Token {
@@ -94,7 +94,7 @@ public:
     }
 
 private:
-    const PunctTokenKind kind_;
+    PunctTokenKind kind_;
 };
 
 class KeywordToken : public Token {
@@ -105,7 +105,7 @@ public:
     }
 
 private:
-    const KeywordTokenKind kind_;
+    KeywordTokenKind kind_;
 };
 
 class IdentToken : public Token {
@@ -116,7 +116,7 @@ public:
     inline const std::string& ident_value() const override { return value_; }
 
 private:
-    const std::string value_;
+    std::string value_;
 };
 
 class IntToken : public Token {
@@ -126,7 +126,7 @@ public:
     inline uint64_t int_value() const override { return value_; }
 
 private:
-    const uint64_t value_;
+    uint64_t value_;
 };
 
 #endif  // MINI_TOKEN_H_

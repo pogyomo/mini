@@ -48,8 +48,8 @@ public:
     inline Semicolon semicolon() const { return semicolon_; }
 
 private:
-    const std::unique_ptr<Expression> expr_;
-    const Semicolon semicolon_;
+    std::unique_ptr<Expression> expr_;
+    Semicolon semicolon_;
 };
 
 class ReturnStatement : public Statement {
@@ -70,9 +70,9 @@ public:
     inline Semicolon semicolon() const { return semicolon_; }
 
 private:
-    const Return return_kw_;
-    const std::unique_ptr<Expression> expr_;
-    const Semicolon semicolon_;
+    Return return_kw_;
+    std::unique_ptr<Expression> expr_;
+    Semicolon semicolon_;
 };
 
 class BreakStatement : public Statement {
@@ -89,8 +89,8 @@ public:
     inline Semicolon semicolon() const { return semicolon_; }
 
 private:
-    const Break break_kw_;
-    const Semicolon semicolon_;
+    Break break_kw_;
+    Semicolon semicolon_;
 };
 
 class ContinueStatement : public Statement {
@@ -107,8 +107,8 @@ public:
     inline Semicolon semicolon() const { return semicolon_; }
 
 private:
-    const Continue continue_kw_;
-    const Semicolon semicolon_;
+    Continue continue_kw_;
+    Semicolon semicolon_;
 };
 
 class WhileStatement : public Statement {
@@ -134,11 +134,11 @@ public:
     inline const std::unique_ptr<Statement>& body() const { return body_; }
 
 private:
-    const While while_kw_;
-    const LParen lparen_;
-    const std::unique_ptr<Expression> cond_;
-    const RParen rparen_;
-    const std::unique_ptr<Statement> body_;
+    While while_kw_;
+    LParen lparen_;
+    std::unique_ptr<Expression> cond_;
+    RParen rparen_;
+    std::unique_ptr<Statement> body_;
 };
 
 class IfStatementElseClause : public Node {
@@ -152,7 +152,7 @@ public:
     inline const std::unique_ptr<Statement>& body() const { return body_; }
 
 private:
-    const Else else_kw_;
+    Else else_kw_;
     std::unique_ptr<Statement> body_;
 };
 
@@ -184,12 +184,12 @@ public:
     }
 
 private:
-    const If if_kw_;
-    const LParen lparen_;
-    const std::unique_ptr<Expression> cond_;
-    const RParen rparen_;
-    const std::unique_ptr<Statement> body_;
-    const std::optional<IfStatementElseClause> else_clause_;
+    If if_kw_;
+    LParen lparen_;
+    std::unique_ptr<Expression> cond_;
+    RParen rparen_;
+    std::unique_ptr<Statement> body_;
+    std::optional<IfStatementElseClause> else_clause_;
 };
 
 class VariableName : public Node {
@@ -200,8 +200,8 @@ public:
     inline const std::string& name() const { return name_; }
 
 private:
-    const std::string name_;
-    const Span span_;
+    std::string name_;
+    Span span_;
 };
 
 class VariableInit : public Node {
@@ -213,7 +213,7 @@ public:
     inline const std::unique_ptr<Expression>& expr() const { return expr_; }
 
 private:
-    const Assign assign_;
+    Assign assign_;
     std::unique_ptr<Expression> expr_;
 };
 
@@ -286,10 +286,10 @@ public:
     inline RCurly rcurly() const { return rcurly_; }
 
 private:
-    const LCurly lcurly_;
-    const std::vector<VariableDeclarations> decls_;
-    const std::vector<std::unique_ptr<Statement>> stmts_;
-    const RCurly rcurly_;
+    LCurly lcurly_;
+    std::vector<VariableDeclarations> decls_;
+    std::vector<std::unique_ptr<Statement>> stmts_;
+    RCurly rcurly_;
 };
 
 #endif  // MINI_AST_STMT_H_
