@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include "panic.h"
+
 class InputCacheEntry {
 public:
     InputCacheEntry(std::string &&name, std::vector<std::string> &&lines)
@@ -29,6 +31,7 @@ public:
         std::string line;
         std::vector<std::string> lines;
         std::ifstream ifs(path);
+        if (!ifs.is_open()) fatal_error("failed to open `%s`", path.c_str());
         while (std::getline(ifs, line)) {
             lines.emplace_back(line);
         }
