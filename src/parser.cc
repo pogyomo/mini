@@ -594,6 +594,12 @@ std::optional<std::unique_ptr<Expression>> parse_primary_expr(Context &ctx,
         ts.advance();
 
         return std::make_unique<IntegerExpression>(value, span);
+    } else if (ts.token()->is_string()) {
+        std::string value = ts.token()->string_value();
+        auto span = ts.token()->span();
+        ts.advance();
+
+        return std::make_unique<StringExpression>(std::move(value), span);
     } else if (ts.token()->is_punct_of(PunctTokenKind::LParen)) {
         ts.advance();
         auto expr = parse_expr(ctx, ts);

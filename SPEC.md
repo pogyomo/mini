@@ -113,7 +113,9 @@ The syntax of mini programming language is as follow:
 <primary-expression> ::= <enum-select>
                        | <identifier>
                        | <integer>
+                       | <string>
                        | "(" <expression> ")"
 <enum-select> ::= <identifier> "::" <identifier>
 <integer> ::= ...
+<string> ::= ...
 ```

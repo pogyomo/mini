@@ -12,6 +12,7 @@ class LineStream {
 public:
     LineStream(size_t row, const std::string &line)
         : offset_(0), row_(row), line_(line) {}
+    explicit operator bool() { return !is_eos(); }
     bool is_eos() const { return offset_ >= line_.size(); }
     void advance() { offset_++; }
     char ch() const { return line_[offset_]; }
@@ -30,6 +31,15 @@ public:
             }
         }
         return true;
+    }
+    bool accept(char pat, Position &pos) {
+        if (is_eos() || pat != ch()) {
+            return false;
+        } else {
+            pos = this->pos();
+            advance();
+            return true;
+        }
     }
     void skip_spaces() {
         while (!is_eos() && std::isspace(ch())) {
@@ -50,7 +60,7 @@ LexResult lex_line(Context &ctx, size_t id, size_t row,
     std::vector<std::unique_ptr<Token>> res;
     while (true) {
         stream.skip_spaces();
-        if (stream.is_eos()) {
+        if (!stream) {
             break;
         }
 
@@ -200,10 +210,54 @@ LexResult lex_line(Context &ctx, size_t id, size_t row,
         } else if (stream.accept("enum", end)) {
             res.push_back(std::make_unique<KeywordToken>(KeywordTokenKind::Enum,
                                                          Span(id, start, end)));
+        } else if (stream.accept('"', end)) {
+            std::string value;
+            while (true) {
+                if (!stream) {
+                    ReportInfo info(Span(id, start, end),
+                                    "unclosing string literal", "");
+                    report(ctx, ReportLevel::Error, info);
+                    return std::nullopt;
+                } else if (stream.accept('"', end)) {
+                    break;
+                } else if (stream.accept('\\', end)) {
+                    if (stream.accept('a', end)) {
+                        value.push_back('\a');
+                    } else if (stream.accept('b', end)) {
+                        value.push_back('\b');
+                    } else if (stream.accept('f', end)) {
+                        value.push_back('\f');
+                    } else if (stream.accept('n', end)) {
+                        value.push_back('\n');
+                    } else if (stream.accept('r', end)) {
+                        value.push_back('\r');
+                    } else if (stream.accept('t', end)) {
+                        value.push_back('\t');
+                    } else if (stream.accept('v', end)) {
+                        value.push_back('\v');
+                    } else if (stream.accept('\'', end)) {
+                        value.push_back('\'');
+                    } else if (stream.accept('"', end)) {
+                        value.push_back('\"');
+                    } else if (stream.accept('\\', end)) {
+                        value.push_back('\\');
+                    } else {
+                        ReportInfo info(Span(id, end, end),
+                                        "unexpected escape sequence", "");
+                        report(ctx, ReportLevel::Error, info);
+                        return std::nullopt;
+                    }
+                } else {
+                    value.push_back(stream.ch());
+                    stream.advance();
+                }
+            }
+            res.push_back(std::make_unique<StringToken>(std::move(value),
+                                                        Span(id, start, end)));
         } else if (std::isalpha(stream.ch())) {
             std::string value;
-            while (!stream.is_eos()) {
-                if (std::isalnum(stream.ch())) {
+            while (stream) {
+                if (std::isalnum(stream.ch()) || stream.ch() == '_') {
                     value.push_back(stream.ch());
                     end = stream.pos();
                     stream.advance();
@@ -215,7 +269,7 @@ LexResult lex_line(Context &ctx, size_t id, size_t row,
                                                        Span(id, start, end)));
         } else if (std::isdigit(stream.ch())) {
             std::string buf;
-            while (!stream.is_eos()) {
+            while (stream) {
                 if (std::isdigit(stream.ch())) {
                     buf.push_back(stream.ch());
                     end = stream.pos();
@@ -254,7 +308,7 @@ LexResult lex_file(Context &ctx, const std::string &path) {
     std::vector<std::unique_ptr<Token>> res;
     for (size_t row = 0; row < lines.size(); row++) {
         auto line = lex_line(ctx, id, row, lines.at(row));
-        if (!line.has_value()) {
+        if (!line) {
             success = false;
             continue;
         }

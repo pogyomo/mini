@@ -17,6 +17,7 @@ class TSizeofExpression;
 class EnumSelectExpression;
 class VariableExpression;
 class IntegerExpression;
+class StringExpression;
 
 class ExpressionVisitor {
 public:
@@ -32,6 +33,7 @@ public:
     virtual void visit(const EnumSelectExpression& expr) = 0;
     virtual void visit(const VariableExpression& expr) = 0;
     virtual void visit(const IntegerExpression& expr) = 0;
+    virtual void visit(const StringExpression& expr) = 0;
 };
 
 class Expression : public Node {
@@ -333,6 +335,21 @@ public:
 
 private:
     uint64_t value_;
+    Span span_;
+};
+
+class StringExpression : public Expression {
+public:
+    StringExpression(std::string&& value, Span span)
+        : value_(std::move(value)), span_(span) {}
+    inline void accept(ExpressionVisitor& visitor) const override {
+        return visitor.visit(*this);
+    }
+    inline Span span() const override { return span_; }
+    inline const std::string& value() const { return value_; }
+
+private:
+    std::string value_;
     Span span_;
 };
 

@@ -73,6 +73,7 @@ public:
     virtual bool is_keyword_of(KeywordTokenKind kind) const { return false; }
     virtual bool is_ident() const { return false; }
     virtual bool is_int() const { return false; }
+    virtual bool is_string() const { return false; }
     virtual const std::string& ident_value() const {
         throw std::runtime_error(
             "`ident_value` called when `is_ident` returns false");
@@ -80,6 +81,10 @@ public:
     virtual uint64_t int_value() const {
         throw std::runtime_error(
             "`int_value` called when `is_int` returns false");
+    }
+    virtual const std::string& string_value() const {
+        throw std::runtime_error(
+            "`string_value` called when `is_string` returns false");
     }
 
 private:
@@ -127,6 +132,17 @@ public:
 
 private:
     uint64_t value_;
+};
+
+class StringToken : public Token {
+public:
+    StringToken(std::string&& value, Span span)
+        : Token(span), value_(std::move(value)) {}
+    inline bool is_string() const override { return true; }
+    inline const std::string& string_value() const override { return value_; }
+
+private:
+    std::string value_;
 };
 
 #endif  // MINI_TOKEN_H_
