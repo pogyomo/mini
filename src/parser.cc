@@ -709,8 +709,12 @@ std::optional<std::unique_ptr<ReturnStatement>> parse_return_stmt(
     Return return_kw(ts.token()->span());
     ts.advance();
 
-    auto expr = parse_expr(ctx, ts);
-    if (!expr) return std::nullopt;
+    std::optional<std::unique_ptr<Expression>> expr;
+    TRY(check_eos(ctx, ts));
+    if (!ts.token()->is_punct_of(PunctTokenKind::Semicolon)) {
+        expr = parse_expr(ctx, ts);
+        if (!expr) return std::nullopt;
+    }
 
     TRY(check_punct(ctx, ts, PunctTokenKind::Semicolon));
     Semicolon semicolon(ts.token()->span());
@@ -955,19 +959,23 @@ std::optional<std::unique_ptr<FunctionDeclaration>> parse_func_decl(
     RParen rparen(ts.token()->span());
     ts.advance();
 
-    TRY(check_punct(ctx, ts, PunctTokenKind::Arrow));
-    Arrow arrow(ts.token()->span());
-    ts.advance();
+    std::optional<FunctionDeclarationReturn> ret;
+    if (!ts.is_eos() && ts.token()->is_punct_of(PunctTokenKind::Arrow)) {
+        Arrow arrow(ts.token()->span());
+        ts.advance();
 
-    auto type = parse_type(ctx, ts);
-    if (!type) return std::nullopt;
+        auto type = parse_type(ctx, ts);
+        if (!type) return std::nullopt;
+
+        ret.emplace(arrow, std::move(*type));
+    }
 
     auto body = parse_block_stmt(ctx, ts);
     if (!body) return std::nullopt;
 
     return std::make_unique<FunctionDeclaration>(
-        function_kw, std::move(name), lparen, std::move(params), rparen, arrow,
-        std::move(*type), std::move(*body));
+        function_kw, std::move(name), lparen, std::move(params), rparen,
+        std::move(ret), std::move(*body));
 }
 
 std::optional<std::unique_ptr<StructDeclaration>> parse_struct_decl(

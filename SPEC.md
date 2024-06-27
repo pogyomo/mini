@@ -47,7 +47,7 @@ The syntax of mini programming language is as follow:
 <declaration> ::= <function-declaration>
                 | <struct-declaration>
                 | <enum-declaration>
-<function-declaration> ::= "function" "(" <function-parameters> ")" "->" <type> <block-statement>
+<function-declaration> ::= "function" "(" <function-parameters> ")" [ "->" <type> ] <block-statement>
 <function-parameters> ::= <function-parameter>
                         | <function-parameter> "," <function-parameters>
 <function-parameter> ::= <identifier> ":" <type>
@@ -76,7 +76,7 @@ The syntax of mini programming language is as follow:
               | <if-statement>
               | <block-statement>
 <expression-statement> ::= <expression> ";"
-<return-statement> ::= "return" <expression> ";"
+<return-statement> ::= "return" [ <expression> ] ";"
 <break-statement> ::= "break" ";"
 <continue-statement> ::= "continue" ";"
 <while-statement> ::= "while" "(" <expression> ")" <statement>

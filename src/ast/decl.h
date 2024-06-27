@@ -1,6 +1,7 @@
 #ifndef MINI_AST_DECL_H_
 #define MINI_AST_DECL_H_
 
+#include <optional>
 #include <string>
 
 #include "node.h"
@@ -67,21 +68,33 @@ private:
     std::unique_ptr<Type> type_;
 };
 
+class FunctionDeclarationReturn : public Node {
+public:
+    FunctionDeclarationReturn(Arrow arrow, std::unique_ptr<Type>&& type)
+        : arrow_(arrow), type_(std::move(type)) {}
+    inline Span span() const { return arrow_.span() + type_->span(); }
+    inline Arrow arrow() const { return arrow_; }
+    inline const std::unique_ptr<Type>& type() const { return type_; }
+
+private:
+    Arrow arrow_;
+    std::unique_ptr<Type> type_;
+};
+
 class FunctionDeclaration : public Declaration {
 public:
     FunctionDeclaration(Function function_kw, FunctionDeclarationName&& name,
                         LParen lparen,
                         std::vector<FunctionDeclarationParameter>&& params,
-                        RParen rparen, Arrow arrow,
-                        std::unique_ptr<Type>&& type,
+                        RParen rparen,
+                        std::optional<FunctionDeclarationReturn>&& ret,
                         std::unique_ptr<BlockStatement>&& body)
         : function_kw_(function_kw),
           name_(std::move(name)),
           lparen_(lparen),
           params_(std::move(params)),
           rparen_(rparen),
-          arrow_(arrow),
-          type_(std::move(type)),
+          ret_(std::move(ret)),
           body_(std::move(body)) {}
     inline void accept(DeclarationVisitor& visitor) const override {
         visitor.visit(*this);
@@ -96,8 +109,6 @@ public:
         return params_;
     }
     inline RParen rparen() const { return rparen_; }
-    inline Arrow arrow() const { return arrow_; }
-    inline const std::unique_ptr<Type>& type() const { return type_; }
     inline const std::unique_ptr<BlockStatement>& body() const { return body_; }
 
 private:
@@ -106,8 +117,7 @@ private:
     LParen lparen_;
     std::vector<FunctionDeclarationParameter> params_;
     RParen rparen_;
-    Arrow arrow_;
-    std::unique_ptr<Type> type_;
+    std::optional<FunctionDeclarationReturn> ret_;
     std::unique_ptr<BlockStatement> body_;
 };
 

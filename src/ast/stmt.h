@@ -54,7 +54,8 @@ private:
 
 class ReturnStatement : public Statement {
 public:
-    ReturnStatement(Return return_kw, std::unique_ptr<Expression>&& expr,
+    ReturnStatement(Return return_kw,
+                    std::optional<std::unique_ptr<Expression>>&& expr,
                     Semicolon semicolon)
         : return_kw_(return_kw),
           expr_(std::move(expr)),
@@ -66,12 +67,14 @@ public:
         return return_kw_.span() + semicolon_.span();
     }
     inline Return return_kw() const { return return_kw_; }
-    inline const std::unique_ptr<Expression>& expr() const { return expr_; }
+    inline const std::optional<std::unique_ptr<Expression>>& expr() const {
+        return expr_;
+    }
     inline Semicolon semicolon() const { return semicolon_; }
 
 private:
     Return return_kw_;
-    std::unique_ptr<Expression> expr_;
+    std::optional<std::unique_ptr<Expression>> expr_;
     Semicolon semicolon_;
 };
 
