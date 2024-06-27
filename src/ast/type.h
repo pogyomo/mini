@@ -72,15 +72,10 @@ private:
 
 class ArrayType : public Type {
 public:
+    ~ArrayType();
     ArrayType(LParen lparen, std::unique_ptr<Type>&& of, RParen rparen,
               LSquare lsquare, std::unique_ptr<Expression>&& size,
-              RSquare rsquare)
-        : lparen_(lparen),
-          of_(std::move(of)),
-          rparen_(rparen),
-          lsquare_(lsquare),
-          size_(std::move(size)),
-          rsquare_(rsquare) {}
+              RSquare rsquare);
     inline void accept(TypeVisitor& visitor) const override {
         visitor.visit(*this);
     }
