@@ -10,6 +10,7 @@ class Expression;
 
 class IntType;
 class UIntType;
+class BoolType;
 class PointerType;
 class ArrayType;
 class NameType;
@@ -19,6 +20,7 @@ public:
     virtual ~TypeVisitor() {}
     virtual void visit(const IntType& type) = 0;
     virtual void visit(const UIntType& type) = 0;
+    virtual void visit(const BoolType& type) = 0;
     virtual void visit(const PointerType& type) = 0;
     virtual void visit(const ArrayType& type) = 0;
     virtual void visit(const NameType& type) = 0;
@@ -54,26 +56,38 @@ private:
     Span span_;
 };
 
+class BoolType : public Type {
+public:
+    BoolType(Span span) : span_(span) {}
+    inline void accept(TypeVisitor& visitor) const override {
+        visitor.visit(*this);
+    }
+    inline Span span() const override { return span_; }
+
+private:
+    Span span_;
+};
+
 class PointerType : public Type {
 public:
-    PointerType(Star star, std::unique_ptr<Type>&& of)
-        : star_(star), of_(std::move(of)) {}
+    PointerType(Star star, const std::shared_ptr<Type>& of)
+        : star_(star), of_(of) {}
     inline void accept(TypeVisitor& visitor) const override {
         visitor.visit(*this);
     }
     inline Span span() const override { return star_.span() + of_->span(); }
     inline Star star() const { return star_; }
-    inline const std::unique_ptr<Type>& of() const { return of_; }
+    inline const std::shared_ptr<Type>& of() const { return of_; }
 
 private:
     Star star_;
-    std::unique_ptr<Type> of_;
+    std::shared_ptr<Type> of_;
 };
 
 class ArrayType : public Type {
 public:
     ~ArrayType();
-    ArrayType(LParen lparen, std::unique_ptr<Type>&& of, RParen rparen,
+    ArrayType(LParen lparen, const std::shared_ptr<Type>& of, RParen rparen,
               LSquare lsquare, std::unique_ptr<Expression>&& size,
               RSquare rsquare);
     inline void accept(TypeVisitor& visitor) const override {
@@ -83,7 +97,7 @@ public:
         return lparen_.span() + rsquare_.span();
     }
     inline LParen lparen() const { return lparen_; }
-    inline const std::unique_ptr<Type>& of() const { return of_; }
+    inline const std::shared_ptr<Type>& of() const { return of_; }
     inline RParen rparen() const { return rparen_; }
     inline LSquare lsquare() const { return lsquare_; }
     inline const std::unique_ptr<Expression>& size() const { return size_; }
@@ -91,7 +105,7 @@ public:
 
 private:
     LParen lparen_;
-    std::unique_ptr<Type> of_;
+    std::shared_ptr<Type> of_;
     RParen rparen_;
     LSquare lsquare_;
     std::unique_ptr<Expression> size_;
@@ -106,6 +120,7 @@ public:
         visitor.visit(*this);
     }
     inline Span span() const override { return span_; }
+    inline const std::string& name() const { return name_; }
 
 private:
     std::string name_;

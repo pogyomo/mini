@@ -168,6 +168,9 @@ LexResult lex_line(Context &ctx, size_t id, size_t row,
         } else if (stream.accept("as", end)) {
             res.push_back(std::make_unique<KeywordToken>(KeywordTokenKind::As,
                                                          Span(id, start, end)));
+        } else if (stream.accept("bool", end)) {
+            res.push_back(std::make_unique<KeywordToken>(KeywordTokenKind::Bool,
+                                                         Span(id, start, end)));
         } else if (stream.accept("break", end)) {
             res.push_back(std::make_unique<KeywordToken>(
                 KeywordTokenKind::Break, Span(id, start, end)));
@@ -177,6 +180,9 @@ LexResult lex_line(Context &ctx, size_t id, size_t row,
         } else if (stream.accept("else", end)) {
             res.push_back(std::make_unique<KeywordToken>(KeywordTokenKind::Else,
                                                          Span(id, start, end)));
+        } else if (stream.accept("false", end)) {
+            res.push_back(std::make_unique<KeywordToken>(
+                KeywordTokenKind::False, Span(id, start, end)));
         } else if (stream.accept("if", end)) {
             res.push_back(std::make_unique<KeywordToken>(KeywordTokenKind::If,
                                                          Span(id, start, end)));
@@ -198,6 +204,9 @@ LexResult lex_line(Context &ctx, size_t id, size_t row,
         } else if (stream.accept("tsizeof", end)) {
             res.push_back(std::make_unique<KeywordToken>(
                 KeywordTokenKind::TSizeof, Span(id, start, end)));
+        } else if (stream.accept("true", end)) {
+            res.push_back(std::make_unique<KeywordToken>(KeywordTokenKind::True,
+                                                         Span(id, start, end)));
         } else if (stream.accept("function", end)) {
             res.push_back(std::make_unique<KeywordToken>(
                 KeywordTokenKind::Function, Span(id, start, end)));

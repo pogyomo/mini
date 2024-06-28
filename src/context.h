@@ -5,7 +5,10 @@
 #include <fstream>
 #include <map>
 #include <memory>
+#include <optional>
+#include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "ast/type.h"
@@ -47,12 +50,52 @@ private:
     std::vector<InputCacheEntry> entries_;
 };
 
+class VariableEntry;
+class StructEntry;
+class EnumEntry;
+class FunctionEntry;
+
+class SymbolTableEntryVisitor {
+public:
+    virtual ~SymbolTableEntryVisitor() {}
+    virtual void visit(const VariableEntry &entry) = 0;
+    virtual void visit(const StructEntry &entry) = 0;
+    virtual void visit(const EnumEntry &entry) = 0;
+    virtual void visit(const FunctionEntry &entry) = 0;
+};
+
+class SymbolTableEntry {
+public:
+    virtual ~SymbolTableEntry() {}
+    virtual void accept(SymbolTableEntryVisitor &visitor) const = 0;
+};
+
+class VariableEntry : public SymbolTableEntry {
+public:
+    VariableEntry(uint64_t offset, const std::shared_ptr<Type> &type,
+                  Span var_span)
+        : offset_(offset), type_(type), var_span_(var_span) {}
+    void accept(SymbolTableEntryVisitor &visitor) const override {
+        visitor.visit(*this);
+    }
+    uint64_t offset() const { return offset_; }
+    std::shared_ptr<Type> type() const { return type_; }
+    Span var_span() const { return var_span_; }
+
+private:
+    uint64_t offset_;
+    std::shared_ptr<Type> type_;
+    Span var_span_;
+};
+
 class StructField {
 public:
-    StructField(std::shared_ptr<Type> type, std::string &&name, Span span)
+    StructField(const std::shared_ptr<Type> &type, std::string &&name,
+                Span span)
         : type_(type), name_(name), span_(span) {}
     const std::shared_ptr<Type> &type() const { return type_; }
     const std::string &name() const { return name_; }
+    Span span() const { return span_; }
 
 private:
     std::shared_ptr<Type> type_;
@@ -60,29 +103,19 @@ private:
     Span span_;
 };
 
-class StructTableEntry {
+class StructEntry : public SymbolTableEntry {
 public:
-    StructTableEntry(std::vector<StructField> &&fields)
-        : fields_(std::move(fields)) {}
+    StructEntry(std::vector<StructField> &&fields, Span span)
+        : fields_(std::move(fields)), span_(span) {}
+    void accept(SymbolTableEntryVisitor &visitor) const override {
+        visitor.visit(*this);
+    }
     const std::vector<StructField> &fields() const { return fields_; }
+    Span span() const { return span_; }
 
 private:
     std::vector<StructField> fields_;
-};
-
-class StructTable {
-public:
-    void insert(std::string &&name, StructTableEntry &&entry) {
-        map_.insert({name, entry});
-    }
-
-    // Throw `out_of_range` when no struct exists associated with `name`.
-    const StructTableEntry &query(const std::string &name) {
-        return map_.at(name);
-    }
-
-private:
-    std::map<std::string, StructTableEntry> map_;
+    Span span_;
 };
 
 class EnumField {
@@ -99,73 +132,97 @@ private:
     Span span_;
 };
 
-class EnumTableEntry {
+class EnumEntry : public SymbolTableEntry {
 public:
-    EnumTableEntry(std::vector<EnumField> &&fields)
-        : fields_(std::move(fields)) {}
+    EnumEntry(std::vector<EnumField> &&fields, Span span)
+        : fields_(std::move(fields)), span_(span) {}
+    void accept(SymbolTableEntryVisitor &visitor) const override {
+        visitor.visit(*this);
+    }
     const std::vector<EnumField> &fields() const { return fields_; }
+    Span span() const { return span_; }
 
 private:
     std::vector<EnumField> fields_;
+    Span span_;
 };
 
-class EnumTable {
+class FunctionEntry : public SymbolTableEntry {
 public:
-    void insert(std::string &&name, EnumTableEntry &&entry) {
-        map_.insert({name, entry});
+    FunctionEntry(const std::optional<std::shared_ptr<Type>> &ret,
+                  std::vector<std::shared_ptr<Type>> &&params, Span span)
+        : ret_(ret), params_(std::move(params)), span_(span) {}
+    void accept(SymbolTableEntryVisitor &visitor) const override {
+        visitor.visit(*this);
     }
-
-    // Throw `out_of_range` when no enum exists associated with `name`.
-    const EnumTableEntry &query(const std::string &name) {
-        return map_.at(name);
-    }
+    const std::optional<std::shared_ptr<Type>> &ret() const { return ret_; }
+    const std::vector<std::shared_ptr<Type>> &params() const { return params_; }
+    Span span() const { return span_; }
 
 private:
-    std::map<std::string, EnumTableEntry> map_;
-};
-
-class SymbolTableEntry {
-public:
-    SymbolTableEntry(std::shared_ptr<Type> type, Span var_span)
-        : type_(type), var_span_(var_span) {}
-    std::shared_ptr<Type> type() const { return type_; }
-    Span var_span() const { return var_span_; }
-
-private:
-    std::shared_ptr<Type> type_;
-    Span var_span_;
+    std::optional<std::shared_ptr<Type>> ret_;
+    std::vector<std::shared_ptr<Type>> params_;
+    Span span_;
 };
 
 class SymbolTable {
 public:
-    void insert(std::string &&name, SymbolTableEntry &&entry) {
-        map_.insert({name, entry});
+    SymbolTable() : outer_(nullptr) {}
+    SymbolTable(const std::shared_ptr<SymbolTable> &outer) : outer_(outer) {}
+    const std::shared_ptr<SymbolTable> &outer() const { return outer_; }
+    void insert(std::string &&name, std::unique_ptr<SymbolTableEntry> &&entry) {
+        map_.emplace(std::make_pair(std::move(name), std::move(entry)));
     }
-
     // Throw `out_of_range` when no symbol named `name`.
-    const SymbolTableEntry &query(const std::string &name) {
-        return map_.at(name);
+    const std::unique_ptr<SymbolTableEntry> &query(const std::string &name) {
+        try {
+            return map_.at(name);
+        } catch (std::out_of_range &e) {
+            if (outer_) {
+                return outer_->query(name);
+            } else {
+                throw std::out_of_range("`query` called from base table");
+            }
+        }
+    }
+    bool exists(const std::string &name) {
+        try {
+            query(name);
+            return true;
+        } catch (std::out_of_range &e) {
+            return false;
+        }
     }
 
 private:
-    std::map<std::string, SymbolTableEntry> map_;
+    std::shared_ptr<SymbolTable> outer_;
+    std::map<std::string, std::unique_ptr<SymbolTableEntry>> map_;
 };
 
 class Context {
 public:
+    Context()
+        : symbol_table_(std::make_shared<SymbolTable>()), label_count_(0) {}
     InputCache &input_cache() { return input_cache_; }
-    StructTable &struct_table() { return struct_table_; }
-    EnumTable &enum_table() { return enum_table_; }
-    SymbolTable &symbol_table() { return symbol_table_; }
+    std::shared_ptr<SymbolTable> &symbol_table() { return symbol_table_; }
+    void dive_symbol_table() {
+        symbol_table_ = std::make_shared<SymbolTable>(symbol_table_);
+    }
+    // Throw `runtime_error` when `symbol_table` doesn't have outer table.
+    void float_symbol_table() {
+        symbol_table_ = symbol_table_->outer();
+        if (!symbol_table_) throw std::runtime_error("float from base table");
+    }
     bool suppress_report() const { return suppress_report_; }
     void enable_suppress_report() { suppress_report_ = true; }
     void disable_suppress_report() { suppress_report_ = false; }
+    // Fetch unique integer to be used in label at codegen.
+    int fetch_unique_label_id() { return label_count_++; }
 
 private:
     InputCache input_cache_;
-    StructTable struct_table_;
-    EnumTable enum_table_;
-    SymbolTable symbol_table_;
+    std::shared_ptr<SymbolTable> symbol_table_;
+    int label_count_;
     bool suppress_report_;
 };
 

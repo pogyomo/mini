@@ -45,11 +45,13 @@ enum class PunctTokenKind {
 
 enum class KeywordTokenKind {
     As,        // "as"
+    Bool,      // "bool"
     Break,     // "break"
     Continue,  // "continue"
     ESizeof,   // "esizeof"
     Else,      // "else"
     Enum,      // "enum"
+    False,     // "false"
     Function,  // "function"
     If,        // "if"
     Int,       // "int"
@@ -57,6 +59,7 @@ enum class KeywordTokenKind {
     Return,    // "return"
     Struct,    // "struct"
     TSizeof,   // "tsizeof"
+    True,      // "true"
     UInt,      // "uint"
     While,     // "while"
 };

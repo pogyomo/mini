@@ -32,6 +32,7 @@ The mini programming language support a few types described below:
 | ------- | --------------------------- |
 | int     | signed 64-bit integer       |
 | uint    | unsigned 64-bit integer     |
+| bool    | true or false               |
 | struct  | a collection of value       |
 | enum    | a collection of unique ints |
 | array   | a list of value             |
@@ -60,6 +61,7 @@ The syntax of mini programming language is as follow:
 
 <type> ::= "int"
          | "uint"
+         | "bool"
          | <struct-or-enum-name>
          | <array>
          | <pointer>
@@ -114,6 +116,8 @@ The syntax of mini programming language is as follow:
                        | <identifier>
                        | <integer>
                        | <string>
+                       | "true"
+                       | "false"
                        | "(" <expression> ")"
 <enum-select> ::= <identifier> "::" <identifier>
 <integer> ::= ...

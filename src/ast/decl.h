@@ -53,10 +53,10 @@ private:
 class FunctionDeclarationParameter : public Node {
 public:
     FunctionDeclarationParameter(FunctionDeclarationParameterName&& name,
-                                 Colon colon, std::unique_ptr<Type>&& type)
-        : name_(std::move(name)), colon_(colon), type_(std::move(type)) {}
+                                 Colon colon, const std::shared_ptr<Type>& type)
+        : name_(std::move(name)), colon_(colon), type_(type) {}
     inline Span span() const override { return type_->span() + name_.span(); }
-    inline const std::unique_ptr<Type>& type() const { return type_; }
+    inline const std::shared_ptr<Type>& type() const { return type_; }
     inline Colon colon() const { return colon_; }
     inline const FunctionDeclarationParameterName& name() const {
         return name_;
@@ -65,20 +65,20 @@ public:
 private:
     FunctionDeclarationParameterName name_;
     Colon colon_;
-    std::unique_ptr<Type> type_;
+    std::shared_ptr<Type> type_;
 };
 
 class FunctionDeclarationReturn : public Node {
 public:
-    FunctionDeclarationReturn(Arrow arrow, std::unique_ptr<Type>&& type)
-        : arrow_(arrow), type_(std::move(type)) {}
+    FunctionDeclarationReturn(Arrow arrow, const std::shared_ptr<Type>& type)
+        : arrow_(arrow), type_(type) {}
     inline Span span() const { return arrow_.span() + type_->span(); }
     inline Arrow arrow() const { return arrow_; }
-    inline const std::unique_ptr<Type>& type() const { return type_; }
+    inline const std::shared_ptr<Type>& type() const { return type_; }
 
 private:
     Arrow arrow_;
-    std::unique_ptr<Type> type_;
+    std::shared_ptr<Type> type_;
 };
 
 class FunctionDeclaration : public Declaration {
@@ -109,6 +109,7 @@ public:
         return params_;
     }
     inline RParen rparen() const { return rparen_; }
+    const std::optional<FunctionDeclarationReturn>& ret() const { return ret_; }
     inline const std::unique_ptr<BlockStatement>& body() const { return body_; }
 
 private:
@@ -148,16 +149,16 @@ private:
 class StructDeclarationField : public Node {
 public:
     StructDeclarationField(StructDeclarationFieldName&& name, Colon colon,
-                           std::unique_ptr<Type>&& type)
-        : name_(std::move(name)), colon_(colon), type_(std::move(type)) {}
+                           const std::shared_ptr<Type>& type)
+        : name_(std::move(name)), colon_(colon), type_(type) {}
     inline Span span() const override { return type_->span() + name_.span(); }
-    inline const std::unique_ptr<Type>& type() const { return type_; }
+    inline const std::shared_ptr<Type>& type() const { return type_; }
     inline const StructDeclarationFieldName& name() const { return name_; }
 
 private:
     StructDeclarationFieldName name_;
     Colon colon_;
-    std::unique_ptr<Type> type_;
+    std::shared_ptr<Type> type_;
 };
 
 class StructDeclaration : public Declaration {

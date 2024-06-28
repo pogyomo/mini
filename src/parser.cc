@@ -609,6 +609,16 @@ std::optional<std::unique_ptr<Expression>> parse_primary_expr(Context &ctx,
         ts.advance();
 
         return expr;
+    } else if (ts.token()->is_keyword_of(KeywordTokenKind::True)) {
+        auto span = ts.token()->span();
+        ts.advance();
+
+        return std::make_unique<BoolExpression>(true, span);
+    } else if (ts.token()->is_keyword_of(KeywordTokenKind::False)) {
+        auto span = ts.token()->span();
+        ts.advance();
+
+        return std::make_unique<BoolExpression>(false, span);
     } else {
         ReportInfo info(ts.token()->span(), "unexpected token found",
                         "expected identifier, integer or `(`");
@@ -625,6 +635,10 @@ std::optional<std::unique_ptr<Type>> parse_type(Context &ctx, TokenStream &ts) {
         return type;
     } else if (ts.token()->is_keyword_of(KeywordTokenKind::UInt)) {
         auto type = std::make_unique<UIntType>(ts.token()->span());
+        ts.advance();
+        return type;
+    } else if (ts.token()->is_keyword_of(KeywordTokenKind::Bool)) {
+        auto type = std::make_unique<BoolType>(ts.token()->span());
         ts.advance();
         return type;
     } else if (ts.token()->is_punct_of(PunctTokenKind::Star)) {
