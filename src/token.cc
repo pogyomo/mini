@@ -105,7 +105,11 @@ std::string to_string(KeywordTokenKind kind) {
             return "uint";
         case KeywordTokenKind::While:
             return "while";
-        default:
-            return "";
+        case KeywordTokenKind::True:
+            return "true";
+        case KeywordTokenKind::False:
+            return "false";
+        case KeywordTokenKind::Bool:
+            return "bool";
     }
 }
