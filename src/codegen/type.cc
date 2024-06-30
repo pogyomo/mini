@@ -136,11 +136,12 @@ void ExprTypeInferencer::visit(const IntegerExpression &expr) {
 
 void ExprTypeInferencer::visit(const StringExpression &expr) {
     auto span = expr.span();
-    auto size = std::make_shared<IntegerExpression>(expr.value().size(), span);
+    auto size = std::make_unique<IntegerExpression>(expr.value().size(), span);
     auto of = std::make_shared<CharType>(span);
     success_ = true;
     inferred_ = std::make_shared<ArrayType>(LParen(span), of, RParen(span),
-                                            LSquare(span), size, RSquare(span));
+                                            LSquare(span), std::move(size),
+                                            RSquare(span));
 }
 
 void ExprTypeInferencer::visit(const BoolExpression &expr) {

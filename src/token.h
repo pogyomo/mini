@@ -47,6 +47,7 @@ enum class KeywordTokenKind {
     As,        // "as"
     Bool,      // "bool"
     Break,     // "break"
+    Char,      // "char"
     Continue,  // "continue"
     ESizeof,   // "esizeof"
     Else,      // "else"

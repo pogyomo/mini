@@ -174,6 +174,9 @@ LexResult lex_line(Context &ctx, size_t id, size_t row,
         } else if (stream.accept("break", end)) {
             res.push_back(std::make_unique<KeywordToken>(
                 KeywordTokenKind::Break, Span(id, start, end)));
+        } else if (stream.accept("char", end)) {
+            res.push_back(std::make_unique<KeywordToken>(KeywordTokenKind::Char,
+                                                         Span(id, start, end)));
         } else if (stream.accept("continue", end)) {
             res.push_back(std::make_unique<KeywordToken>(
                 KeywordTokenKind::Continue, Span(id, start, end)));

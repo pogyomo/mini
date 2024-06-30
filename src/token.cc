@@ -79,6 +79,8 @@ std::string to_string(KeywordTokenKind kind) {
             return "as";
         case KeywordTokenKind::Break:
             return "break";
+        case KeywordTokenKind::Char:
+            return "char";
         case KeywordTokenKind::Continue:
             return "continue";
         case KeywordTokenKind::ESizeof:
@@ -111,5 +113,7 @@ std::string to_string(KeywordTokenKind kind) {
             return "false";
         case KeywordTokenKind::Bool:
             return "bool";
+        default:
+            return "";
     }
 }

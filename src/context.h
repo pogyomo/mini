@@ -202,7 +202,9 @@ private:
 class Context {
 public:
     Context()
-        : symbol_table_(std::make_shared<SymbolTable>()), label_count_(0) {}
+        : symbol_table_(std::make_shared<SymbolTable>()),
+          label_count_(0),
+          suppress_report_(false) {}
     InputCache &input_cache() { return input_cache_; }
     std::shared_ptr<SymbolTable> &symbol_table() { return symbol_table_; }
     void dive_symbol_table() {

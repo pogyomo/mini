@@ -641,6 +641,10 @@ std::optional<std::unique_ptr<Type>> parse_type(Context &ctx, TokenStream &ts) {
         auto type = std::make_unique<BoolType>(ts.token()->span());
         ts.advance();
         return type;
+    } else if (ts.token()->is_keyword_of(KeywordTokenKind::Char)) {
+        auto type = std::make_unique<BoolType>(ts.token()->span());
+        ts.advance();
+        return type;
     } else if (ts.token()->is_punct_of(PunctTokenKind::Star)) {
         Star star(ts.token()->span());
         ts.advance();
