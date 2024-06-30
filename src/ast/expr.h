@@ -214,20 +214,20 @@ public:
 class CastExpression : public Expression {
 public:
     CastExpression(std::unique_ptr<Expression>&& expr, As as_kw,
-                   std::unique_ptr<Type>&& type)
-        : expr_(std::move(expr)), as_kw_(as_kw), type_(std::move(type)) {}
+                   const std::shared_ptr<Type>& type)
+        : expr_(std::move(expr)), as_kw_(as_kw), type_(type) {}
     inline void accept(ExpressionVisitor& visitor) const override {
         return visitor.visit(*this);
     }
     inline Span span() const override { return expr_->span() + type_->span(); }
     inline const std::unique_ptr<Expression>& expr() const { return expr_; }
     inline As as_kw() const { return as_kw_; }
-    inline const std::unique_ptr<Type>& type() const { return type_; }
+    inline const std::shared_ptr<Type>& type() const { return type_; }
 
 private:
     std::unique_ptr<Expression> expr_;
     As as_kw_;
-    std::unique_ptr<Type> type_;
+    std::shared_ptr<Type> type_;
 };
 
 class ESizeofExpression : public Expression {

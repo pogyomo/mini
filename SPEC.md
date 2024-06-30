@@ -32,6 +32,7 @@ The mini programming language support a few types described below:
 | ------- | --------------------------- |
 | int     | signed 64-bit integer       |
 | uint    | unsigned 64-bit integer     |
+| char    | unsigned 32-bit integer     |
 | bool    | true or false               |
 | struct  | a collection of value       |
 | enum    | a collection of unique ints |

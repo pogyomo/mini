@@ -8,8 +8,11 @@
 
 class Expression;
 
+class IntLiteralType;
+class UIntLiteralType;
 class IntType;
 class UIntType;
+class CharType;
 class BoolType;
 class PointerType;
 class ArrayType;
@@ -18,9 +21,12 @@ class NameType;
 class TypeVisitor {
 public:
     virtual ~TypeVisitor() {}
+    virtual void visit(const IntLiteralType& type) = 0;
+    virtual void visit(const UIntLiteralType& type) = 0;
     virtual void visit(const IntType& type) = 0;
     virtual void visit(const UIntType& type) = 0;
     virtual void visit(const BoolType& type) = 0;
+    virtual void visit(const CharType& type) = 0;
     virtual void visit(const PointerType& type) = 0;
     virtual void visit(const ArrayType& type) = 0;
     virtual void visit(const NameType& type) = 0;
@@ -30,6 +36,30 @@ class Type : public Node {
 public:
     virtual ~Type() {}
     virtual void accept(TypeVisitor& visitor) const = 0;
+};
+
+class IntLiteralType : public Type {
+public:
+    IntLiteralType(Span span) : span_(span) {}
+    inline void accept(TypeVisitor& visitor) const override {
+        visitor.visit(*this);
+    }
+    inline Span span() const override { return span_; }
+
+private:
+    Span span_;
+};
+
+class UIntLiteralType : public Type {
+public:
+    UIntLiteralType(Span span) : span_(span) {}
+    inline void accept(TypeVisitor& visitor) const override {
+        visitor.visit(*this);
+    }
+    inline Span span() const override { return span_; }
+
+private:
+    Span span_;
 };
 
 class IntType : public Type {
@@ -59,6 +89,18 @@ private:
 class BoolType : public Type {
 public:
     BoolType(Span span) : span_(span) {}
+    inline void accept(TypeVisitor& visitor) const override {
+        visitor.visit(*this);
+    }
+    inline Span span() const override { return span_; }
+
+private:
+    Span span_;
+};
+
+class CharType : public Type {
+public:
+    CharType(Span span) : span_(span) {}
     inline void accept(TypeVisitor& visitor) const override {
         visitor.visit(*this);
     }
