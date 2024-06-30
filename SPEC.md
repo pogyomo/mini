@@ -62,6 +62,7 @@ The syntax of mini programming language is as follow:
 
 <type> ::= "int"
          | "uint"
+         | "char"
          | "bool"
          | <struct-or-enum-name>
          | <array>
