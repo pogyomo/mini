@@ -37,7 +37,7 @@ public:
         std::string line;
         std::vector<std::string> lines;
         std::ifstream ifs(path);
-        if (!ifs.is_open()) fatal_error("failed to open `%s`", path.c_str());
+        if (!ifs.is_open()) fatal_error("failed to open `{}`", path);
         while (std::getline(ifs, line)) {
             lines.emplace_back(line);
         }
@@ -64,10 +64,19 @@ public:
     virtual void visit(const FunctionEntry &entry) = 0;
 };
 
+enum class SymbolTableEntryKind {
+    VariableEntry,
+    StructEntry,
+    EnumEntry,
+    FunctionEntry,
+};
+
 class SymbolTableEntry {
 public:
     virtual ~SymbolTableEntry() {}
     virtual void accept(SymbolTableEntryVisitor &visitor) const = 0;
+    virtual Span span() const = 0;
+    virtual bool is(SymbolTableEntryKind kind) const = 0;
 };
 
 class VariableEntry : public SymbolTableEntry {
@@ -78,9 +87,12 @@ public:
     void accept(SymbolTableEntryVisitor &visitor) const override {
         visitor.visit(*this);
     }
+    Span span() const override { return var_span_; }
+    bool is(SymbolTableEntryKind kind) const override {
+        return kind == SymbolTableEntryKind::VariableEntry;
+    }
     uint64_t offset() const { return offset_; }
     std::shared_ptr<Type> type() const { return type_; }
-    Span var_span() const { return var_span_; }
 
 private:
     uint64_t offset_;
@@ -110,8 +122,11 @@ public:
     void accept(SymbolTableEntryVisitor &visitor) const override {
         visitor.visit(*this);
     }
+    Span span() const override { return span_; }
+    bool is(SymbolTableEntryKind kind) const override {
+        return kind == SymbolTableEntryKind::StructEntry;
+    }
     const std::vector<StructField> &fields() const { return fields_; }
-    Span span() const { return span_; }
 
 private:
     std::vector<StructField> fields_;
@@ -139,8 +154,11 @@ public:
     void accept(SymbolTableEntryVisitor &visitor) const override {
         visitor.visit(*this);
     }
+    Span span() const override { return span_; }
+    bool is(SymbolTableEntryKind kind) const override {
+        return kind == SymbolTableEntryKind::EnumEntry;
+    }
     const std::vector<EnumField> &fields() const { return fields_; }
-    Span span() const { return span_; }
 
 private:
     std::vector<EnumField> fields_;
@@ -155,9 +173,12 @@ public:
     void accept(SymbolTableEntryVisitor &visitor) const override {
         visitor.visit(*this);
     }
+    Span span() const override { return span_; }
+    bool is(SymbolTableEntryKind kind) const override {
+        return kind == SymbolTableEntryKind::FunctionEntry;
+    }
     const std::optional<std::shared_ptr<Type>> &ret() const { return ret_; }
     const std::vector<std::shared_ptr<Type>> &params() const { return params_; }
-    Span span() const { return span_; }
 
 private:
     std::optional<std::shared_ptr<Type>> ret_;

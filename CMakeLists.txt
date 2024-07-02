@@ -16,3 +16,6 @@ target_sources(${PROJECT_NAME} PRIVATE
     src/report.cc
     src/token.cc
 )
+
+add_subdirectory(fmt)
+target_link_libraries(${PROJECT_NAME} fmt::fmt)

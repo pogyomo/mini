@@ -3,11 +3,13 @@
 
 #include <string>
 
+#include "fmt/base.h"
+
 template <typename... Args>
 void fatal_error(const std::string &fmt, Args... args) {
-    std::fprintf(stderr, "\e[31mfatal error: \e[0m");
-    std::fprintf(stderr, fmt.c_str(), args...);
-    std::fprintf(stderr, "\n");
+    fmt::print(stderr, "\e[31mfatal error: \e[0m");
+    fmt::print(stderr, fmt, args...);
+    fmt::println(stderr, "");
     std::exit(EXIT_FAILURE);
 }
 
