@@ -10,10 +10,7 @@ namespace ast {
 
 class Expression;
 
-class IntType;
-class UIntType;
-class CharType;
-class BoolType;
+class BuiltinType;
 class PointerType;
 class ArrayType;
 class NameType;
@@ -21,96 +18,43 @@ class NameType;
 class TypeVisitor {
 public:
     virtual ~TypeVisitor() {}
-    virtual void visit(const IntType& type) = 0;
-    virtual void visit(const UIntType& type) = 0;
-    virtual void visit(const BoolType& type) = 0;
-    virtual void visit(const CharType& type) = 0;
+    virtual void visit(const BuiltinType& type) = 0;
     virtual void visit(const PointerType& type) = 0;
     virtual void visit(const ArrayType& type) = 0;
     virtual void visit(const NameType& type) = 0;
-};
-
-enum class TypeKind {
-    UnitType,
-    IntType,
-    UIntType,
-    CharType,
-    BoolType,
-    PointerType,
-    ArrayType,
-    NameType,
 };
 
 class Type : public Node {
 public:
     virtual ~Type() {}
     virtual void accept(TypeVisitor& visitor) const = 0;
-    virtual bool is(TypeKind kind) const = 0;
-    virtual bool operator==(const Type& other) const = 0;
-    bool operator!=(const Type& other) const { return !(*this == other); }
 };
 
-class IntType : public Type {
+class BuiltinType : public Type {
 public:
-    IntType(Span span) : span_(span) {}
+    enum Kind {
+        ISize,
+        Int8,
+        Int16,
+        Int32,
+        Int64,
+        USize,
+        UInt8,
+        UInt16,
+        UInt32,
+        UInt64,
+        Char,
+        Bool,
+    };
+    BuiltinType(Kind kind, Span span) : kind_(kind), span_(span) {}
     inline void accept(TypeVisitor& visitor) const override {
         visitor.visit(*this);
     }
-    bool is(TypeKind kind) const override { return kind == TypeKind::IntType; }
-    bool operator==(const Type& other) const override {
-        return other.is(TypeKind::IntType);
-    }
     inline Span span() const override { return span_; }
+    Kind kind() const { return kind_; }
 
 private:
-    Span span_;
-};
-
-class UIntType : public Type {
-public:
-    UIntType(Span span) : span_(span) {}
-    inline void accept(TypeVisitor& visitor) const override {
-        visitor.visit(*this);
-    }
-    bool is(TypeKind kind) const override { return kind == TypeKind::UIntType; }
-    bool operator==(const Type& other) const override {
-        return other.is(TypeKind::UIntType);
-    }
-    inline Span span() const override { return span_; }
-
-private:
-    Span span_;
-};
-
-class BoolType : public Type {
-public:
-    BoolType(Span span) : span_(span) {}
-    inline void accept(TypeVisitor& visitor) const override {
-        visitor.visit(*this);
-    }
-    bool is(TypeKind kind) const override { return kind == TypeKind::BoolType; }
-    bool operator==(const Type& other) const override {
-        return other.is(TypeKind::BoolType);
-    }
-    inline Span span() const override { return span_; }
-
-private:
-    Span span_;
-};
-
-class CharType : public Type {
-public:
-    CharType(Span span) : span_(span) {}
-    inline void accept(TypeVisitor& visitor) const override {
-        visitor.visit(*this);
-    }
-    bool is(TypeKind kind) const override { return kind == TypeKind::CharType; }
-    bool operator==(const Type& other) const override {
-        return other.is(TypeKind::CharType);
-    }
-    inline Span span() const override { return span_; }
-
-private:
+    Kind kind_;
     Span span_;
 };
 
@@ -120,16 +64,6 @@ public:
         : star_(star), of_(of) {}
     inline void accept(TypeVisitor& visitor) const override {
         visitor.visit(*this);
-    }
-    bool is(TypeKind kind) const override {
-        return kind == TypeKind::PointerType;
-    }
-    bool operator==(const Type& other) const override {
-        if (other.is(TypeKind::PointerType)) {
-            return *this->of_ == *static_cast<const PointerType*>(&other);
-        } else {
-            return false;
-        }
     }
     inline Span span() const override { return star_.span() + of_->span(); }
     inline Star star() const { return star_; }
@@ -148,16 +82,6 @@ public:
               RSquare rsquare);
     inline void accept(TypeVisitor& visitor) const override {
         visitor.visit(*this);
-    }
-    bool is(TypeKind kind) const override {
-        return kind == TypeKind::ArrayType;
-    }
-    bool operator==(const Type& other) const override {
-        if (other.is(TypeKind::ArrayType)) {
-            return *this->of_ == *static_cast<const ArrayType*>(&other);
-        } else {
-            return false;
-        }
     }
     inline Span span() const override {
         return lparen_.span() + rsquare_.span();
@@ -184,14 +108,6 @@ public:
         : name_(std::move(name)), span_(span) {}
     inline void accept(TypeVisitor& visitor) const override {
         visitor.visit(*this);
-    }
-    bool is(TypeKind kind) const override { return kind == TypeKind::NameType; }
-    bool operator==(const Type& other) const override {
-        if (other.is(TypeKind::NameType)) {
-            return this->name_ == static_cast<const NameType*>(&other)->name_;
-        } else {
-            return false;
-        }
     }
     inline Span span() const override { return span_; }
     inline const std::string& name() const { return name_; }

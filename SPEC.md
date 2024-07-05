@@ -28,16 +28,24 @@ All program must uses either of above two signature.
 
 The mini programming language support a few types described below:
 
-| type    | description                 |
-| ------- | --------------------------- |
-| int     | signed 64-bit integer       |
-| uint    | unsigned 64-bit integer     |
-| char    | unsigned 32-bit integer     |
-| bool    | true or false               |
-| struct  | a collection of value       |
-| enum    | a collection of unique ints |
-| array   | a list of value             |
-| pointer | a value pointing to a value |
+| type    | description                  |
+| ------- | ---------------------------- |
+| isize   | signed native size integer   |
+| int8    | signed 8-bit integer         |
+| int16   | signed 16-bit integer        |
+| int32   | signed 32-bit integer        |
+| int64   | signed 64-bit integer        |
+| usize   | unsigned native size integer |
+| uint8   | unsigned 8-bit integer       |
+| uint16  | unsigned 16-bit integer      |
+| uint32  | unsigned 32-bit integer      |
+| uint64  | unsigned 64-bit integer      |
+| char    | unsigned 8-bit integer       |
+| bool    | 0 for false or 1 for true    |
+| struct  | a collection of value        |
+| enum    | a collection of unique ints  |
+| array   | a list of value              |
+| pointer | a value pointing to a value  |
 
 ## Syntax
 
@@ -60,8 +68,14 @@ The syntax of mini programming language is as follow:
 <enum-items> ::= <enum-item> [ "," <enum-items> ]
 <enum-item> ::= <identifier>
 
-<type> ::= "int"
-         | "uint"
+<type> ::= "int8"
+         | "int16"
+         | "int32"
+         | "int64"
+         | "uint8"
+         | "uint16"
+         | "uint32"
+         | "uint64"
          | "char"
          | "bool"
          | <struct-or-enum-name>

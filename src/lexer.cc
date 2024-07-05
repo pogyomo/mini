@@ -189,9 +189,6 @@ LexResult lex_line(Context &ctx, size_t id, size_t row,
         } else if (stream.accept("if", end)) {
             res.push_back(std::make_unique<KeywordToken>(KeywordTokenKind::If,
                                                          Span(id, start, end)));
-        } else if (stream.accept("int", end)) {
-            res.push_back(std::make_unique<KeywordToken>(KeywordTokenKind::Int,
-                                                         Span(id, start, end)));
         } else if (stream.accept("let", end)) {
             res.push_back(std::make_unique<KeywordToken>(KeywordTokenKind::Let,
                                                          Span(id, start, end)));
@@ -216,9 +213,36 @@ LexResult lex_line(Context &ctx, size_t id, size_t row,
         } else if (stream.accept("struct", end)) {
             res.push_back(std::make_unique<KeywordToken>(
                 KeywordTokenKind::Struct, Span(id, start, end)));
-        } else if (stream.accept("uint", end)) {
-            res.push_back(std::make_unique<KeywordToken>(KeywordTokenKind::UInt,
+        } else if (stream.accept("isize", end)) {
+            res.push_back(std::make_unique<KeywordToken>(
+                KeywordTokenKind::ISize, Span(id, start, end)));
+        } else if (stream.accept("int8", end)) {
+            res.push_back(std::make_unique<KeywordToken>(KeywordTokenKind::Int8,
                                                          Span(id, start, end)));
+        } else if (stream.accept("int16", end)) {
+            res.push_back(std::make_unique<KeywordToken>(
+                KeywordTokenKind::Int16, Span(id, start, end)));
+        } else if (stream.accept("int32", end)) {
+            res.push_back(std::make_unique<KeywordToken>(
+                KeywordTokenKind::Int32, Span(id, start, end)));
+        } else if (stream.accept("int64", end)) {
+            res.push_back(std::make_unique<KeywordToken>(
+                KeywordTokenKind::Int64, Span(id, start, end)));
+        } else if (stream.accept("usize", end)) {
+            res.push_back(std::make_unique<KeywordToken>(
+                KeywordTokenKind::USize, Span(id, start, end)));
+        } else if (stream.accept("uint8", end)) {
+            res.push_back(std::make_unique<KeywordToken>(
+                KeywordTokenKind::UInt8, Span(id, start, end)));
+        } else if (stream.accept("uint16", end)) {
+            res.push_back(std::make_unique<KeywordToken>(
+                KeywordTokenKind::UInt16, Span(id, start, end)));
+        } else if (stream.accept("uint32", end)) {
+            res.push_back(std::make_unique<KeywordToken>(
+                KeywordTokenKind::UInt32, Span(id, start, end)));
+        } else if (stream.accept("uint64", end)) {
+            res.push_back(std::make_unique<KeywordToken>(
+                KeywordTokenKind::UInt64, Span(id, start, end)));
         } else if (stream.accept("enum", end)) {
             res.push_back(std::make_unique<KeywordToken>(KeywordTokenKind::Enum,
                                                          Span(id, start, end)));

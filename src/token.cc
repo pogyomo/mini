@@ -93,7 +93,6 @@ std::string to_string(KeywordTokenKind kind) {
             return "function";
         case KeywordTokenKind::If:
             return "if";
-        case KeywordTokenKind::Int:
             return "int";
         case KeywordTokenKind::Let:
             return "let";
@@ -103,8 +102,6 @@ std::string to_string(KeywordTokenKind kind) {
             return "struct";
         case KeywordTokenKind::TSizeof:
             return "tsizeof";
-        case KeywordTokenKind::UInt:
-            return "uint";
         case KeywordTokenKind::While:
             return "while";
         case KeywordTokenKind::True:
@@ -113,6 +110,22 @@ std::string to_string(KeywordTokenKind kind) {
             return "false";
         case KeywordTokenKind::Bool:
             return "bool";
+        case KeywordTokenKind::Int8:
+            return "int8";
+        case KeywordTokenKind::Int16:
+            return "int16";
+        case KeywordTokenKind::Int32:
+            return "int32";
+        case KeywordTokenKind::Int64:
+            return "int64";
+        case KeywordTokenKind::UInt8:
+            return "uint8";
+        case KeywordTokenKind::UInt16:
+            return "uint16";
+        case KeywordTokenKind::UInt32:
+            return "uint32";
+        case KeywordTokenKind::UInt64:
+            return "uint64";
         default:
             return "";
     }

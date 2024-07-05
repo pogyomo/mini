@@ -631,20 +631,64 @@ std::optional<std::unique_ptr<ast::Expression>> parse_primary_expr(
 std::optional<std::unique_ptr<ast::Type>> parse_type(Context &ctx,
                                                      TokenStream &ts) {
     TRY(check_eos(ctx, ts));
-    if (ts.token()->is_keyword_of(KeywordTokenKind::Int)) {
-        auto type = std::make_unique<ast::IntType>(ts.token()->span());
+    if (ts.token()->is_keyword_of(KeywordTokenKind::ISize)) {
+        auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::ISize,
+                                                       ts.token()->span());
         ts.advance();
         return type;
-    } else if (ts.token()->is_keyword_of(KeywordTokenKind::UInt)) {
-        auto type = std::make_unique<ast::UIntType>(ts.token()->span());
+    } else if (ts.token()->is_keyword_of(KeywordTokenKind::Int8)) {
+        auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::Int8,
+                                                       ts.token()->span());
+        ts.advance();
+        return type;
+    } else if (ts.token()->is_keyword_of(KeywordTokenKind::Int16)) {
+        auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::Int16,
+                                                       ts.token()->span());
+        ts.advance();
+        return type;
+    } else if (ts.token()->is_keyword_of(KeywordTokenKind::Int32)) {
+        auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::Int32,
+                                                       ts.token()->span());
+        ts.advance();
+        return type;
+    } else if (ts.token()->is_keyword_of(KeywordTokenKind::Int64)) {
+        auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::Int64,
+                                                       ts.token()->span());
+        ts.advance();
+        return type;
+    } else if (ts.token()->is_keyword_of(KeywordTokenKind::USize)) {
+        auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::USize,
+                                                       ts.token()->span());
+        ts.advance();
+        return type;
+    } else if (ts.token()->is_keyword_of(KeywordTokenKind::UInt8)) {
+        auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::UInt8,
+                                                       ts.token()->span());
+        ts.advance();
+        return type;
+    } else if (ts.token()->is_keyword_of(KeywordTokenKind::UInt16)) {
+        auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::UInt16,
+                                                       ts.token()->span());
+        ts.advance();
+        return type;
+    } else if (ts.token()->is_keyword_of(KeywordTokenKind::UInt32)) {
+        auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::UInt32,
+                                                       ts.token()->span());
+        ts.advance();
+        return type;
+    } else if (ts.token()->is_keyword_of(KeywordTokenKind::UInt64)) {
+        auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::UInt64,
+                                                       ts.token()->span());
         ts.advance();
         return type;
     } else if (ts.token()->is_keyword_of(KeywordTokenKind::Bool)) {
-        auto type = std::make_unique<ast::BoolType>(ts.token()->span());
+        auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::Bool,
+                                                       ts.token()->span());
         ts.advance();
         return type;
     } else if (ts.token()->is_keyword_of(KeywordTokenKind::Char)) {
-        auto type = std::make_unique<ast::BoolType>(ts.token()->span());
+        auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::Char,
+                                                       ts.token()->span());
         ts.advance();
         return type;
     } else if (ts.token()->is_punct_of(PunctTokenKind::Star)) {
