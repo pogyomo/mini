@@ -240,6 +240,55 @@ LexResult lex_line(Context &ctx, size_t id, size_t row,
             }
             res.push_back(std::make_unique<StringToken>(std::move(value),
                                                         Span(id, start, end)));
+        } else if (stream.accept('\'', end)) {
+            char value;
+            if (stream.accept('\\', end)) {
+                if (stream.accept('a', end)) {
+                    value = '\a';
+                } else if (stream.accept('b', end)) {
+                    value = '\b';
+                } else if (stream.accept('f', end)) {
+                    value = '\f';
+                } else if (stream.accept('n', end)) {
+                    value = '\n';
+                } else if (stream.accept('r', end)) {
+                    value = '\r';
+                } else if (stream.accept('t', end)) {
+                    value = '\t';
+                } else if (stream.accept('v', end)) {
+                    value = '\v';
+                } else if (stream.accept('\'', end)) {
+                    value = '\'';
+                } else if (stream.accept('"', end)) {
+                    value = '\"';
+                } else if (stream.accept('\\', end)) {
+                    value = '\\';
+                } else {
+                    ReportInfo info(Span(id, end, end),
+                                    "unexpected escape sequence", "");
+                    report(ctx, ReportLevel::Error, info);
+                    return std::nullopt;
+                }
+            } else if (stream) {
+                value = stream.ch();
+                end = stream.pos();
+                stream.advance();
+            } else {
+                ReportInfo info(Span(id, end, end),
+                                "unclosing character literal", "");
+                report(ctx, ReportLevel::Error, info);
+                return std::nullopt;
+            }
+
+            if (!stream.accept('\'', end)) {
+                ReportInfo info(Span(id, end, end),
+                                "unclosing character literal", "");
+                report(ctx, ReportLevel::Error, info);
+                return std::nullopt;
+            }
+
+            res.push_back(
+                std::make_unique<CharToken>(value, Span(id, start, end)));
         } else if (std::isalpha(stream.ch())) {
             std::string value;
             while (stream) {

@@ -86,6 +86,7 @@ public:
     virtual bool is_ident() const { return false; }
     virtual bool is_int() const { return false; }
     virtual bool is_string() const { return false; }
+    virtual bool is_char() const { return false; }
     virtual const std::string& ident_value() const {
         throw std::runtime_error(
             "`ident_value` called when `is_ident` returns false");
@@ -97,6 +98,10 @@ public:
     virtual const std::string& string_value() const {
         throw std::runtime_error(
             "`string_value` called when `is_string` returns false");
+    }
+    virtual char char_value() const {
+        throw std::runtime_error(
+            "`char_value` called when `is_char` returns false");
     }
 
 private:
@@ -155,6 +160,16 @@ public:
 
 private:
     std::string value_;
+};
+
+class CharToken : public Token {
+public:
+    CharToken(char value, Span span) : Token(span), value_(value) {}
+    inline bool is_char() const override { return true; }
+    inline char char_value() const override { return value_; }
+
+private:
+    char value_;
 };
 
 #endif  // MINI_TOKEN_H_

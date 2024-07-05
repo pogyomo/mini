@@ -20,6 +20,7 @@ class EnumSelectExpression;
 class VariableExpression;
 class IntegerExpression;
 class StringExpression;
+class CharExpression;
 class BoolExpression;
 
 class ExpressionVisitor {
@@ -37,6 +38,7 @@ public:
     virtual void visit(const VariableExpression& expr) = 0;
     virtual void visit(const IntegerExpression& expr) = 0;
     virtual void visit(const StringExpression& expr) = 0;
+    virtual void visit(const CharExpression& expr) = 0;
     virtual void visit(const BoolExpression& expr) = 0;
 };
 
@@ -354,6 +356,20 @@ public:
 
 private:
     std::string value_;
+    Span span_;
+};
+
+class CharExpression : public Expression {
+public:
+    CharExpression(char value, Span span) : value_(value), span_(span) {}
+    inline void accept(ExpressionVisitor& visitor) const override {
+        return visitor.visit(*this);
+    }
+    inline Span span() const override { return span_; }
+    inline char value() const { return value_; }
+
+private:
+    char value_;
     Span span_;
 };
 

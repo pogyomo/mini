@@ -601,6 +601,12 @@ std::optional<std::unique_ptr<ast::Expression>> parse_primary_expr(
         ts.advance();
 
         return std::make_unique<ast::StringExpression>(std::move(value), span);
+    } else if (ts.token()->is_char()) {
+        char value = ts.token()->char_value();
+        auto span = ts.token()->span();
+        ts.advance();
+
+        return std::make_unique<ast::CharExpression>(value, span);
     } else if (ts.token()->is_punct_of(PunctTokenKind::LParen)) {
         ts.advance();
         auto expr = parse_expr(ctx, ts);
