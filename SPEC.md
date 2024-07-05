@@ -132,10 +132,12 @@ The syntax of mini programming language is as follow:
                        | <identifier>
                        | <integer>
                        | <string>
+                       | <character>
                        | "true"
                        | "false"
                        | "(" <expression> ")"
 <enum-select> ::= <identifier> "::" <identifier>
 <integer> ::= ...
 <string> ::= ...
+<character> ::= ...
 ```
