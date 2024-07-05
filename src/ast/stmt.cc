@@ -2,6 +2,8 @@
 
 #include "expr.h"
 
+namespace ast {
+
 ExpressionStatement::ExpressionStatement(std::unique_ptr<Expression>&& expr,
                                          Semicolon semicolon)
     : expr_(std::move(expr)), semicolon_(semicolon) {}
@@ -61,3 +63,5 @@ VariableDeclarationBody::VariableDeclarationBody(
       colon_(colon),
       type_(std::move(type)),
       init_(std::move(init)) {}
+
+};  // namespace ast

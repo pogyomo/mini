@@ -6,6 +6,8 @@
 #include "node.h"
 #include "type.h"
 
+namespace ast {
+
 class UnaryExpression;
 class InfixExpression;
 class IndexExpression;
@@ -368,5 +370,7 @@ private:
     bool value_;
     Span span_;
 };
+
+};  // namespace ast
 
 #endif  // MINI_AST_EXPR_H_

@@ -8,6 +8,8 @@
 #include "stmt.h"
 #include "type.h"
 
+namespace ast {
+
 class FunctionDeclaration;
 class StructDeclaration;
 class EnumDeclaration;
@@ -248,5 +250,7 @@ private:
     std::vector<EnumDeclarationField> fields_;
     RCurly rcurly_;
 };
+
+};  // namespace ast
 
 #endif  // MINI_AST_DECL_H_

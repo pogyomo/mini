@@ -8,6 +8,8 @@
 #include "node.h"
 #include "type.h"
 
+namespace ast {
+
 class Expression;
 
 class ExpressionStatement;
@@ -281,5 +283,7 @@ private:
     std::vector<std::unique_ptr<Statement>> stmts_;
     RCurly rcurly_;
 };
+
+};  // namespace ast
 
 #endif  // MINI_AST_STMT_H_

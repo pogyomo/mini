@@ -36,67 +36,69 @@ private:
     const std::vector<std::unique_ptr<Token>> tokens_;
 };
 
-using ParserResult = std::optional<std::vector<std::unique_ptr<Declaration>>>;
+using ParserResult =
+    std::optional<std::vector<std::unique_ptr<ast::Declaration>>>;
 
-std::optional<std::unique_ptr<Expression>> parse_expr(Context& ctx,
-                                                      TokenStream& ts);
-std::optional<std::unique_ptr<Expression>> parse_logical_or_expr(
-    Context& ctx, TokenStream& ts);
-std::optional<std::unique_ptr<Expression>> parse_logical_and_expr(
-    Context& ctx, TokenStream& ts);
-std::optional<std::unique_ptr<Expression>> parse_inclusive_or_expr(
-    Context& ctx, TokenStream& ts);
-std::optional<std::unique_ptr<Expression>> parse_exclusive_or_expr(
-    Context& ctx, TokenStream& ts);
-std::optional<std::unique_ptr<Expression>> parse_and_expr(Context& ctx,
-                                                          TokenStream& ts);
-std::optional<std::unique_ptr<Expression>> parse_equality_expr(Context& ctx,
-                                                               TokenStream& ts);
-std::optional<std::unique_ptr<Expression>> parse_relational_expr(
-    Context& ctx, TokenStream& ts);
-std::optional<std::unique_ptr<Expression>> parse_shift_expr(Context& ctx,
-                                                            TokenStream& ts);
-std::optional<std::unique_ptr<Expression>> parse_additive_expr(Context& ctx,
-                                                               TokenStream& ts);
-std::optional<std::unique_ptr<Expression>> parse_multiplicative_expr(
-    Context& ctx, TokenStream& ts);
-std::optional<std::unique_ptr<Expression>> parse_cast_expr(Context& ctx,
+std::optional<std::unique_ptr<ast::Expression>> parse_expr(Context& ctx,
                                                            TokenStream& ts);
-std::optional<std::unique_ptr<Expression>> parse_unary_expr(Context& ctx,
-                                                            TokenStream& ts);
-std::optional<std::unique_ptr<Expression>> parse_postfix_expr(Context& ctx,
-                                                              TokenStream& ts);
-std::optional<std::unique_ptr<Expression>> parse_primary_expr(Context& ctx,
-                                                              TokenStream& ts);
+std::optional<std::unique_ptr<ast::Expression>> parse_logical_or_expr(
+    Context& ctx, TokenStream& ts);
+std::optional<std::unique_ptr<ast::Expression>> parse_logical_and_expr(
+    Context& ctx, TokenStream& ts);
+std::optional<std::unique_ptr<ast::Expression>> parse_inclusive_or_expr(
+    Context& ctx, TokenStream& ts);
+std::optional<std::unique_ptr<ast::Expression>> parse_exclusive_or_expr(
+    Context& ctx, TokenStream& ts);
+std::optional<std::unique_ptr<ast::Expression>> parse_and_expr(Context& ctx,
+                                                               TokenStream& ts);
+std::optional<std::unique_ptr<ast::Expression>> parse_equality_expr(
+    Context& ctx, TokenStream& ts);
+std::optional<std::unique_ptr<ast::Expression>> parse_relational_expr(
+    Context& ctx, TokenStream& ts);
+std::optional<std::unique_ptr<ast::Expression>> parse_shift_expr(
+    Context& ctx, TokenStream& ts);
+std::optional<std::unique_ptr<ast::Expression>> parse_additive_expr(
+    Context& ctx, TokenStream& ts);
+std::optional<std::unique_ptr<ast::Expression>> parse_multiplicative_expr(
+    Context& ctx, TokenStream& ts);
+std::optional<std::unique_ptr<ast::Expression>> parse_cast_expr(
+    Context& ctx, TokenStream& ts);
+std::optional<std::unique_ptr<ast::Expression>> parse_unary_expr(
+    Context& ctx, TokenStream& ts);
+std::optional<std::unique_ptr<ast::Expression>> parse_postfix_expr(
+    Context& ctx, TokenStream& ts);
+std::optional<std::unique_ptr<ast::Expression>> parse_primary_expr(
+    Context& ctx, TokenStream& ts);
 
-std::optional<std::unique_ptr<Statement>> parse_stmt(Context& ctx,
+std::optional<std::unique_ptr<ast::Statement>> parse_stmt(Context& ctx,
+                                                          TokenStream& ts);
+std::optional<std::unique_ptr<ast::ExpressionStatement>> parse_expr_stmt(
+    Context& ctx, TokenStream& ts);
+std::optional<std::unique_ptr<ast::ReturnStatement>> parse_return_stmt(
+    Context& ctx, TokenStream& ts);
+std::optional<std::unique_ptr<ast::BreakStatement>> parse_break_stmt(
+    Context& ctx, TokenStream& ts);
+std::optional<std::unique_ptr<ast::ContinueStatement>> parse_continue_stmt(
+    Context& ctx, TokenStream& ts);
+std::optional<std::unique_ptr<ast::WhileStatement>> parse_while_stmt(
+    Context& ctx, TokenStream& ts);
+std::optional<std::unique_ptr<ast::IfStatement>> parse_if_stmt(Context& ctx,
+                                                               TokenStream& ts);
+std::optional<std::unique_ptr<ast::BlockStatement>> parse_block_stmt(
+    Context& ctx, TokenStream& ts);
+
+std::optional<std::unique_ptr<ast::Type>> parse_type(Context& ctx,
                                                      TokenStream& ts);
-std::optional<std::unique_ptr<ExpressionStatement>> parse_expr_stmt(
-    Context& ctx, TokenStream& ts);
-std::optional<std::unique_ptr<ReturnStatement>> parse_return_stmt(
-    Context& ctx, TokenStream& ts);
-std::optional<std::unique_ptr<BreakStatement>> parse_break_stmt(
-    Context& ctx, TokenStream& ts);
-std::optional<std::unique_ptr<ContinueStatement>> parse_continue_stmt(
-    Context& ctx, TokenStream& ts);
-std::optional<std::unique_ptr<WhileStatement>> parse_while_stmt(
-    Context& ctx, TokenStream& ts);
-std::optional<std::unique_ptr<IfStatement>> parse_if_stmt(Context& ctx,
-                                                          TokenStream& ts);
-std::optional<std::unique_ptr<BlockStatement>> parse_block_stmt(
+std::optional<std::unique_ptr<ast::ArrayType>> parse_array_type(
     Context& ctx, TokenStream& ts);
 
-std::optional<std::unique_ptr<Type>> parse_type(Context& ctx, TokenStream& ts);
-std::optional<std::unique_ptr<ArrayType>> parse_array_type(Context& ctx,
-                                                           TokenStream& ts);
-
-std::optional<std::unique_ptr<Declaration>> parse_decl(Context& ctx,
-                                                       TokenStream& ts);
-std::optional<std::unique_ptr<FunctionDeclaration>> parse_func_decl(
+std::optional<std::unique_ptr<ast::Declaration>> parse_decl(Context& ctx,
+                                                            TokenStream& ts);
+std::optional<std::unique_ptr<ast::FunctionDeclaration>> parse_func_decl(
     Context& ctx, TokenStream& ts);
-std::optional<std::unique_ptr<StructDeclaration>> parse_struct_decl(
+std::optional<std::unique_ptr<ast::StructDeclaration>> parse_struct_decl(
     Context& ctx, TokenStream& ts);
-std::optional<std::unique_ptr<EnumDeclaration>> parse_enum_decl(
+std::optional<std::unique_ptr<ast::EnumDeclaration>> parse_enum_decl(
     Context& ctx, TokenStream& ts);
 
 ParserResult parse_file(Context& ctx, const std::string& path);

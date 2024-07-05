@@ -81,7 +81,7 @@ public:
 
 class VariableEntry : public SymbolTableEntry {
 public:
-    VariableEntry(uint64_t offset, const std::shared_ptr<Type> &type,
+    VariableEntry(uint64_t offset, const std::shared_ptr<ast::Type> &type,
                   Span var_span)
         : offset_(offset), type_(type), var_span_(var_span) {}
     void accept(SymbolTableEntryVisitor &visitor) const override {
@@ -92,25 +92,25 @@ public:
         return kind == SymbolTableEntryKind::VariableEntry;
     }
     uint64_t offset() const { return offset_; }
-    std::shared_ptr<Type> type() const { return type_; }
+    std::shared_ptr<ast::Type> type() const { return type_; }
 
 private:
     uint64_t offset_;
-    std::shared_ptr<Type> type_;
+    std::shared_ptr<ast::Type> type_;
     Span var_span_;
 };
 
 class StructField {
 public:
-    StructField(const std::shared_ptr<Type> &type, std::string &&name,
+    StructField(const std::shared_ptr<ast::Type> &type, std::string &&name,
                 Span span)
         : type_(type), name_(name), span_(span) {}
-    const std::shared_ptr<Type> &type() const { return type_; }
+    const std::shared_ptr<ast::Type> &type() const { return type_; }
     const std::string &name() const { return name_; }
     Span span() const { return span_; }
 
 private:
-    std::shared_ptr<Type> type_;
+    std::shared_ptr<ast::Type> type_;
     std::string name_;
     Span span_;
 };
@@ -167,8 +167,8 @@ private:
 
 class FunctionEntry : public SymbolTableEntry {
 public:
-    FunctionEntry(const std::optional<std::shared_ptr<Type>> &ret,
-                  std::vector<std::shared_ptr<Type>> &&params, Span span)
+    FunctionEntry(const std::optional<std::shared_ptr<ast::Type>> &ret,
+                  std::vector<std::shared_ptr<ast::Type>> &&params, Span span)
         : ret_(ret), params_(std::move(params)), span_(span) {}
     void accept(SymbolTableEntryVisitor &visitor) const override {
         visitor.visit(*this);
@@ -177,12 +177,16 @@ public:
     bool is(SymbolTableEntryKind kind) const override {
         return kind == SymbolTableEntryKind::FunctionEntry;
     }
-    const std::optional<std::shared_ptr<Type>> &ret() const { return ret_; }
-    const std::vector<std::shared_ptr<Type>> &params() const { return params_; }
+    const std::optional<std::shared_ptr<ast::Type>> &ret() const {
+        return ret_;
+    }
+    const std::vector<std::shared_ptr<ast::Type>> &params() const {
+        return params_;
+    }
 
 private:
-    std::optional<std::shared_ptr<Type>> ret_;
-    std::vector<std::shared_ptr<Type>> params_;
+    std::optional<std::shared_ptr<ast::Type>> ret_;
+    std::vector<std::shared_ptr<ast::Type>> params_;
     Span span_;
 };
 

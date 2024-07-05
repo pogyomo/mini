@@ -2,6 +2,8 @@
 
 #include "expr.h"
 
+namespace ast {
+
 // NOTE:
 // Don't define constructor/destructor of `ArrayType` at header file, as it
 // contains unique_ptr for opaque type `Expression`.
@@ -20,3 +22,5 @@ ArrayType::ArrayType(LParen lparen, const std::shared_ptr<Type>& of,
       rsquare_(rsquare) {}
 
 ArrayType::~ArrayType() = default;
+
+};  // namespace ast

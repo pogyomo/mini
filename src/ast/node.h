@@ -3,6 +3,8 @@
 
 #include "../span.h"
 
+namespace ast {
+
 #define GEN_NODE(name)                                      \
     class name : public Node {                              \
     public:                                                 \
@@ -46,5 +48,7 @@ GEN_NODE(TSizeof);
 GEN_NODE(Function);
 GEN_NODE(Struct);
 GEN_NODE(Enum);
+
+};  // namespace ast
 
 #endif  // MINI_AST_NODE_H_
