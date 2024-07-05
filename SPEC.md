@@ -7,7 +7,7 @@ A minimal, but self-hostable programming language.
 The `main` function should contained on a executable program, and the program start from the function.
 
 ```
-function main() -> int {
+function main() -> usize {
     int a = 10, b = 20;
     return a + b;
 }
@@ -16,7 +16,7 @@ function main() -> int {
 You can take a arguments and use it in usr program as follow:
 
 ```
-function main(argc: int, argv: *(int)[]) -> int {
+function main(argc: int, argv: *(int)[]) -> usize {
     if (argc < 2) return 0;
     return argv[0][0];
 }
@@ -28,24 +28,24 @@ All program must uses either of above two signature.
 
 The mini programming language support a few types described below:
 
-| type    | description                  |
-| ------- | ---------------------------- |
-| isize   | signed native size integer   |
-| int8    | signed 8-bit integer         |
-| int16   | signed 16-bit integer        |
-| int32   | signed 32-bit integer        |
-| int64   | signed 64-bit integer        |
-| usize   | unsigned native size integer |
-| uint8   | unsigned 8-bit integer       |
-| uint16  | unsigned 16-bit integer      |
-| uint32  | unsigned 32-bit integer      |
-| uint64  | unsigned 64-bit integer      |
-| char    | unsigned 8-bit integer       |
-| bool    | 0 for false or 1 for true    |
-| struct  | a collection of value        |
-| enum    | a collection of unique ints  |
-| array   | a list of value              |
-| pointer | a value pointing to a value  |
+| type    | description                     |
+| ------- | ------------------------------- |
+| isize   | signed native size integer      |
+| int8    | signed 8-bit integer            |
+| int16   | signed 16-bit integer           |
+| int32   | signed 32-bit integer           |
+| int64   | signed 64-bit integer           |
+| usize   | unsigned native size integer    |
+| uint8   | unsigned 8-bit integer          |
+| uint16  | unsigned 16-bit integer         |
+| uint32  | unsigned 32-bit integer         |
+| uint64  | unsigned 64-bit integer         |
+| char    | 8-bit value for ascii codepoint |
+| bool    | 0 for false or 1 for true       |
+| struct  | a collection of value           |
+| enum    | a collection of unique ints     |
+| array   | a list of value                 |
+| pointer | a value pointing to a value     |
 
 ## Syntax
 
