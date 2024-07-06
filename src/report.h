@@ -6,6 +6,8 @@
 #include "context.h"
 #include "span.h"
 
+namespace mini {
+
 enum class ReportLevel {
     Info,
     Warn,
@@ -27,5 +29,7 @@ private:
 };
 
 void report(Context &ctx, ReportLevel level, const ReportInfo &info);
+
+};  // namespace mini
 
 #endif  // MINI_REPORT_H_

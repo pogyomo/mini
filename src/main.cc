@@ -2,7 +2,7 @@
 #include "parser.h"
 
 int main() {
-    Context ctx;
-    auto ds = parse_file(ctx, "main.mini");
+    mini::Context ctx;
+    auto ds = mini::parse_file(ctx, "main.mini");
     if (!ds) return EXIT_FAILURE;
 }

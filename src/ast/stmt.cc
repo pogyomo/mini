@@ -2,6 +2,8 @@
 
 #include "expr.h"
 
+namespace mini {
+
 namespace ast {
 
 ExpressionStatement::ExpressionStatement(std::unique_ptr<Expression>&& expr,
@@ -65,3 +67,5 @@ VariableDeclarationBody::VariableDeclarationBody(
       init_(std::move(init)) {}
 
 };  // namespace ast
+
+};  // namespace mini

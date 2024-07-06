@@ -2,6 +2,8 @@
 
 #include "expr.h"
 
+namespace mini {
+
 namespace ast {
 
 // NOTE:
@@ -24,3 +26,5 @@ ArrayType::ArrayType(LParen lparen, const std::shared_ptr<Type>& of,
 ArrayType::~ArrayType() = default;
 
 };  // namespace ast
+
+};  // namespace mini

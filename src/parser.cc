@@ -13,6 +13,8 @@
 #include "report.h"
 #include "token.h"
 
+namespace mini {
+
 #define TRY(cond)            \
     if ((cond)) {            \
         return std::nullopt; \
@@ -1180,3 +1182,5 @@ ParserResult parse_file(Context &ctx, const std::string &path) {
     }
     return res;
 }
+
+};  // namespace mini

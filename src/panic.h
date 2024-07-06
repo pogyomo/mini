@@ -5,6 +5,8 @@
 
 #include "fmt/base.h"
 
+namespace mini {
+
 template <typename... Args>
 void fatal_error(const std::string &fmt, Args... args) {
     fmt::print(stderr, "\e[31mfatal error: \e[0m");
@@ -12,5 +14,7 @@ void fatal_error(const std::string &fmt, Args... args) {
     fmt::println(stderr, "");
     std::exit(EXIT_FAILURE);
 }
+
+};  // namespace mini
 
 #endif  // MINI_PANIC_H_

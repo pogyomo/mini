@@ -9,6 +9,8 @@
 #include "span.h"
 #include "token.h"
 
+namespace mini {
+
 class LineStream {
 public:
     LineStream(size_t row, const std::string &line)
@@ -361,3 +363,5 @@ LexResult lex_file(Context &ctx, const std::string &path) {
     else
         return std::nullopt;
 }
+
+};  // namespace mini

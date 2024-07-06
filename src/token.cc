@@ -1,5 +1,7 @@
 #include "token.h"
 
+namespace mini {
+
 std::string to_string(PunctTokenKind kind) {
     switch (kind) {
         case PunctTokenKind::Plus:
@@ -130,3 +132,5 @@ std::string to_string(KeywordTokenKind kind) {
             return "";
     }
 }
+
+};  // namespace mini

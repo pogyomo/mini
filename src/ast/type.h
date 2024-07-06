@@ -6,6 +6,8 @@
 
 #include "node.h"
 
+namespace mini {
+
 namespace ast {
 
 class Expression;
@@ -118,5 +120,7 @@ private:
 };
 
 };  // namespace ast
+
+};  // namespace mini
 
 #endif  // MINI_AST_TYPE_H_

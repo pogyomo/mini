@@ -12,6 +12,8 @@
 #include "context.h"
 #include "token.h"
 
+namespace mini {
+
 using TokenStreamState = size_t;
 
 class TokenStream {
@@ -102,5 +104,7 @@ std::optional<std::unique_ptr<ast::EnumDeclaration>> parse_enum_decl(
     Context& ctx, TokenStream& ts);
 
 ParserResult parse_file(Context& ctx, const std::string& path);
+
+};  // namespace mini
 
 #endif  // MINI_PARSER_H_

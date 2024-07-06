@@ -3,6 +3,8 @@
 #include <iostream>
 #include <ostream>
 
+namespace mini {
+
 // Start to coloring the output to `os` depende on `level`.
 static void start_color(std::ostream &os, ReportLevel level) {
     if (level == ReportLevel::Error) {
@@ -98,3 +100,5 @@ void report(Context &ctx, ReportLevel level, const ReportInfo &info) {
         std::cerr << " " << info.info() << std::endl;
     }
 }
+
+};  // namespace mini

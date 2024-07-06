@@ -6,6 +6,8 @@
 #include "node.h"
 #include "type.h"
 
+namespace mini {
+
 namespace ast {
 
 class UnaryExpression;
@@ -309,7 +311,7 @@ public:
     inline ColonColon colon_colon() const { return colon_colon_; }
     inline const EnumSelectExpressionSrc& src() const { return src_; }
 
-public:
+private:
     EnumSelectExpressionDst dst_;
     ColonColon colon_colon_;
     EnumSelectExpressionSrc src_;
@@ -388,5 +390,7 @@ private:
 };
 
 };  // namespace ast
+
+};  // namespace mini
 
 #endif  // MINI_AST_EXPR_H_

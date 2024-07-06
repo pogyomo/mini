@@ -8,6 +8,8 @@
 #include "stmt.h"
 #include "type.h"
 
+namespace mini {
+
 namespace ast {
 
 class FunctionDeclaration;
@@ -252,5 +254,7 @@ private:
 };
 
 };  // namespace ast
+
+};  // namespace mini
 
 #endif  // MINI_AST_DECL_H_

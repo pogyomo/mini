@@ -7,6 +7,8 @@
 
 #include "span.h"
 
+namespace mini {
+
 enum class PunctTokenKind {
     Plus,         // "+"
     Arrow,        // "->"
@@ -171,5 +173,7 @@ public:
 private:
     char value_;
 };
+
+};  // namespace mini
 
 #endif  // MINI_TOKEN_H_

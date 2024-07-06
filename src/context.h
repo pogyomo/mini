@@ -14,6 +14,8 @@
 #include "ast/type.h"
 #include "panic.h"
 
+namespace mini {
+
 class InputCacheEntry {
 public:
     InputCacheEntry(std::string &&name, std::vector<std::string> &&lines)
@@ -252,5 +254,7 @@ private:
     int label_count_;
     bool suppress_report_;
 };
+
+};  // namespace mini
 
 #endif  // MINI_CONTEXT_H_
