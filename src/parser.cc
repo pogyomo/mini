@@ -1143,10 +1143,17 @@ std::optional<std::unique_ptr<ast::StructDeclaration>> parse_struct_decl(
             return std::make_unique<ast::StructDeclaration>(
                 struct_kw, std::move(name), lcurly, std::move(fields), rcurly);
         } else {
-            ReportInfo info(ts.token()->span(), "unexpected token",
-                            "expected identifier or `}`");
-            report(ctx, ReportLevel::Error, info);
-            return std::nullopt;
+            if (ts.has_prev()) {
+                ReportInfo info(ts.prev()->span(), "unexpected token",
+                                "expected identifier or `}` after this");
+                report(ctx, ReportLevel::Error, info);
+                return std::nullopt;
+            } else {
+                ReportInfo info(ts.token()->span(), "unexpected token",
+                                "expected this to be identifier or `}`");
+                report(ctx, ReportLevel::Error, info);
+                return std::nullopt;
+            }
         }
     }
 }
@@ -1185,10 +1192,17 @@ std::optional<std::unique_ptr<ast::EnumDeclaration>> parse_enum_decl(
             return std::make_unique<ast::EnumDeclaration>(
                 enum_kw, std::move(name), lcurly, std::move(fields), rcurly);
         } else {
-            ReportInfo info(ts.token()->span(), "unexpected token",
-                            "expected identifier or `}`");
-            report(ctx, ReportLevel::Error, info);
-            return std::nullopt;
+            if (ts.has_prev()) {
+                ReportInfo info(ts.prev()->span(), "unexpected token",
+                                "expected identifier or `}` after this");
+                report(ctx, ReportLevel::Error, info);
+                return std::nullopt;
+            } else {
+                ReportInfo info(ts.token()->span(), "unexpected token",
+                                "expected this to be identifier or `}`");
+                report(ctx, ReportLevel::Error, info);
+                return std::nullopt;
+            }
         }
     }
 }
