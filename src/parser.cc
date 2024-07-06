@@ -780,8 +780,12 @@ std::optional<std::unique_ptr<ast::ArrayType>> parse_array_type(
     ast::LSquare lsquare(ts.token()->span());
     ts.advance();
 
-    auto size = parse_expr(ctx, ts);
-    if (!size) return std::nullopt;
+    TRY(check_eos(ctx, ts));
+    std::optional<std::unique_ptr<ast::Expression>> size;
+    if (!ts.token()->is_punct_of(PunctTokenKind::RSquare)) {
+        size = parse_expr(ctx, ts);
+        if (!size) return std::nullopt;
+    }
 
     TRY(check_punct(ctx, ts, PunctTokenKind::RSquare));
     ast::RSquare rsquare(ts.token()->span());

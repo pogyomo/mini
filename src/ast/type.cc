@@ -15,7 +15,8 @@ namespace ast {
 
 ArrayType::ArrayType(LParen lparen, const std::shared_ptr<Type>& of,
                      RParen rparen, LSquare lsquare,
-                     std::unique_ptr<Expression>&& size, RSquare rsquare)
+                     std::optional<std::unique_ptr<Expression>>&& size,
+                     RSquare rsquare)
     : lparen_(lparen),
       of_(of),
       rparen_(rparen),

@@ -83,7 +83,7 @@ The syntax of mini programming language is as follow:
          | <pointer>
 <struct-or-enum-name> :: <identifier>
 <array> ::= "(" <type> ")" <array-indexe>
-<array-index> ::= "[" <const-expression> "]"
+<array-index> ::= "[" [ <const-expression> ] "]"
 <pointer> ::= "*" <type>
 
 <statement> ::= <expression-statement>

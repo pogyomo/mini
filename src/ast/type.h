@@ -2,6 +2,7 @@
 #define MINI_AST_TYPE_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "node.h"
@@ -80,7 +81,8 @@ class ArrayType : public Type {
 public:
     ~ArrayType();
     ArrayType(LParen lparen, const std::shared_ptr<Type>& of, RParen rparen,
-              LSquare lsquare, std::unique_ptr<Expression>&& size,
+              LSquare lsquare,
+              std::optional<std::unique_ptr<Expression>>&& size,
               RSquare rsquare);
     inline void accept(TypeVisitor& visitor) const override {
         visitor.visit(*this);
@@ -92,7 +94,9 @@ public:
     inline const std::shared_ptr<Type>& of() const { return of_; }
     inline RParen rparen() const { return rparen_; }
     inline LSquare lsquare() const { return lsquare_; }
-    inline const std::unique_ptr<Expression>& size() const { return size_; }
+    inline const std::optional<std::unique_ptr<Expression>>& size() const {
+        return size_;
+    }
     inline RSquare rsquare() const { return rsquare_; }
 
 private:
@@ -100,7 +104,7 @@ private:
     std::shared_ptr<Type> of_;
     RParen rparen_;
     LSquare lsquare_;
-    std::unique_ptr<Expression> size_;
+    std::optional<std::unique_ptr<Expression>> size_;
     RSquare rsquare_;
 };
 
