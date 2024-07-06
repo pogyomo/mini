@@ -596,12 +596,7 @@ std::optional<std::unique_ptr<ast::Expression>> parse_primary_expr(
             while (true) {
                 TRY(check_eos(ctx, ts));
                 if (ts.token()->is_punct_of(PunctTokenKind::RCurly)) {
-                    ast::RCurly rcurly(ts.token()->span());
-                    ts.advance();
-
-                    ast::StructExpressionName name(std::move(value1), span1);
-                    return std::make_unique<ast::StructExpression>(
-                        std::move(name), lcurly, std::move(inits), rcurly);
+                    break;
                 } else if (ts.token()->is_ident()) {
                     ast::StructExpressionInitName name(
                         std::string(ts.token()->ident_value()),
@@ -621,6 +616,8 @@ std::optional<std::unique_ptr<ast::Expression>> parse_primary_expr(
                     if (!ts.is_eos() &&
                         ts.token()->is_punct_of(PunctTokenKind::Comma)) {
                         ts.advance();
+                    } else {
+                        break;
                     }
                 } else {
                     ReportInfo info(ts.token()->span(),
@@ -629,10 +626,48 @@ std::optional<std::unique_ptr<ast::Expression>> parse_primary_expr(
                     return std::nullopt;
                 }
             }
+
+            TRY(check_punct(ctx, ts, PunctTokenKind::RCurly));
+            ast::RCurly rcurly(ts.token()->span());
+            ts.advance();
+
+            ast::StructExpressionName name(std::move(value1), span1);
+            return std::make_unique<ast::StructExpression>(
+                std::move(name), lcurly, std::move(inits), rcurly);
         } else {
             return std::make_unique<ast::VariableExpression>(std::move(value1),
                                                              span1);
         }
+    } else if (ts.token()->is_punct_of(PunctTokenKind::LCurly)) {
+        ast::LCurly lcurly(ts.token()->span());
+        ts.advance();
+
+        std::vector<std::unique_ptr<ast::Expression>> inits;
+        while (true) {
+            TRY(check_eos(ctx, ts));
+            if (ts.token()->is_punct_of(PunctTokenKind::RCurly)) {
+                break;
+            } else {
+                auto value = parse_expr(ctx, ts);
+                if (!value) return std::nullopt;
+
+                inits.emplace_back(std::move(*value));
+
+                if (!ts.is_eos() &&
+                    ts.token()->is_punct_of(PunctTokenKind::Comma)) {
+                    ts.advance();
+                } else {
+                    break;
+                }
+            }
+        }
+
+        TRY(check_punct(ctx, ts, PunctTokenKind::RCurly));
+        ast::RCurly rcurly(ts.token()->span());
+        ts.advance();
+
+        return std::make_unique<ast::ArrayExpression>(lcurly, std::move(inits),
+                                                      rcurly);
     } else if (ts.token()->is_int()) {
         uint64_t value = ts.token()->int_value();
         auto span = ts.token()->span();

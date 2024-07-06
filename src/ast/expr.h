@@ -25,6 +25,7 @@ class StringExpression;
 class CharExpression;
 class BoolExpression;
 class StructExpression;
+class ArrayExpression;
 
 class ExpressionVisitor {
 public:
@@ -44,6 +45,7 @@ public:
     virtual void visit(const CharExpression& expr) = 0;
     virtual void visit(const BoolExpression& expr) = 0;
     virtual void visit(const StructExpression& expr) = 0;
+    virtual void visit(const ArrayExpression& expr) = 0;
 };
 
 class Expression : public Node {
@@ -454,6 +456,30 @@ private:
     StructExpressionName name_;
     LCurly lcurly_;
     std::vector<StructExpressionInit> inits_;
+    RCurly rcurly_;
+};
+
+class ArrayExpression : public Expression {
+public:
+    ArrayExpression(LCurly lcurly,
+                    std::vector<std::unique_ptr<Expression>>&& inits,
+                    RCurly rcurly)
+        : lcurly_(lcurly), inits_(std::move(inits)), rcurly_(rcurly) {}
+    inline void accept(ExpressionVisitor& visitor) const override {
+        return visitor.visit(*this);
+    }
+    inline Span span() const override {
+        return lcurly_.span() + rcurly_.span();
+    }
+    inline LCurly lcurly() const { return lcurly_; }
+    inline const std::vector<std::unique_ptr<Expression>>& inits() const {
+        return inits_;
+    }
+    inline RCurly rcurly() const { return rcurly_; }
+
+private:
+    LCurly lcurly_;
+    std::vector<std::unique_ptr<Expression>> inits_;
     RCurly rcurly_;
 };
 
