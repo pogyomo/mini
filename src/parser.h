@@ -20,6 +20,7 @@ class TokenStream {
 public:
     TokenStream(std::vector<std::unique_ptr<Token>>&& tokens)
         : offset_(0), tokens_(std::move(tokens)) {}
+    explicit operator bool() { return !is_eos(); }
     bool is_eos() const { return offset_ >= tokens_.size(); }
     void advance() { offset_++; }
     const std::unique_ptr<Token>& token() const { return tokens_.at(offset_); }
