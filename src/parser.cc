@@ -1135,13 +1135,11 @@ std::optional<std::unique_ptr<ast::StructDeclaration>> parse_struct_decl(
             if (!ts.is_eos() &&
                 ts.token()->is_punct_of(PunctTokenKind::Comma)) {
                 ts.advance();
+            } else {
+                break;
             }
         } else if (ts.token()->is_punct_of(PunctTokenKind::RCurly)) {
-            ast::RCurly rcurly(ts.token()->span());
-            ts.advance();
-
-            return std::make_unique<ast::StructDeclaration>(
-                struct_kw, std::move(name), lcurly, std::move(fields), rcurly);
+            break;
         } else {
             if (ts.has_prev()) {
                 ReportInfo info(ts.prev()->span(), "unexpected token",
@@ -1156,6 +1154,13 @@ std::optional<std::unique_ptr<ast::StructDeclaration>> parse_struct_decl(
             }
         }
     }
+
+    TRY(check_punct(ctx, ts, PunctTokenKind::RCurly));
+    ast::RCurly rcurly(ts.token()->span());
+    ts.advance();
+
+    return std::make_unique<ast::StructDeclaration>(
+        struct_kw, std::move(name), lcurly, std::move(fields), rcurly);
 }
 
 std::optional<std::unique_ptr<ast::EnumDeclaration>> parse_enum_decl(
@@ -1184,13 +1189,11 @@ std::optional<std::unique_ptr<ast::EnumDeclaration>> parse_enum_decl(
             if (!ts.is_eos() &&
                 ts.token()->is_punct_of(PunctTokenKind::Comma)) {
                 ts.advance();
+            } else {
+                break;
             }
         } else if (ts.token()->is_punct_of(PunctTokenKind::RCurly)) {
-            ast::RCurly rcurly(ts.token()->span());
-            ts.advance();
-
-            return std::make_unique<ast::EnumDeclaration>(
-                enum_kw, std::move(name), lcurly, std::move(fields), rcurly);
+            break;
         } else {
             if (ts.has_prev()) {
                 ReportInfo info(ts.prev()->span(), "unexpected token",
@@ -1205,6 +1208,13 @@ std::optional<std::unique_ptr<ast::EnumDeclaration>> parse_enum_decl(
             }
         }
     }
+
+    TRY(check_punct(ctx, ts, PunctTokenKind::RCurly));
+    ast::RCurly rcurly(ts.token()->span());
+    ts.advance();
+
+    return std::make_unique<ast::EnumDeclaration>(
+        enum_kw, std::move(name), lcurly, std::move(fields), rcurly);
 }
 
 ParserResult parse_file(Context &ctx, const std::string &path) {
