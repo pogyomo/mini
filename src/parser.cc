@@ -1132,18 +1132,16 @@ std::optional<std::unique_ptr<ast::StructDeclaration>> parse_struct_decl(
 
             fields.emplace_back(std::move(name), colon, std::move(*type));
 
-            if (ts.token()->is_punct_of(PunctTokenKind::RCurly)) {
-                break;
-            } else if (ts.token()->is_punct_of(PunctTokenKind::Comma)) {
+            if (!ts.is_eos() &&
+                ts.token()->is_punct_of(PunctTokenKind::Comma)) {
                 ts.advance();
-            } else {
-                ReportInfo info(ts.token()->span(), "unexpected token",
-                                "expected one of identifier, `}`, or `,`");
-                report(ctx, ReportLevel::Error, info);
-                return std::nullopt;
             }
         } else if (ts.token()->is_punct_of(PunctTokenKind::RCurly)) {
-            break;
+            ast::RCurly rcurly(ts.token()->span());
+            ts.advance();
+
+            return std::make_unique<ast::StructDeclaration>(
+                struct_kw, std::move(name), lcurly, std::move(fields), rcurly);
         } else {
             ReportInfo info(ts.token()->span(), "unexpected token",
                             "expected identifier or `}`");
@@ -1151,13 +1149,6 @@ std::optional<std::unique_ptr<ast::StructDeclaration>> parse_struct_decl(
             return std::nullopt;
         }
     }
-
-    TRY(check_punct(ctx, ts, PunctTokenKind::RCurly));
-    ast::RCurly rcurly(ts.token()->span());
-    ts.advance();
-
-    return std::make_unique<ast::StructDeclaration>(
-        struct_kw, std::move(name), lcurly, std::move(fields), rcurly);
 }
 
 std::optional<std::unique_ptr<ast::EnumDeclaration>> parse_enum_decl(
@@ -1183,18 +1174,16 @@ std::optional<std::unique_ptr<ast::EnumDeclaration>> parse_enum_decl(
             fields.emplace_back(std::move(name), ts.token()->span());
             ts.advance();
 
-            if (ts.token()->is_punct_of(PunctTokenKind::RCurly)) {
-                break;
-            } else if (ts.token()->is_punct_of(PunctTokenKind::Comma)) {
+            if (!ts.is_eos() &&
+                ts.token()->is_punct_of(PunctTokenKind::Comma)) {
                 ts.advance();
-            } else {
-                ReportInfo info(ts.token()->span(), "unexpected token",
-                                "expected one of identifier, `}`, or `,`");
-                report(ctx, ReportLevel::Error, info);
-                return std::nullopt;
             }
         } else if (ts.token()->is_punct_of(PunctTokenKind::RCurly)) {
-            break;
+            ast::RCurly rcurly(ts.token()->span());
+            ts.advance();
+
+            return std::make_unique<ast::EnumDeclaration>(
+                enum_kw, std::move(name), lcurly, std::move(fields), rcurly);
         } else {
             ReportInfo info(ts.token()->span(), "unexpected token",
                             "expected identifier or `}`");
@@ -1202,13 +1191,6 @@ std::optional<std::unique_ptr<ast::EnumDeclaration>> parse_enum_decl(
             return std::nullopt;
         }
     }
-
-    TRY(check_punct(ctx, ts, PunctTokenKind::RCurly));
-    ast::RCurly rcurly(ts.token()->span());
-    ts.advance();
-
-    return std::make_unique<ast::EnumDeclaration>(
-        enum_kw, std::move(name), lcurly, std::move(fields), rcurly);
 }
 
 ParserResult parse_file(Context &ctx, const std::string &path) {
