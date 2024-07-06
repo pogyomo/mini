@@ -24,6 +24,7 @@ class IntegerExpression;
 class StringExpression;
 class CharExpression;
 class BoolExpression;
+class StructExpression;
 
 class ExpressionVisitor {
 public:
@@ -42,6 +43,7 @@ public:
     virtual void visit(const StringExpression& expr) = 0;
     virtual void visit(const CharExpression& expr) = 0;
     virtual void visit(const BoolExpression& expr) = 0;
+    virtual void visit(const StructExpression& expr) = 0;
 };
 
 class Expression : public Node {
@@ -387,6 +389,72 @@ public:
 private:
     bool value_;
     Span span_;
+};
+
+class StructExpressionName : public Node {
+public:
+    StructExpressionName(std::string&& name, Span span)
+        : name_(std::move(name)), span_(span) {}
+    inline Span span() const override { return span_; }
+    inline const std::string& name() const { return name_; }
+
+private:
+    std::string name_;
+    Span span_;
+};
+
+class StructExpressionInitName : public Node {
+public:
+    StructExpressionInitName(std::string&& name, Span span)
+        : name_(std::move(name)), span_(span) {}
+    inline Span span() const override { return span_; }
+    inline const std::string& name() const { return name_; }
+
+private:
+    std::string name_;
+    Span span_;
+};
+
+class StructExpressionInit : public Node {
+public:
+    StructExpressionInit(StructExpressionInitName&& name, Colon colon,
+                         std::unique_ptr<Expression>&& value)
+        : name_(std::move(name)), colon_(colon), value_(std::move(value)) {}
+    inline Span span() const override { return name_.span() + value_->span(); }
+    inline const StructExpressionInitName& name() const { return name_; }
+    inline Colon colon() const { return colon_; }
+    inline const std::unique_ptr<Expression>& value() const { return value_; }
+
+private:
+    StructExpressionInitName name_;
+    Colon colon_;
+    std::unique_ptr<Expression> value_;
+};
+
+class StructExpression : public Expression {
+public:
+    StructExpression(StructExpressionName&& name, LCurly lcurly,
+                     std::vector<StructExpressionInit>&& inits, RCurly rcurly)
+        : name_(std::move(name)),
+          lcurly_(lcurly),
+          inits_(std::move(inits)),
+          rcurly_(rcurly) {}
+    inline void accept(ExpressionVisitor& visitor) const override {
+        return visitor.visit(*this);
+    }
+    inline Span span() const override { return name_.span() + rcurly_.span(); }
+    inline const StructExpressionName& name() const { return name_; }
+    inline LCurly lcurly() const { return lcurly_; }
+    inline const std::vector<StructExpressionInit>& inits() const {
+        return inits_;
+    }
+    inline RCurly rcurly() const { return rcurly_; }
+
+private:
+    StructExpressionName name_;
+    LCurly lcurly_;
+    std::vector<StructExpressionInit> inits_;
+    RCurly rcurly_;
 };
 
 };  // namespace ast

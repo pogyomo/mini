@@ -133,6 +133,7 @@ The syntax of mini programming language is as follow:
                        | <integer>
                        | <string>
                        | <character>
+                       | <struct-init>
                        | "true"
                        | "false"
                        | "(" <expression> ")"
@@ -140,4 +141,7 @@ The syntax of mini programming language is as follow:
 <integer> ::= ...
 <string> ::= ...
 <character> ::= ...
+<struct-init> ::= <identifier> "{" <struct-initializers> "}"
+<struct-initializers> ::= <struct-initializer> [ "," [ <struct-initializers> ] ]
+<struct-initializer> ::= <identifier> ":" <expression>
 ```
