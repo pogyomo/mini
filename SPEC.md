@@ -62,10 +62,10 @@ The syntax of mini programming language is as follow:
                         | <function-parameter> "," <function-parameters>
 <function-parameter> ::= <identifier> ":" <type>
 <struct-declaration> ::= "struct" "{" <struct-items> "}"
-<struct-items> ::= <struct-item> [ "," <struct-items> ]
+<struct-items> ::= <struct-item> [ "," [ <struct-items> ] ]
 <struct-item> ::= <identifier> ":" <type>
 <enum-declaration> ::= "enum" "{" <enum-items> "}"
-<enum-items> ::= <enum-item> [ "," <enum-items> ]
+<enum-items> ::= <enum-item> [ "," [ <enum-items> ] ]
 <enum-item> ::= <identifier>
 
 <type> ::= "int8"
