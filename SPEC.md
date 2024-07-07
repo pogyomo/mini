@@ -51,7 +51,7 @@ The mini programming language support a few types described below:
 
 A constant expression is an expression which contains only integer literal and using only some arthemtic operator, and evaluated as `usize`.
 
-Infix operators `&, |, <<, >>, +, -, *, /, %` and unary operator `~` is allowed.
+Infix operators `&, |, ^, <<, >>, +, -, *, /, %` and unary operator `~` is allowed.
 
 ## Syntax
 
