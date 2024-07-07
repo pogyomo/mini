@@ -47,6 +47,12 @@ The mini programming language support a few types described below:
 | array   | a list of value                 |
 | pointer | a value pointing to a value     |
 
+## Constant Expression
+
+A constant expression is an expression which contains only integer literal and using only some arthemtic operator, and evaluated as `usize`.
+
+Infix operators `&, |, <<, >>, +, -, *, /, %` and unary operator `~` is allowed.
+
 ## Syntax
 
 The syntax of mini programming language is as follow:
@@ -83,7 +89,7 @@ The syntax of mini programming language is as follow:
          | <pointer>
 <struct-or-enum-name> :: <identifier>
 <array> ::= "(" <type> ")" <array-indexe>
-<array-index> ::= "[" [ <const-expression> ] "]"
+<array-index> ::= "[" [ <constant-expression> ] "]"
 <pointer> ::= "*" <type>
 
 <statement> ::= <expression-statement>
@@ -105,6 +111,7 @@ The syntax of mini programming language is as follow:
 <variable-declarations> ::= "let" <variable-declarations-ids> ";"
 <variable-declarations-ids> ::= <identifier> ":" <type> [ "=" <expression> ] [ <variable-declarations-ids> ]
 
+<constant-expression> ::= <logical-or-expression>
 <expression> ::= <logical-or-expression>
                | <unary-expression> "=" <expression>
 <logical-or-expression> ::= <logical-and-expression> [ "||" <logical-or-expression> ]
