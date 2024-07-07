@@ -48,15 +48,15 @@ private:
 
 class Context {
 public:
-    Context() : should_suppress_report_(false) {}
+    Context() : should_report_(true) {}
     InputCache &input_cache() { return input_cache_; }
-    bool should_suppress_report() const { return should_suppress_report_; }
-    void suppress_report() { should_suppress_report_ = true; }
-    void activate_report() { should_suppress_report_ = false; }
+    bool should_report() const { return should_report_; }
+    void suppress_report() { should_report_ = false; }
+    void activate_report() { should_report_ = true; }
 
 private:
     InputCache input_cache_;
-    bool should_suppress_report_;
+    bool should_report_;
 };
 
 };  // namespace mini

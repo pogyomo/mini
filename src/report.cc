@@ -31,7 +31,7 @@ static int digits(int n) {
 }
 
 void report(Context &ctx, ReportLevel level, const ReportInfo &info) {
-    if (ctx.should_suppress_report()) {
+    if (!ctx.should_report()) {
         return;
     }
 
