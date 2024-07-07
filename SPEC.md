@@ -107,7 +107,7 @@ The syntax of mini programming language is as follow:
 <if-statement> ::= "if" "(" <expression> ")" <statement> [ "else" <statement> ]
 <block-statement> ::= "{" <block-statement-items> "}"
 <block-statement-items> ::= <block-statement-item> [ <block-statement-items> ]
-<block-statement-item> ::= { <variable-declarations> }* { <statement> }*
+<block-statement-item> ::= <variable-declarations> | <statement>
 <variable-declarations> ::= "let" <variable-declarations-ids> ";"
 <variable-declarations-ids> ::= <identifier> ":" <type> [ "=" <expression> ] [ <variable-declarations-ids> ]
 

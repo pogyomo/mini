@@ -4,6 +4,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <variant>
 
 #include "node.h"
 #include "type.h"
@@ -255,15 +256,34 @@ private:
     Semicolon semicolon_;
 };
 
+class BlockStatementItem : public Node {
+public:
+    BlockStatementItem(VariableDeclarations&& decl) : item_(std::move(decl)) {}
+    BlockStatementItem(std::unique_ptr<Statement>&& stmt)
+        : item_(std::move(stmt)) {}
+    Span span() const override {
+        if (item_.index() == 0) {
+            return std::get<0>(item_).span();
+        } else {
+            return std::get<1>(item_)->span();
+        }
+    }
+    bool is_decl() const { return item_.index() == 0; }
+    bool is_stmt() const { return item_.index() == 1; }
+    const VariableDeclarations& decl() const { return std::get<0>(item_); }
+    const std::unique_ptr<Statement>& stmt() const {
+        return std::get<1>(item_);
+    }
+
+private:
+    std::variant<VariableDeclarations, std::unique_ptr<Statement>> item_;
+};
+
 class BlockStatement : public Statement {
 public:
-    BlockStatement(LCurly lcurly, std::vector<VariableDeclarations>&& decls,
-                   std::vector<std::unique_ptr<Statement>>&& stmts,
+    BlockStatement(LCurly lcurly, std::vector<BlockStatementItem>&& items,
                    RCurly rcurly)
-        : lcurly_(lcurly),
-          decls_(std::move(decls)),
-          stmts_(std::move(stmts)),
-          rcurly_(rcurly) {}
+        : lcurly_(lcurly), items_(std::move(items)), rcurly_(rcurly) {}
     inline void accept(StatementVisitor& visitor) const override {
         visitor.visit(*this);
     }
@@ -271,18 +291,14 @@ public:
         return lcurly_.span() + rcurly_.span();
     }
     inline LCurly lcurly() const { return lcurly_; }
-    inline const std::vector<VariableDeclarations>& decls() const {
-        return decls_;
-    }
-    inline const std::vector<std::unique_ptr<Statement>>& stmts() const {
-        return stmts_;
+    inline const std::vector<BlockStatementItem>& items() const {
+        return items_;
     }
     inline RCurly rcurly() const { return rcurly_; }
 
 private:
     LCurly lcurly_;
-    std::vector<VariableDeclarations> decls_;
-    std::vector<std::unique_ptr<Statement>> stmts_;
+    std::vector<BlockStatementItem> items_;
     RCurly rcurly_;
 };
 

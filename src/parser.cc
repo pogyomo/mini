@@ -972,7 +972,7 @@ std::optional<std::unique_ptr<ast::BlockStatement>> parse_block_stmt(
     ast::LCurly lcurly(ts.token()->span());
     ts.advance();
 
-    std::vector<ast::VariableDeclarations> decls;
+    std::vector<ast::BlockStatementItem> items;
     while (true) {
         TRY(check_eos(ctx, ts));
         if (ts.token()->is_keyword_of(KeywordTokenKind::Let)) {
@@ -1019,24 +1019,17 @@ std::optional<std::unique_ptr<ast::BlockStatement>> parse_block_stmt(
             ast::Semicolon semicolon(ts.token()->span());
             ts.advance();
 
-            decls.emplace_back(let_kw, std::move(names), semicolon);
-        } else {
-            break;
-        }
-    }
-
-    std::vector<std::unique_ptr<ast::Statement>> stmts;
-    while (true) {
-        TRY(check_eos(ctx, ts));
-        if (ts.token()->is_punct_of(PunctTokenKind::RCurly)) {
+            items.emplace_back(
+                ast::VariableDeclarations(let_kw, std::move(names), semicolon));
+        } else if (ts.token()->is_punct_of(PunctTokenKind::RCurly)) {
             ast::RCurly rcurly(ts.token()->span());
             ts.advance();
             return std::make_unique<ast::BlockStatement>(
-                lcurly, std::move(decls), std::move(stmts), rcurly);
+                lcurly, std::move(items), rcurly);
         } else {
             auto stmt = parse_stmt(ctx, ts);
             if (!stmt) return std::nullopt;
-            stmts.emplace_back(std::move(*stmt));
+            items.emplace_back(std::move(*stmt));
         }
     }
 }
@@ -1262,5 +1255,4 @@ ParserResult parse_file(Context &ctx, const std::string &path) {
     }
     return res;
 }
-
 };  // namespace mini
