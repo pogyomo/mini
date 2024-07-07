@@ -107,25 +107,25 @@ bool check_keyword(Context &ctx, TokenStream &ts, KeywordTokenKind kind) {
 std::optional<std::unique_ptr<ast::Expression>> parse_expr(Context &ctx,
                                                            TokenStream &ts) {
     auto state = ts.state();
-    ctx.enable_suppress_report();
+    ctx.suppress_report();
 
     auto lhs = parse_unary_expr(ctx, ts);
     if (!lhs) {
         ts.set_state(state);
-        ctx.disable_suppress_report();
+        ctx.activate_report();
         return parse_logical_or_expr(ctx, ts);
     }
 
     if (!ts || !ts.token()->is_punct_of(PunctTokenKind::Assign)) {
         ts.set_state(state);
-        ctx.disable_suppress_report();
+        ctx.activate_report();
         return parse_logical_or_expr(ctx, ts);
     }
     ast::InfixExpression::Op op(ast::InfixExpression::Op::Kind::Assign,
                                 ts.token()->span());
     ts.advance();
 
-    ctx.disable_suppress_report();
+    ctx.activate_report();
     auto rhs = parse_expr(ctx, ts);
     if (!rhs) return std::nullopt;
 
