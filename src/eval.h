@@ -1,8 +1,8 @@
 #ifndef MINI_CODEGEN_EVAL_H_
 #define MINI_CODEGEN_EVAL_H_
 
-#include "../ast/expr.h"
-#include "../report.h"
+#include "ast/expr.h"
+#include "report.h"
 
 namespace mini {
 
