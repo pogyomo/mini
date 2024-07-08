@@ -74,6 +74,7 @@ static const std::map<std::string, KeywordTokenKind> keywords = {
     {"tsizeof", KeywordTokenKind::TSizeof},
     {"true", KeywordTokenKind::True},
     {"while", KeywordTokenKind::While},
+    {"void", KeywordTokenKind::Void},
     {"isize", KeywordTokenKind::ISize},
     {"int8", KeywordTokenKind::Int8},
     {"int16", KeywordTokenKind::Int16},

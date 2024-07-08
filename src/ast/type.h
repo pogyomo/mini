@@ -36,6 +36,7 @@ public:
 class BuiltinType : public Type {
 public:
     enum Kind {
+        Void,
         ISize,
         Int8,
         Int16,

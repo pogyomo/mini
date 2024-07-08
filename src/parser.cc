@@ -712,7 +712,12 @@ std::optional<std::unique_ptr<ast::Expression>> parse_primary_expr(
 std::optional<std::unique_ptr<ast::Type>> parse_type(Context &ctx,
                                                      TokenStream &ts) {
     TRY(check_eos(ctx, ts));
-    if (ts.token()->is_keyword_of(KeywordTokenKind::ISize)) {
+    if (ts.token()->is_keyword_of(KeywordTokenKind::Void)) {
+        auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::Void,
+                                                       ts.token()->span());
+        ts.advance();
+        return type;
+    } else if (ts.token()->is_keyword_of(KeywordTokenKind::ISize)) {
         auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::ISize,
                                                        ts.token()->span());
         ts.advance();

@@ -30,6 +30,7 @@ The mini programming language support a few types described below:
 
 | type    | description                     |
 | ------- | ------------------------------- |
+| void    | an empty, zero sized type       |
 | isize   | signed native size integer      |
 | int8    | signed 8-bit integer            |
 | int16   | signed 16-bit integer           |
@@ -74,10 +75,13 @@ The syntax of mini programming language is as follow:
 <enum-items> ::= <enum-item> [ "," [ <enum-items> ] ]
 <enum-item> ::= <identifier>
 
-<type> ::= "int8"
+<type> ::= "void"
+         | "isize"
+         | "int8"
          | "int16"
          | "int32"
          | "int64"
+         | "usize"
          | "uint8"
          | "uint16"
          | "uint32"

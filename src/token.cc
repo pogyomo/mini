@@ -112,6 +112,8 @@ std::string to_string(KeywordTokenKind kind) {
             return "false";
         case KeywordTokenKind::Bool:
             return "bool";
+        case KeywordTokenKind::Void:
+            return "void";
         case KeywordTokenKind::Int8:
             return "int8";
         case KeywordTokenKind::Int16:

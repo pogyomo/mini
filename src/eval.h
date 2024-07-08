@@ -1,5 +1,5 @@
-#ifndef MINI_CODEGEN_EVAL_H_
-#define MINI_CODEGEN_EVAL_H_
+#ifndef MINI_EVAL_H_
+#define MINI_EVAL_H_
 
 #include "ast/expr.h"
 #include "report.h"
@@ -9,7 +9,7 @@ namespace mini {
 class ConstEval : public ast::ExpressionVisitor {
 public:
     ConstEval(Context &ctx) : success_(false), value_(0), ctx_(ctx) {}
-    bool success() const { return success_; }
+    explicit operator bool() { return success_; }
     uint64_t value() const { return value_; }
     void visit(const ast::UnaryExpression &expr) override {
         ConstEval eval(ctx_);
@@ -124,4 +124,4 @@ private:
 
 };  // namespace mini
 
-#endif  // MINI_CODEGEN_EVAL_H_
+#endif  // MINI_EVAL_H_

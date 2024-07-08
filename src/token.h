@@ -63,6 +63,7 @@ enum class KeywordTokenKind {
     TSizeof,   // "tsizeof"
     True,      // "true"
     While,     // "while"
+    Void,      // "void"
     ISize,     // "isize"
     Int8,      // "int8"
     Int16,     // "int16"
