@@ -7,22 +7,11 @@ A minimal, but self-hostable programming language.
 The `main` function should contained on a executable program, and the program start from the function.
 
 ```
-function main() -> usize {
+function main() {
     int a = 10, b = 20;
     return a + b;
 }
 ```
-
-You can take a arguments and use it in usr program as follow:
-
-```
-function main(argc: int, argv: *(int)[]) -> usize {
-    if (argc < 2) return 0;
-    return argv[0][0];
-}
-```
-
-All program must uses either of above two signature.
 
 ## Types
 
