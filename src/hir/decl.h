@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "../span.h"
@@ -203,16 +204,43 @@ private:
     Span span_;
 };
 
+class VariableDeclarationName {
+public:
+    VariableDeclarationName(std::string &&value, Span span)
+        : value_(std::move(value)), span_(span) {}
+    inline const std::string &value() const { return value_; }
+    inline Span span() const { return span_; }
+
+private:
+    std::string value_;
+    Span span_;
+};
+
+class VariableDeclaration {
+public:
+    VariableDeclaration(const std::shared_ptr<Type> &type,
+                        VariableDeclarationName &&name)
+        : type_(type), name_(std::move(name)) {}
+    inline const std::shared_ptr<Type> &type() const { return type_; }
+    inline const VariableDeclarationName &name() const { return name_; }
+
+private:
+    std::shared_ptr<Type> type_;
+    VariableDeclarationName name_;
+};
+
 class FunctionDeclaration : public Declaration {
 public:
     FunctionDeclaration(FunctionDeclarationName &&name,
                         std::vector<FunctionDeclarationParam> &&params,
-                        const std::shared_ptr<Type> &ret, BlockStatement &&body,
-                        Span span)
+                        const std::shared_ptr<Type> &ret,
+                        std::vector<VariableDeclaration> &&decls,
+                        std::unique_ptr<Statement> &&body, Span span)
         : Declaration(span),
           name_(std::move(name)),
           params_(std::move(params)),
-          ret_(std::move(ret)),
+          ret_(ret),
+          decls_(std::move(decls)),
           body_(std::move(body)) {}
     inline void accept(DeclarationVisitor &visitor) const override {
         visitor.visit(*this);
@@ -222,12 +250,17 @@ public:
         return params_;
     }
     inline const std::shared_ptr<Type> &ret() const { return ret_; }
+    inline const std::vector<VariableDeclaration> &decls() const {
+        return decls_;
+    }
+    inline const std::unique_ptr<Statement> &body() const { return body_; }
 
 private:
     FunctionDeclarationName name_;
     std::vector<FunctionDeclarationParam> params_;
     std::shared_ptr<Type> ret_;
-    BlockStatement body_;
+    std::vector<VariableDeclaration> decls_;
+    std::unique_ptr<Statement> body_;
 };
 
 }  // namespace hir
