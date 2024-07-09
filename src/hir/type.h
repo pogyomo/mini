@@ -39,9 +39,6 @@ private:
 class BuiltinType : public Type {
 public:
     enum Kind {
-        // Special type
-        IntLiteral,
-
         Void,
         ISize,
         Int8,

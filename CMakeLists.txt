@@ -8,6 +8,7 @@ add_executable(${PROJECT_NAME})
 target_sources(${PROJECT_NAME} PRIVATE
     src/ast/stmt.cc
     src/ast/type.cc
+    src/hirgen/hirgen.cc
     src/lexer.cc
     src/main.cc
     src/parser.cc
