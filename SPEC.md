@@ -73,7 +73,7 @@ The syntax of mini programming language is as follow:
 <struct-item> ::= <identifier> ":" <type>
 <enum-declaration> ::= "enum" "{" <enum-items> "}"
 <enum-items> ::= <enum-item> [ "," [ <enum-items> ] ]
-<enum-item> ::= <identifier>
+<enum-item> ::= <identifier> [ "=" <constant-expression> ]
 
 <type> ::= "void"
          | "isize"

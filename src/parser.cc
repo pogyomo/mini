@@ -4,6 +4,7 @@
 #include <optional>
 #include <vector>
 
+#include "ast/decl.h"
 #include "ast/expr.h"
 #include "ast/node.h"
 #include "ast/stmt.h"
@@ -1213,9 +1214,22 @@ std::optional<std::unique_ptr<ast::EnumDeclaration>> parse_enum_decl(
     while (true) {
         TRY(check_eos(ctx, ts));
         if (ts.token()->is_ident()) {
-            std::string name = ts.token()->ident_value();
-            fields.emplace_back(std::move(name), ts.token()->span());
+            ast::EnumDeclarationFieldName name(
+                std::string(ts.token()->ident_value()), ts.token()->span());
             ts.advance();
+
+            std::optional<ast::EnumDeclarationFieldInit> init;
+            if (ts && ts.token()->is_punct_of(PunctTokenKind::Assign)) {
+                ast::Assign assign(ts.token()->span());
+                ts.advance();
+
+                auto value = parse_logical_or_expr(ctx, ts);
+                if (!value) return std::nullopt;
+
+                init.emplace(assign, std::move(*value));
+            }
+
+            fields.emplace_back(std::move(name), std::move(init));
 
             if (ts && ts.token()->is_punct_of(PunctTokenKind::Comma)) {
                 ts.advance();

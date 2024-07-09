@@ -1,9 +1,11 @@
 #ifndef MINI_AST_DECL_H_
 #define MINI_AST_DECL_H_
 
+#include <cstdint>
 #include <optional>
 #include <string>
 
+#include "expr.h"
 #include "node.h"
 #include "stmt.h"
 #include "type.h"
@@ -210,9 +212,9 @@ private:
     Span span_;
 };
 
-class EnumDeclarationField : public Node {
+class EnumDeclarationFieldName : public Node {
 public:
-    EnumDeclarationField(std::string&& name, Span span)
+    EnumDeclarationFieldName(std::string&& name, Span span)
         : name_(std::move(name)), span_(span) {}
     inline Span span() const override { return span_; }
     inline const std::string& name() const { return name_; }
@@ -220,6 +222,39 @@ public:
 private:
     std::string name_;
     Span span_;
+};
+
+class EnumDeclarationFieldInit : public Node {
+public:
+    EnumDeclarationFieldInit(Assign assign, std::unique_ptr<Expression>&& value)
+        : assign_(assign), value_(std::move(value)) {}
+    inline Span span() const override {
+        return assign_.span() + value_->span();
+    }
+    inline Assign assign() const { return assign_; }
+    inline const std::unique_ptr<Expression>& value() const { return value_; }
+
+private:
+    Assign assign_;
+    std::unique_ptr<Expression> value_;
+};
+
+class EnumDeclarationField : public Node {
+public:
+    EnumDeclarationField(EnumDeclarationFieldName&& name,
+                         std::optional<EnumDeclarationFieldInit>&& init)
+        : name_(std::move(name)), init_(std::move(init)) {}
+    inline Span span() const override {
+        return init_ ? name_.span() + init_->span() : name_.span();
+    }
+    inline const EnumDeclarationFieldName& name() const { return name_; }
+    inline const std::optional<EnumDeclarationFieldInit>& init() const {
+        return init_;
+    }
+
+private:
+    EnumDeclarationFieldName name_;
+    std::optional<EnumDeclarationFieldInit> init_;
 };
 
 class EnumDeclaration : public Declaration {
@@ -240,7 +275,7 @@ public:
     inline Enum enum_kw() const { return enum_kw_; }
     inline const EnumDeclarationName name() const { return name_; }
     inline LCurly lcurly() const { return lcurly_; }
-    inline const std::vector<EnumDeclarationField> fields() const {
+    inline const std::vector<EnumDeclarationField>& fields() const {
         return fields_;
     }
     inline RCurly rcurly() const { return rcurly_; }
