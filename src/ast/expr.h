@@ -215,7 +215,7 @@ public:
     inline Dot dot() const { return dot_; }
     inline const AccessExpressionField& field() const { return field_; }
 
-public:
+private:
     std::unique_ptr<Expression> expr_;
     Dot dot_;
     AccessExpressionField field_;
