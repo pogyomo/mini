@@ -17,9 +17,9 @@ HirgenResult hirgen_file(Context &ctx, const std::string &path) {
     auto decls = parse_file(ctx, path);
     if (!decls) return std::nullopt;
 
-    HirGenContext gen_ctx(ctx);
     std::vector<std::unique_ptr<hir::Declaration>> res;
     for (const auto &decl : decls.value()) {
+        HirGenContext gen_ctx(ctx);
         DeclHirGen gen(gen_ctx);
         decl->accept(gen);
         if (!gen) return std::nullopt;
