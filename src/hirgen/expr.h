@@ -43,12 +43,10 @@ public:
     }
     void visit(const ast::InfixExpression &expr) override {
         ExprHirGen lhs_gen(ctx_);
-        expr.lhs()->accept(lhs_gen);
-        if (!lhs_gen) return;
-
         ExprHirGen rhs_gen(ctx_);
+        expr.lhs()->accept(lhs_gen);
         expr.rhs()->accept(rhs_gen);
-        if (!rhs_gen) return;
+        if (!lhs_gen || !rhs_gen) return;
 
         hir::InfixExpression::Op::Kind kind;
         if (expr.op().kind() == ast::InfixExpression::Op::Add)
