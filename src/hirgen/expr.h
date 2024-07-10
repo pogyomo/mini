@@ -2,7 +2,6 @@
 #define MINI_HIRGEN_EXPR_H_
 
 #include <memory>
-#include <stdexcept>
 #include <string>
 
 #include "../ast/expr.h"

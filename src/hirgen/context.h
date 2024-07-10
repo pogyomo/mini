@@ -4,6 +4,7 @@
 #include <map>
 #include <memory>
 #include <stack>
+#include <stdexcept>
 #include <string>
 
 #include "../context.h"
@@ -14,16 +15,19 @@ namespace mini {
 class VariableTranslator {
 public:
     VariableTranslator()
-        : assoc_table_(), id_tracker_({0}), current_scope_id_(0) {}
-    bool translatable(const std::string &original) {
-        return assoc_table_->exists(original);
+        : assoc_table_(std::make_shared<SymbolAssocTable>()),
+          id_tracker_({0}),
+          current_scope_id_(0) {}
+    bool translatable(const std::string &name) {
+        return assoc_table_->exists(name);
     }
-    const std::string &translate(const std::string &original) {
-        if (!assoc_table_->exists(original)) {
-            auto assoc = fmt::format("{}_{}", original, id_tracker_.top());
-            assoc_table_->insert(std::string(original), std::move(assoc));
-        }
-        return assoc_table_->query(original);
+    const std::string &regvar(const std::string &name) {
+        auto assoc = fmt::format("{}_{}", name, id_tracker_.top());
+        assoc_table_->insert(std::string(name), std::move(assoc));
+        return assoc_table_->query(name);
+    }
+    const std::string &translate(const std::string &name) {
+        return assoc_table_->query(name);
     }
     void enter_scope() {
         assoc_table_ = std::make_shared<SymbolAssocTable>(assoc_table_);
@@ -47,7 +51,16 @@ private:
             return outer_;
         }
         const std::string &query(const std::string &name) {
-            return map_.at(name);
+            if (map_.find(name) != map_.end()) {
+                return map_.at(name);
+            } else {
+                if (!outer_) {
+                    throw std::out_of_range(
+                        fmt::format("{} doesn't exists", name));
+                } else {
+                    return outer_->query(name);
+                }
+            }
         }
         void insert(std::string &&symbol, std::string &&assoc) {
             map_.insert(std::make_pair(symbol, assoc));

@@ -108,7 +108,7 @@ public:
 
                     hir::VariableDeclarationName name(
                         std::string(
-                            ctx_.translator().translate(body.name().name())),
+                            ctx_.translator().regvar(body.name().name())),
                         body.name().span());
                     decls.emplace_back(gen.type(), std::move(name));
                 }
