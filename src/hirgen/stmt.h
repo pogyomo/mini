@@ -111,6 +111,25 @@ public:
                             ctx_.translator().regvar(body.name().name())),
                         body.name().span());
                     decls.emplace_back(gen.type(), std::move(name));
+
+                    if (body.init()) {
+                        ExprHirGen gen(ctx_);
+                        body.init()->expr()->accept(gen);
+                        if (!gen) return;
+
+                        auto lhs = std::make_unique<hir::VariableExpression>(
+                            std::string(body.name().name()),
+                            body.name().span());
+                        hir::InfixExpression::Op op(
+                            hir::InfixExpression::Op::Assign,
+                            body.init()->assign().span());
+                        auto expr = std::make_unique<hir::InfixExpression>(
+                            std::move(lhs), op, std::move(gen.expr()),
+                            body.span());
+                        stmts.emplace_back(
+                            std::make_unique<hir::ExpressionStatement>(
+                                std::move(expr), expr->span()));
+                    }
                 }
             }
         }
