@@ -1,14 +1,6 @@
 #include "hirgen.h"
 
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "../ast/decl.h"
-#include "../context.h"
-#include "../hir/decl.h"
-#include "../parser.h"
-#include "context.h"
+#include "../parser/parser.h"
 #include "decl.h"
 
 namespace mini {

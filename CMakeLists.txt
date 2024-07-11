@@ -13,16 +13,21 @@ target_sources(${PROJECT_NAME} PRIVATE
     src/hir/expr.cc
     src/hir/stmt.cc
     src/hir/type.cc
+    src/hirgen/context.cc
     src/hirgen/decl.cc
     src/hirgen/expr.cc
     src/hirgen/hirgen.cc
-    src/hirgen/context.cc
     src/hirgen/item.cc
     src/hirgen/stmt.cc
     src/hirgen/type.cc
     src/lexer.cc
     src/main.cc
-    src/parser.cc
+    src/parser/decl.cc
+    src/parser/expr.cc
+    src/parser/parser.cc
+    src/parser/stmt.cc
+    src/parser/type.cc
+    src/parser/utils.cc
     src/report.cc
     src/token.cc
 )
