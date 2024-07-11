@@ -487,7 +487,7 @@ std::optional<std::unique_ptr<ast::Expression>> ParsePrimaryExpr(
             ts.Advance();
 
             ast::EnumSelectExpressionSrc src(std::move(value1), span1);
-            ast::EnumSelectExpressionDst dst(std::move(value1), span1);
+            ast::EnumSelectExpressionDst dst(std::move(value2), span2);
             return std::make_unique<ast::EnumSelectExpression>(
                 std::move(dst), colon_colon, std::move(src));
         } else if (ts && ts.CurrToken()->IsPunctOf(PunctTokenKind::LCurly)) {
