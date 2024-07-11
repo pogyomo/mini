@@ -12,6 +12,23 @@
 
 namespace mini {
 
+class DeclVarReg : public ast::DeclarationVisitor {
+public:
+    DeclVarReg(HirGenContext &ctx) : ctx_(ctx) {}
+    void visit(const ast::FunctionDeclaration &decl) override {
+        ctx_.translator().regvar(decl.name().name());
+    }
+    void visit(const ast::StructDeclaration &decl) override {
+        ctx_.translator().regvar(decl.name().name());
+    }
+    void visit(const ast::EnumDeclaration &decl) override {
+        ctx_.translator().regvar(decl.name().name());
+    }
+
+private:
+    HirGenContext &ctx_;
+};
+
 class DeclHirGen : public ast::DeclarationVisitor {
 public:
     DeclHirGen(HirGenContext &ctx)
@@ -20,7 +37,7 @@ public:
     std::unique_ptr<hir::Declaration> &decl() { return decl_; }
     void visit(const ast::FunctionDeclaration &decl) override {
         hir::FunctionDeclarationName name(
-            std::string(ctx_.translator().regvar(decl.name().name())),
+            std::string(ctx_.translator().translate(decl.name().name())),
             decl.name().span());
 
         ctx_.translator().enter_scope();
@@ -119,7 +136,7 @@ public:
         }
 
         hir::StructDeclarationName name(
-            std::string(ctx_.translator().regvar(decl.name().name())),
+            std::string(ctx_.translator().translate(decl.name().name())),
             decl.name().span());
         decl_ = std::make_unique<hir::StructDeclaration>(
             std::move(name), std::move(fields), decl.span());
@@ -145,7 +162,7 @@ public:
         }
 
         hir::EnumDeclarationName name(
-            std::string(ctx_.translator().regvar(decl.name().name())),
+            std::string(ctx_.translator().translate(decl.name().name())),
             decl.name().span());
         decl_ = std::make_unique<hir::EnumDeclaration>(
             std::move(name), std::move(fields), decl.span());

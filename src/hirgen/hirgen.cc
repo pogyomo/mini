@@ -18,6 +18,12 @@ HirgenResult hirgen_file(Context &ctx, const std::string &path) {
     if (!decls) return std::nullopt;
 
     HirGenContext gen_ctx(ctx);
+
+    for (const auto &decl : decls.value()) {
+        DeclVarReg reg(gen_ctx);
+        decl->accept(reg);
+    }
+
     std::vector<std::unique_ptr<hir::Declaration>> res;
     for (const auto &decl : decls.value()) {
         DeclHirGen gen(gen_ctx);
