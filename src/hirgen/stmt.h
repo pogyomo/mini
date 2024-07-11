@@ -118,7 +118,8 @@ public:
                         if (!gen) return;
 
                         auto lhs = std::make_unique<hir::VariableExpression>(
-                            std::string(body.name().name()),
+                            std::string(ctx_.translator().translate(
+                                body.name().name())),
                             body.name().span());
                         hir::InfixExpression::Op op(
                             hir::InfixExpression::Op::Assign,
