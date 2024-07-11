@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.1)
 project(mini CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0")
+
+#  Uncomment it for gdb
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0")
 
 add_executable(${PROJECT_NAME})
 target_sources(${PROJECT_NAME} PRIVATE
@@ -34,3 +36,5 @@ target_sources(${PROJECT_NAME} PRIVATE
 
 add_subdirectory(fmt)
 target_link_libraries(${PROJECT_NAME} fmt::fmt)
+
+target_compile_options(${PROJECT_NAME} PUBLIC -O3 -Wall)
