@@ -7,6 +7,7 @@
 #include "../ast/decl.h"
 #include "../hir/decl.h"
 #include "context.h"
+#include "item.h"
 #include "stmt.h"
 #include "type.h"
 
@@ -65,53 +66,10 @@ public:
                                                      decl.span());
         }
 
-        // TODO:
-        // This code come from stmt.h
-        // Should I combine these to reduce code?
         std::vector<std::unique_ptr<hir::Statement>> stmts;
         std::vector<hir::VariableDeclaration> decls;
         for (const auto &item : decl.body()->items()) {
-            if (item.is_stmt()) {
-                StmtHirGen gen(ctx_);
-                item.stmt()->accept(gen);
-                if (!gen) return;
-
-                stmts.emplace_back(std::move(gen.stmt()));
-                decls.insert(decls.end(), gen.decls().begin(),
-                             gen.decls().end());
-            } else {
-                for (const auto &body : item.decl().bodies()) {
-                    TypeHirGen gen(ctx_);
-                    body.type()->accept(gen);
-                    if (!gen) return;
-
-                    hir::VariableDeclarationName name(
-                        std::string(
-                            ctx_.translator().regvar(body.name().name())),
-                        body.name().span());
-                    decls.emplace_back(gen.type(), std::move(name));
-
-                    if (body.init()) {
-                        ExprHirGen gen(ctx_);
-                        body.init()->expr()->accept(gen);
-                        if (!gen) return;
-
-                        auto lhs = std::make_unique<hir::VariableExpression>(
-                            std::string(ctx_.translator().translate(
-                                body.name().name())),
-                            body.name().span());
-                        hir::InfixExpression::Op op(
-                            hir::InfixExpression::Op::Assign,
-                            body.init()->assign().span());
-                        auto expr = std::make_unique<hir::InfixExpression>(
-                            std::move(lhs), op, std::move(gen.expr()),
-                            body.span());
-                        stmts.emplace_back(
-                            std::make_unique<hir::ExpressionStatement>(
-                                std::move(expr), expr->span()));
-                    }
-                }
-            }
+            if (!hirgen_block_item(ctx_, item, stmts, decls)) return;
         }
 
         ctx_.translator().leave_scope();
