@@ -8,7 +8,7 @@
 namespace mini {
 
 template <typename... Args>
-void fatal_error(const std::string &fmt, Args... args) {
+[[noreturn]] void fatal_error(const std::string &fmt, Args... args) {
     fmt::print(stderr, "\e[31mfatal error: \e[0m");
     fmt::print(stderr, fmt, args...);
     fmt::println(stderr, "");

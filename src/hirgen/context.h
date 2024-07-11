@@ -27,7 +27,10 @@ public:
         return assoc_table_->query(name);
     }
     const std::string &translate(const std::string &name) {
-        return assoc_table_->query(name);
+        if (translatable(name))
+            return assoc_table_->query(name);
+        else
+            fatal_error("{} doesn't exists", name);
     }
     void enter_scope() {
         assoc_table_ = std::make_shared<SymbolAssocTable>(assoc_table_);
