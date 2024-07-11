@@ -37,4 +37,4 @@ target_sources(${PROJECT_NAME} PRIVATE
 add_subdirectory(fmt)
 target_link_libraries(${PROJECT_NAME} fmt::fmt)
 
-target_compile_options(${PROJECT_NAME} PUBLIC -O3 -Wall)
+target_compile_options(${PROJECT_NAME} PUBLIC -O3 -Wall -Wextra)
