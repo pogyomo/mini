@@ -148,7 +148,7 @@ public:
         ctx.printer().print(") ");
         then_body_->print(ctx);
         if (else_body_) {
-            ctx.printer().print(" ");
+            ctx.printer().print(" else ");
             else_body_.value()->print(ctx);
         }
     }
