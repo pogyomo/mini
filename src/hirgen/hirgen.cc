@@ -13,7 +13,7 @@
 
 namespace mini {
 
-HirgenResult HirgenFile(Context &ctx, const std::string &path) {
+HirGenResult HirGenFile(Context &ctx, const std::string &path) {
     auto decls = ParseFile(ctx, path);
     if (!decls) return std::nullopt;
 

@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
     Arguments args(argc, argv);
     if (args.emit_hir()) {
         mini::Context ctx;
-        auto decls = mini::HirgenFile(ctx, args.input());
+        auto decls = mini::HirGenFile(ctx, args.input());
         if (!decls) std::exit(EXIT_FAILURE);
         if (args.output()) {
             std::ofstream ofs(args.output().value());
