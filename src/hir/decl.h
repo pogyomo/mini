@@ -278,7 +278,7 @@ public:
                         std::vector<FunctionDeclarationParam> &&params,
                         const std::shared_ptr<Type> &ret,
                         std::vector<VariableDeclaration> &&decls,
-                        std::unique_ptr<Statement> &&body, Span span)
+                        BlockStatement &&body, Span span)
         : Declaration(span),
           name_(std::move(name)),
           params_(std::move(params)),
@@ -318,7 +318,7 @@ public:
         } else {
             ctx.printer().print(") {} ");
         }
-        body_->print(ctx);
+        body_.print(ctx);
     }
     inline const FunctionDeclarationName &name() const { return name_; }
     inline const std::vector<FunctionDeclarationParam> &params() const {
@@ -328,14 +328,14 @@ public:
     inline const std::vector<VariableDeclaration> &decls() const {
         return decls_;
     }
-    inline const std::unique_ptr<Statement> &body() const { return body_; }
+    inline const BlockStatement &body() const { return body_; }
 
 private:
     FunctionDeclarationName name_;
     std::vector<FunctionDeclarationParam> params_;
     std::shared_ptr<Type> ret_;
     std::vector<VariableDeclaration> decls_;
-    std::unique_ptr<Statement> body_;
+    BlockStatement body_;
 };
 
 }  // namespace hir

@@ -8,7 +8,6 @@
 #include "../hir/decl.h"
 #include "context.h"
 #include "item.h"
-#include "stmt.h"
 #include "type.h"
 
 namespace mini {
@@ -74,8 +73,7 @@ public:
 
         ctx_.translator().leave_scope();
 
-        auto body = std::make_unique<hir::BlockStatement>(std::move(stmts),
-                                                          decl.body()->span());
+        hir::BlockStatement body(std::move(stmts), decl.body()->span());
         decl_ = std::make_unique<hir::FunctionDeclaration>(
             std::move(name), std::move(params), ret, std::move(decls),
             std::move(body), decl.span());
