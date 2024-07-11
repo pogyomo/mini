@@ -70,6 +70,12 @@ public:
         success_ = true;
     }
     void visit(const ast::NameType &type) override {
+        if (!ctx_.translator().translatable(type.name())) {
+            ReportInfo info(type.span(), "no such name exists", "");
+            report(ctx_.ctx(), ReportLevel::Error, info);
+            return;
+        }
+
         type_ = std::make_shared<hir::NameType>(
             std::string(ctx_.translator().translate(type.name())), type.span());
         success_ = true;

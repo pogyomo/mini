@@ -1,7 +1,6 @@
 #ifndef MINI_HIRGEN_EXPR_H_
 #define MINI_HIRGEN_EXPR_H_
 
-#include <iostream>
 #include <memory>
 #include <string>
 
@@ -181,7 +180,7 @@ public:
     }
     void visit(const ast::VariableExpression &expr) override {
         if (!ctx_.translator().translatable(expr.value())) {
-            ReportInfo info(expr.span(), "no such variable exists", "");
+            ReportInfo info(expr.span(), "no such name exists", "");
             report(ctx_.ctx(), ReportLevel::Error, info);
             return;
         }
