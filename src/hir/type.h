@@ -6,7 +6,6 @@
 #include <optional>
 #include <string>
 
-#include "../panic.h"
 #include "../span.h"
 #include "fmt/format.h"
 #include "printable.h"
@@ -23,16 +22,16 @@ class NameType;
 class TypeVisitor {
 public:
     virtual ~TypeVisitor() {}
-    virtual void visit(const BuiltinType &type) = 0;
-    virtual void visit(const PointerType &type) = 0;
-    virtual void visit(const ArrayType &type) = 0;
-    virtual void visit(const NameType &type) = 0;
+    virtual void Visit(const BuiltinType &type) = 0;
+    virtual void Visit(const PointerType &type) = 0;
+    virtual void Visit(const ArrayType &type) = 0;
+    virtual void Visit(const NameType &type) = 0;
 };
 
 class Type : public Printable {
 public:
     Type(Span span) : span_(span) {}
-    virtual void accept(TypeVisitor &visitor) const = 0;
+    virtual void Accept(TypeVisitor &visitor) const = 0;
     inline Span span() const { return span_; }
 
 private:
@@ -57,10 +56,10 @@ public:
         Bool,
     };
     BuiltinType(Kind kind, Span span) : Type(span), kind_(kind) {}
-    inline void accept(TypeVisitor &visitor) const override {
-        visitor.visit(*this);
+    inline void Accept(TypeVisitor &visitor) const override {
+        visitor.Visit(*this);
     }
-    void print(PrintableContext &ctx) const override;
+    void Print(PrintableContext &ctx) const override;
     inline Kind kind() const { return kind_; }
 
 private:
@@ -71,12 +70,12 @@ class PointerType : public Type {
 public:
     PointerType(const std::shared_ptr<Type> &of, Span span)
         : Type(span), of_(of) {}
-    inline void accept(TypeVisitor &visitor) const override {
-        visitor.visit(*this);
+    inline void Accept(TypeVisitor &visitor) const override {
+        visitor.Visit(*this);
     }
-    inline void print(PrintableContext &ctx) const override {
-        ctx.printer().print("*");
-        of_->print(ctx);
+    inline void Print(PrintableContext &ctx) const override {
+        ctx.printer().Print("*");
+        of_->Print(ctx);
     }
     const std::shared_ptr<Type> &of() const { return of_; }
 
@@ -89,10 +88,10 @@ public:
     ArrayType(const std::shared_ptr<Type> &of, std::optional<uint64_t> size,
               Span span)
         : Type(span), of_(of), size_(size) {}
-    inline void accept(TypeVisitor &visitor) const override {
-        visitor.visit(*this);
+    inline void Accept(TypeVisitor &visitor) const override {
+        visitor.Visit(*this);
     }
-    void print(PrintableContext &ctx) const override;
+    void Print(PrintableContext &ctx) const override;
     const std::shared_ptr<Type> &of() const { return of_; }
 
 private:
@@ -104,11 +103,11 @@ class NameType : public Type {
 public:
     NameType(std::string &&value, Span span)
         : Type(span), value_(std::move(value)) {}
-    inline void accept(TypeVisitor &visitor) const override {
-        visitor.visit(*this);
+    inline void Accept(TypeVisitor &visitor) const override {
+        visitor.Visit(*this);
     }
-    inline void print(PrintableContext &ctx) const override {
-        ctx.printer().print(fmt::format("{}", value_));
+    inline void Print(PrintableContext &ctx) const override {
+        ctx.printer().Print(fmt::format("{}", value_));
     }
     const std::string &value() const { return value_; }
 

@@ -12,22 +12,22 @@ public:
     ExprHirGen(HirGenContext &ctx) : success_(false), ctx_(ctx) {}
     explicit operator bool() const { return success_; }
     std::unique_ptr<hir::Expression> &expr() { return expr_; }
-    void visit(const ast::UnaryExpression &expr) override;
-    void visit(const ast::InfixExpression &expr) override;
-    void visit(const ast::IndexExpression &expr) override;
-    void visit(const ast::CallExpression &expr) override;
-    void visit(const ast::AccessExpression &expr) override;
-    void visit(const ast::CastExpression &expr) override;
-    void visit(const ast::ESizeofExpression &expr) override;
-    void visit(const ast::TSizeofExpression &expr) override;
-    void visit(const ast::EnumSelectExpression &expr) override;
-    void visit(const ast::VariableExpression &expr) override;
-    void visit(const ast::IntegerExpression &expr) override;
-    void visit(const ast::StringExpression &expr) override;
-    void visit(const ast::CharExpression &expr) override;
-    void visit(const ast::BoolExpression &expr) override;
-    void visit(const ast::StructExpression &expr) override;
-    void visit(const ast::ArrayExpression &expr) override;
+    void Visit(const ast::UnaryExpression &expr) override;
+    void Visit(const ast::InfixExpression &expr) override;
+    void Visit(const ast::IndexExpression &expr) override;
+    void Visit(const ast::CallExpression &expr) override;
+    void Visit(const ast::AccessExpression &expr) override;
+    void Visit(const ast::CastExpression &expr) override;
+    void Visit(const ast::ESizeofExpression &expr) override;
+    void Visit(const ast::TSizeofExpression &expr) override;
+    void Visit(const ast::EnumSelectExpression &expr) override;
+    void Visit(const ast::VariableExpression &expr) override;
+    void Visit(const ast::IntegerExpression &expr) override;
+    void Visit(const ast::StringExpression &expr) override;
+    void Visit(const ast::CharExpression &expr) override;
+    void Visit(const ast::BoolExpression &expr) override;
+    void Visit(const ast::StructExpression &expr) override;
+    void Visit(const ast::ArrayExpression &expr) override;
 
 private:
     bool success_;

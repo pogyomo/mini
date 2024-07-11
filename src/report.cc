@@ -30,12 +30,12 @@ static int digits(int n) {
     return res;
 }
 
-void report(Context &ctx, ReportLevel level, const ReportInfo &info) {
+void Report(Context &ctx, ReportLevel level, const ReportInfo &info) {
     if (!ctx.should_report()) {
         return;
     }
 
-    auto entry = ctx.input_cache().fetch(info.span().id());
+    auto entry = ctx.input_cache().Fetch(info.span().id());
     auto start = info.span().start();
     auto end = info.span().end();
 

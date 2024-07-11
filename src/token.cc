@@ -2,7 +2,7 @@
 
 namespace mini {
 
-std::string to_string(PunctTokenKind kind) {
+std::string ToString(PunctTokenKind kind) {
     switch (kind) {
         case PunctTokenKind::Plus:
             return "+";
@@ -75,7 +75,7 @@ std::string to_string(PunctTokenKind kind) {
     }
 }
 
-std::string to_string(KeywordTokenKind kind) {
+std::string ToString(KeywordTokenKind kind) {
     switch (kind) {
         case KeywordTokenKind::As:
             return "as";

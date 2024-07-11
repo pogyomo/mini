@@ -1,1 +1,0 @@
-- [ ] Rename function names according to google style guide

@@ -5,9 +5,9 @@
 
 namespace mini {
 
-void ExprHirGen::visit(const ast::UnaryExpression &expr) {
+void ExprHirGen::Visit(const ast::UnaryExpression &expr) {
     ExprHirGen expr_gen(ctx_);
-    expr.expr()->accept(expr_gen);
+    expr.expr()->Accept(expr_gen);
     if (!expr_gen) return;
 
     hir::UnaryExpression::Op::Kind kind;
@@ -22,7 +22,7 @@ void ExprHirGen::visit(const ast::UnaryExpression &expr) {
     else if (expr.op().kind() == ast::UnaryExpression::Op::Neg)
         kind = hir::UnaryExpression::Op::Neg;
     else
-        fatal_error("unreachable");
+        FatalError("unreachable");
 
     hir::UnaryExpression::Op op(kind, expr.op().span());
     expr_ = std::make_unique<hir::UnaryExpression>(
@@ -30,11 +30,11 @@ void ExprHirGen::visit(const ast::UnaryExpression &expr) {
     success_ = true;
 }
 
-void ExprHirGen::visit(const ast::InfixExpression &expr) {
+void ExprHirGen::Visit(const ast::InfixExpression &expr) {
     ExprHirGen lhs_gen(ctx_);
     ExprHirGen rhs_gen(ctx_);
-    expr.lhs()->accept(lhs_gen);
-    expr.rhs()->accept(rhs_gen);
+    expr.lhs()->Accept(lhs_gen);
+    expr.rhs()->Accept(rhs_gen);
     if (!lhs_gen || !rhs_gen) return;
 
     hir::InfixExpression::Op::Kind kind;
@@ -77,7 +77,7 @@ void ExprHirGen::visit(const ast::InfixExpression &expr) {
     else if (expr.op().kind() == ast::InfixExpression::Op::RShift)
         kind = hir::InfixExpression::Op::RShift;
     else
-        fatal_error("unreachable");
+        FatalError("unreachable");
 
     hir::InfixExpression::Op op(kind, expr.op().span());
     expr_ = std::make_unique<hir::InfixExpression>(
@@ -85,28 +85,28 @@ void ExprHirGen::visit(const ast::InfixExpression &expr) {
     success_ = true;
 }
 
-void ExprHirGen::visit(const ast::IndexExpression &expr) {
+void ExprHirGen::Visit(const ast::IndexExpression &expr) {
     ExprHirGen expr_gen(ctx_);
-    expr.expr()->accept(expr_gen);
+    expr.expr()->Accept(expr_gen);
     if (!expr_gen) return;
 
     ExprHirGen index_gen(ctx_);
-    expr.index()->accept(index_gen);
+    expr.index()->Accept(index_gen);
     if (!index_gen) return;
 
     expr_ = std::make_unique<hir::IndexExpression>(
         std::move(expr_gen.expr_), std::move(index_gen.expr_), expr.span());
     success_ = true;
 }
-void ExprHirGen::visit(const ast::CallExpression &expr) {
+void ExprHirGen::Visit(const ast::CallExpression &expr) {
     ExprHirGen func_gen(ctx_);
-    expr.func()->accept(func_gen);
+    expr.func()->Accept(func_gen);
     if (!func_gen) return;
 
     std::vector<std::unique_ptr<hir::Expression>> args;
     for (const auto &arg : expr.args()) {
         ExprHirGen gen(ctx_);
-        arg->accept(gen);
+        arg->Accept(gen);
         if (!gen) return;
 
         args.emplace_back(std::move(gen.expr_));
@@ -117,9 +117,9 @@ void ExprHirGen::visit(const ast::CallExpression &expr) {
     success_ = true;
 }
 
-void ExprHirGen::visit(const ast::AccessExpression &expr) {
+void ExprHirGen::Visit(const ast::AccessExpression &expr) {
     ExprHirGen gen(ctx_);
-    expr.expr()->accept(gen);
+    expr.expr()->Accept(gen);
     if (!gen) return;
 
     hir::AccessExpressionField field(std::string(expr.field().name()),
@@ -129,13 +129,13 @@ void ExprHirGen::visit(const ast::AccessExpression &expr) {
     success_ = true;
 }
 
-void ExprHirGen::visit(const ast::CastExpression &expr) {
+void ExprHirGen::Visit(const ast::CastExpression &expr) {
     ExprHirGen expr_gen(ctx_);
-    expr.expr()->accept(expr_gen);
+    expr.expr()->Accept(expr_gen);
     if (!expr_gen) return;
 
     TypeHirGen type_gen(ctx_);
-    expr.type()->accept(type_gen);
+    expr.type()->Accept(type_gen);
     if (!type_gen) return;
 
     expr_ = std::make_unique<hir::CastExpression>(
@@ -143,9 +143,9 @@ void ExprHirGen::visit(const ast::CastExpression &expr) {
     success_ = true;
 }
 
-void ExprHirGen::visit(const ast::ESizeofExpression &expr) {
+void ExprHirGen::Visit(const ast::ESizeofExpression &expr) {
     ExprHirGen gen(ctx_);
-    expr.expr()->accept(gen);
+    expr.expr()->Accept(gen);
     if (!gen) return;
 
     expr_ = std::make_unique<hir::ESizeofExpression>(std::move(gen.expr_),
@@ -153,9 +153,9 @@ void ExprHirGen::visit(const ast::ESizeofExpression &expr) {
     success_ = true;
 }
 
-void ExprHirGen::visit(const ast::TSizeofExpression &expr) {
+void ExprHirGen::Visit(const ast::TSizeofExpression &expr) {
     TypeHirGen gen(ctx_);
-    expr.type()->accept(gen);
+    expr.type()->Accept(gen);
     if (!gen) return;
 
     expr_ = std::make_unique<hir::TSizeofExpression>(std::move(gen.type()),
@@ -163,7 +163,7 @@ void ExprHirGen::visit(const ast::TSizeofExpression &expr) {
     success_ = true;
 }
 
-void ExprHirGen::visit(const ast::EnumSelectExpression &expr) {
+void ExprHirGen::Visit(const ast::EnumSelectExpression &expr) {
     hir::EnumSelectExpressionSrc src(std::string(expr.src().name()),
                                      expr.src().span());
     hir::EnumSelectExpressionDst dst(std::string(expr.dst().name()),
@@ -174,45 +174,45 @@ void ExprHirGen::visit(const ast::EnumSelectExpression &expr) {
     success_ = true;
 }
 
-void ExprHirGen::visit(const ast::VariableExpression &expr) {
-    if (!ctx_.translator().translatable(expr.value())) {
+void ExprHirGen::Visit(const ast::VariableExpression &expr) {
+    if (!ctx_.translator().Translatable(expr.value())) {
         ReportInfo info(expr.span(), "no such name exists", "");
-        report(ctx_.ctx(), ReportLevel::Error, info);
+        Report(ctx_.ctx(), ReportLevel::Error, info);
         return;
     }
 
-    std::string translated = ctx_.translator().translate(expr.value());
+    std::string translated = ctx_.translator().Translate(expr.value());
     expr_ = std::make_unique<hir::VariableExpression>(std::move(translated),
                                                       expr.span());
     success_ = true;
 }
 
-void ExprHirGen::visit(const ast::IntegerExpression &expr) {
+void ExprHirGen::Visit(const ast::IntegerExpression &expr) {
     expr_ = std::make_unique<hir::IntegerExpression>(expr.value(), expr.span());
     success_ = true;
 }
 
-void ExprHirGen::visit(const ast::StringExpression &expr) {
+void ExprHirGen::Visit(const ast::StringExpression &expr) {
     expr_ = std::make_unique<hir::StringExpression>(std::string(expr.value()),
                                                     expr.span());
     success_ = true;
 }
 
-void ExprHirGen::visit(const ast::CharExpression &expr) {
+void ExprHirGen::Visit(const ast::CharExpression &expr) {
     expr_ = std::make_unique<hir::CharExpression>(expr.value(), expr.span());
     success_ = true;
 }
 
-void ExprHirGen::visit(const ast::BoolExpression &expr) {
+void ExprHirGen::Visit(const ast::BoolExpression &expr) {
     expr_ = std::make_unique<hir::BoolExpression>(expr.value(), expr.span());
     success_ = true;
 }
 
-void ExprHirGen::visit(const ast::StructExpression &expr) {
+void ExprHirGen::Visit(const ast::StructExpression &expr) {
     std::vector<hir::StructExpressionInit> inits;
     for (const auto &init : expr.inits()) {
         ExprHirGen gen(ctx_);
-        init.value()->accept(gen);
+        init.value()->Accept(gen);
         if (!gen) return;
 
         hir::StructExpressionInitName name(std::string(init.name().name()),
@@ -227,11 +227,11 @@ void ExprHirGen::visit(const ast::StructExpression &expr) {
     success_ = true;
 }
 
-void ExprHirGen::visit(const ast::ArrayExpression &expr) {
+void ExprHirGen::Visit(const ast::ArrayExpression &expr) {
     std::vector<std::unique_ptr<hir::Expression>> inits;
     for (const auto &init : expr.inits()) {
         ExprHirGen gen(ctx_);
-        init->accept(gen);
+        init->Accept(gen);
         if (!gen) return;
 
         inits.emplace_back(std::move(gen.expr_));

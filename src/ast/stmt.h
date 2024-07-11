@@ -26,19 +26,19 @@ class BlockStatement;
 class StatementVisitor {
 public:
     virtual ~StatementVisitor() {}
-    virtual void visit(const ExpressionStatement& stmt) = 0;
-    virtual void visit(const ReturnStatement& stmt) = 0;
-    virtual void visit(const BreakStatement& stmt) = 0;
-    virtual void visit(const ContinueStatement& stmt) = 0;
-    virtual void visit(const WhileStatement& stmt) = 0;
-    virtual void visit(const IfStatement& stmt) = 0;
-    virtual void visit(const BlockStatement& stmt) = 0;
+    virtual void Visit(const ExpressionStatement& stmt) = 0;
+    virtual void Visit(const ReturnStatement& stmt) = 0;
+    virtual void Visit(const BreakStatement& stmt) = 0;
+    virtual void Visit(const ContinueStatement& stmt) = 0;
+    virtual void Visit(const WhileStatement& stmt) = 0;
+    virtual void Visit(const IfStatement& stmt) = 0;
+    virtual void Visit(const BlockStatement& stmt) = 0;
 };
 
 class Statement : public Node {
 public:
     virtual ~Statement() {}
-    virtual void accept(StatementVisitor& visitor) const = 0;
+    virtual void Accept(StatementVisitor& visitor) const = 0;
 };
 
 class ExpressionStatement : public Statement {
@@ -46,8 +46,8 @@ public:
     ExpressionStatement(std::unique_ptr<Expression>&& expr,
                         Semicolon semicolon);
     ~ExpressionStatement();
-    inline void accept(StatementVisitor& visitor) const override {
-        visitor.visit(*this);
+    inline void Accept(StatementVisitor& visitor) const override {
+        visitor.Visit(*this);
     }
     Span span() const override;
     inline const std::unique_ptr<Expression>& expr() const { return expr_; }
@@ -64,8 +64,8 @@ public:
                     std::optional<std::unique_ptr<Expression>>&& expr,
                     Semicolon semicolon);
     ~ReturnStatement();
-    inline void accept(StatementVisitor& visitor) const override {
-        visitor.visit(*this);
+    inline void Accept(StatementVisitor& visitor) const override {
+        visitor.Visit(*this);
     }
     inline Span span() const override {
         return return_kw_.span() + semicolon_.span();
@@ -86,8 +86,8 @@ class BreakStatement : public Statement {
 public:
     BreakStatement(Break break_kw, Semicolon semicolon)
         : break_kw_(break_kw), semicolon_(semicolon) {}
-    inline void accept(StatementVisitor& visitor) const override {
-        visitor.visit(*this);
+    inline void Accept(StatementVisitor& visitor) const override {
+        visitor.Visit(*this);
     }
     inline Span span() const override {
         return break_kw_.span() + semicolon_.span();
@@ -104,8 +104,8 @@ class ContinueStatement : public Statement {
 public:
     ContinueStatement(Continue continue_kw, Semicolon semicolon)
         : continue_kw_(continue_kw), semicolon_(semicolon) {}
-    inline void accept(StatementVisitor& visitor) const override {
-        visitor.visit(*this);
+    inline void Accept(StatementVisitor& visitor) const override {
+        visitor.Visit(*this);
     }
     inline Span span() const override {
         return continue_kw_.span() + semicolon_.span();
@@ -124,8 +124,8 @@ public:
                    std::unique_ptr<Expression>&& cond, RParen rparen,
                    std::unique_ptr<Statement>&& body);
     ~WhileStatement();
-    inline void accept(StatementVisitor& visitor) const override {
-        visitor.visit(*this);
+    inline void Accept(StatementVisitor& visitor) const override {
+        visitor.Visit(*this);
     }
     inline Span span() const override {
         return while_kw_.span() + body_->span();
@@ -165,8 +165,8 @@ public:
                 RParen rparen, std::unique_ptr<Statement>&& body,
                 std::optional<IfStatementElseClause>&& else_clause);
     ~IfStatement();
-    inline void accept(StatementVisitor& visitor) const override {
-        visitor.visit(*this);
+    inline void Accept(StatementVisitor& visitor) const override {
+        visitor.Visit(*this);
     }
     inline Span span() const override {
         return else_clause_ ? if_kw_.span() + else_clause_->span()
@@ -268,8 +268,8 @@ public:
             return std::get<1>(item_)->span();
         }
     }
-    bool is_decl() const { return item_.index() == 0; }
-    bool is_stmt() const { return item_.index() == 1; }
+    bool IsDecl() const { return item_.index() == 0; }
+    bool IsStmt() const { return item_.index() == 1; }
     const VariableDeclarations& decl() const { return std::get<0>(item_); }
     const std::unique_ptr<Statement>& stmt() const {
         return std::get<1>(item_);
@@ -284,8 +284,8 @@ public:
     BlockStatement(LCurly lcurly, std::vector<BlockStatementItem>&& items,
                    RCurly rcurly)
         : lcurly_(lcurly), items_(std::move(items)), rcurly_(rcurly) {}
-    inline void accept(StatementVisitor& visitor) const override {
-        visitor.visit(*this);
+    inline void Accept(StatementVisitor& visitor) const override {
+        visitor.Visit(*this);
     }
     inline Span span() const override {
         return lcurly_.span() + rcurly_.span();

@@ -5,7 +5,7 @@
 
 namespace mini {
 
-void TypeHirGen::visit(const ast::BuiltinType &type) {
+void TypeHirGen::Visit(const ast::BuiltinType &type) {
     hir::BuiltinType::Kind kind;
     if (type.kind() == ast::BuiltinType::USize)
         kind = hir::BuiltinType::USize;
@@ -32,29 +32,29 @@ void TypeHirGen::visit(const ast::BuiltinType &type) {
     else if (type.kind() == ast::BuiltinType::Bool)
         kind = hir::BuiltinType::Bool;
     else
-        fatal_error("unreachable");
+        FatalError("unreachable");
     type_ = std::make_shared<hir::BuiltinType>(kind, type.span());
     success_ = true;
 }
 
-void TypeHirGen::visit(const ast::PointerType &type) {
+void TypeHirGen::Visit(const ast::PointerType &type) {
     TypeHirGen gen(ctx_);
-    type.of()->accept(gen);
+    type.of()->Accept(gen);
     if (!gen) return;
 
     type_ = std::make_shared<hir::PointerType>(gen.type_, type.span());
     success_ = true;
 }
 
-void TypeHirGen::visit(const ast::ArrayType &type) {
+void TypeHirGen::Visit(const ast::ArrayType &type) {
     TypeHirGen gen(ctx_);
-    type.of()->accept(gen);
+    type.of()->Accept(gen);
     if (!gen) return;
 
     std::optional<uint64_t> size;
     if (type.size()) {
         ConstEval eval(ctx_.ctx());
-        type.size().value()->accept(eval);
+        type.size().value()->Accept(eval);
         if (!eval) return;
         size = eval.value();
     }
@@ -63,15 +63,15 @@ void TypeHirGen::visit(const ast::ArrayType &type) {
     success_ = true;
 }
 
-void TypeHirGen::visit(const ast::NameType &type) {
-    if (!ctx_.translator().translatable(type.name())) {
+void TypeHirGen::Visit(const ast::NameType &type) {
+    if (!ctx_.translator().Translatable(type.name())) {
         ReportInfo info(type.span(), "no such name exists", "");
-        report(ctx_.ctx(), ReportLevel::Error, info);
+        Report(ctx_.ctx(), ReportLevel::Error, info);
         return;
     }
 
     type_ = std::make_shared<hir::NameType>(
-        std::string(ctx_.translator().translate(type.name())), type.span());
+        std::string(ctx_.translator().Translate(type.name())), type.span());
     success_ = true;
 }
 

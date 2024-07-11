@@ -13,21 +13,21 @@
 
 namespace mini {
 
-HirgenResult hirgen_file(Context &ctx, const std::string &path) {
-    auto decls = parse_file(ctx, path);
+HirgenResult HirgenFile(Context &ctx, const std::string &path) {
+    auto decls = ParseFile(ctx, path);
     if (!decls) return std::nullopt;
 
     HirGenContext gen_ctx(ctx);
 
     for (const auto &decl : decls.value()) {
         DeclVarReg reg(gen_ctx);
-        decl->accept(reg);
+        decl->Accept(reg);
     }
 
     std::vector<std::unique_ptr<hir::Declaration>> res;
     for (const auto &decl : decls.value()) {
         DeclHirGen gen(gen_ctx);
-        decl->accept(gen);
+        decl->Accept(gen);
         if (!gen) return std::nullopt;
         res.emplace_back(std::move(gen.decl()));
     }

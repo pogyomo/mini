@@ -6,33 +6,33 @@
 
 namespace mini {
 
-void DeclVarReg::visit(const ast::FunctionDeclaration &decl) {
-    ctx_.translator().regvar(decl.name().name());
+void DeclVarReg::Visit(const ast::FunctionDeclaration &decl) {
+    ctx_.translator().RegVar(decl.name().name());
 }
 
-void DeclVarReg::visit(const ast::StructDeclaration &decl) {
-    ctx_.translator().regvar(decl.name().name());
+void DeclVarReg::Visit(const ast::StructDeclaration &decl) {
+    ctx_.translator().RegVar(decl.name().name());
 }
 
-void DeclVarReg::visit(const ast::EnumDeclaration &decl) {
-    ctx_.translator().regvar(decl.name().name());
+void DeclVarReg::Visit(const ast::EnumDeclaration &decl) {
+    ctx_.translator().RegVar(decl.name().name());
 }
 
-void DeclHirGen::visit(const ast::FunctionDeclaration &decl) {
+void DeclHirGen::Visit(const ast::FunctionDeclaration &decl) {
     hir::FunctionDeclarationName name(
-        std::string(ctx_.translator().translate(decl.name().name())),
+        std::string(ctx_.translator().Translate(decl.name().name())),
         decl.name().span());
 
-    ctx_.translator().enter_scope();
+    ctx_.translator().EnterScope();
 
     std::vector<hir::FunctionDeclarationParam> params;
     for (const auto &param : decl.params()) {
         TypeHirGen gen(ctx_);
-        param.type()->accept(gen);
+        param.type()->Accept(gen);
         if (!gen) return;
 
         hir::FunctionDeclarationParamName name(
-            std::string(ctx_.translator().regvar(param.name().name())),
+            std::string(ctx_.translator().RegVar(param.name().name())),
             param.name().span());
         params.emplace_back(gen.type(), std::move(name), param.span());
     }
@@ -40,7 +40,7 @@ void DeclHirGen::visit(const ast::FunctionDeclaration &decl) {
     std::shared_ptr<hir::Type> ret;
     if (decl.ret()) {
         TypeHirGen gen(ctx_);
-        decl.ret()->type()->accept(gen);
+        decl.ret()->type()->Accept(gen);
         if (!gen) return;
         ret = gen.type();
     } else {
@@ -54,7 +54,7 @@ void DeclHirGen::visit(const ast::FunctionDeclaration &decl) {
         if (!hirgen_block_item(ctx_, item, stmts, decls)) return;
     }
 
-    ctx_.translator().leave_scope();
+    ctx_.translator().LeaveScope();
 
     hir::BlockStatement body(std::move(stmts), decl.body()->span());
     decl_ = std::make_unique<hir::FunctionDeclaration>(
@@ -63,11 +63,11 @@ void DeclHirGen::visit(const ast::FunctionDeclaration &decl) {
     success_ = true;
 }
 
-void DeclHirGen::visit(const ast::StructDeclaration &decl) {
+void DeclHirGen::Visit(const ast::StructDeclaration &decl) {
     std::vector<hir::StructDeclarationField> fields;
     for (const auto &field : decl.fields()) {
         TypeHirGen gen(ctx_);
-        field.type()->accept(gen);
+        field.type()->Accept(gen);
         if (!gen) return;
 
         auto name = hir::StructDeclarationFieldName(
@@ -76,20 +76,20 @@ void DeclHirGen::visit(const ast::StructDeclaration &decl) {
     }
 
     hir::StructDeclarationName name(
-        std::string(ctx_.translator().translate(decl.name().name())),
+        std::string(ctx_.translator().Translate(decl.name().name())),
         decl.name().span());
     decl_ = std::make_unique<hir::StructDeclaration>(
         std::move(name), std::move(fields), decl.span());
     success_ = true;
 }
 
-void DeclHirGen::visit(const ast::EnumDeclaration &decl) {
+void DeclHirGen::Visit(const ast::EnumDeclaration &decl) {
     uint64_t value = 0;
     std::vector<hir::EnumDeclarationField> fields;
     for (const auto &field : decl.fields()) {
         if (field.init()) {
             ConstEval eval(ctx_.ctx());
-            field.init()->value()->accept(eval);
+            field.init()->value()->Accept(eval);
             if (!eval) return;
             value = eval.value();
         }
@@ -102,7 +102,7 @@ void DeclHirGen::visit(const ast::EnumDeclaration &decl) {
     }
 
     hir::EnumDeclarationName name(
-        std::string(ctx_.translator().translate(decl.name().name())),
+        std::string(ctx_.translator().Translate(decl.name().name())),
         decl.name().span());
     decl_ = std::make_unique<hir::EnumDeclaration>(
         std::move(name), std::move(fields), decl.span());

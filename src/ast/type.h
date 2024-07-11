@@ -21,16 +21,16 @@ class NameType;
 class TypeVisitor {
 public:
     virtual ~TypeVisitor() {}
-    virtual void visit(const BuiltinType& type) = 0;
-    virtual void visit(const PointerType& type) = 0;
-    virtual void visit(const ArrayType& type) = 0;
-    virtual void visit(const NameType& type) = 0;
+    virtual void Visit(const BuiltinType& type) = 0;
+    virtual void Visit(const PointerType& type) = 0;
+    virtual void Visit(const ArrayType& type) = 0;
+    virtual void Visit(const NameType& type) = 0;
 };
 
 class Type : public Node {
 public:
     virtual ~Type() {}
-    virtual void accept(TypeVisitor& visitor) const = 0;
+    virtual void Accept(TypeVisitor& visitor) const = 0;
 };
 
 class BuiltinType : public Type {
@@ -51,8 +51,8 @@ public:
         Bool,
     };
     BuiltinType(Kind kind, Span span) : kind_(kind), span_(span) {}
-    inline void accept(TypeVisitor& visitor) const override {
-        visitor.visit(*this);
+    inline void Accept(TypeVisitor& visitor) const override {
+        visitor.Visit(*this);
     }
     inline Span span() const override { return span_; }
     Kind kind() const { return kind_; }
@@ -66,8 +66,8 @@ class PointerType : public Type {
 public:
     PointerType(Star star, const std::shared_ptr<Type>& of)
         : star_(star), of_(of) {}
-    inline void accept(TypeVisitor& visitor) const override {
-        visitor.visit(*this);
+    inline void Accept(TypeVisitor& visitor) const override {
+        visitor.Visit(*this);
     }
     inline Span span() const override { return star_.span() + of_->span(); }
     inline Star star() const { return star_; }
@@ -85,8 +85,8 @@ public:
               LSquare lsquare,
               std::optional<std::unique_ptr<Expression>>&& size,
               RSquare rsquare);
-    inline void accept(TypeVisitor& visitor) const override {
-        visitor.visit(*this);
+    inline void Accept(TypeVisitor& visitor) const override {
+        visitor.Visit(*this);
     }
     inline Span span() const override {
         return lparen_.span() + rsquare_.span();
@@ -113,8 +113,8 @@ class NameType : public Type {
 public:
     NameType(std::string&& name, Span span)
         : name_(std::move(name)), span_(span) {}
-    inline void accept(TypeVisitor& visitor) const override {
-        visitor.visit(*this);
+    inline void Accept(TypeVisitor& visitor) const override {
+        visitor.Visit(*this);
     }
     inline Span span() const override { return span_; }
     inline const std::string& name() const { return name_; }

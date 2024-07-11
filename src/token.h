@@ -76,35 +76,35 @@ enum class KeywordTokenKind {
     UInt64,    // "uint64"
 };
 
-std::string to_string(PunctTokenKind kind);
-std::string to_string(KeywordTokenKind kind);
+std::string ToString(PunctTokenKind kind);
+std::string ToString(KeywordTokenKind kind);
 
 class Token {
 public:
     Token(Span span) : span_(span) {}
     virtual ~Token() {}
     Span span() const { return span_; }
-    virtual bool is_punct_of(PunctTokenKind kind) const { return false; }
-    virtual bool is_keyword_of(KeywordTokenKind kind) const { return false; }
-    virtual bool is_ident() const { return false; }
-    virtual bool is_int() const { return false; }
-    virtual bool is_string() const { return false; }
-    virtual bool is_char() const { return false; }
-    virtual const std::string& ident_value() const {
+    virtual bool IsPunctOf(PunctTokenKind kind) const { return false; }
+    virtual bool IsKeywordOf(KeywordTokenKind kind) const { return false; }
+    virtual bool IsIdent() const { return false; }
+    virtual bool IsInt() const { return false; }
+    virtual bool IsString() const { return false; }
+    virtual bool IsChar() const { return false; }
+    virtual const std::string& IdentValue() const {
         throw std::runtime_error(
-            "`ident_value` called when `is_ident` returns false");
+            "`IdentValue` called when `IsIdent` returns false");
     }
-    virtual uint64_t int_value() const {
+    virtual uint64_t IntValue() const {
         throw std::runtime_error(
-            "`int_value` called when `is_int` returns false");
+            "`IntValue` called when `IsInt` returns false");
     }
-    virtual const std::string& string_value() const {
+    virtual const std::string& StringValue() const {
         throw std::runtime_error(
-            "`string_value` called when `is_string` returns false");
+            "`StringValue` called when `IsString` returns false");
     }
-    virtual char char_value() const {
+    virtual char CharValue() const {
         throw std::runtime_error(
-            "`char_value` called when `is_char` returns false");
+            "`CharValue` called when `IsChar` returns false");
     }
 
 private:
@@ -114,7 +114,7 @@ private:
 class PunctToken : public Token {
 public:
     PunctToken(PunctTokenKind kind, Span span) : Token(span), kind_(kind) {}
-    inline bool is_punct_of(PunctTokenKind kind) const override {
+    inline bool IsPunctOf(PunctTokenKind kind) const override {
         return kind == kind_;
     }
 
@@ -125,7 +125,7 @@ private:
 class KeywordToken : public Token {
 public:
     KeywordToken(KeywordTokenKind kind, Span span) : Token(span), kind_(kind) {}
-    inline bool is_keyword_of(KeywordTokenKind kind) const override {
+    inline bool IsKeywordOf(KeywordTokenKind kind) const override {
         return kind == kind_;
     }
 
@@ -137,8 +137,8 @@ class IdentToken : public Token {
 public:
     IdentToken(std::string&& value, Span span)
         : Token(span), value_(std::move(value)) {}
-    inline bool is_ident() const override { return true; }
-    inline const std::string& ident_value() const override { return value_; }
+    inline bool IsIdent() const override { return true; }
+    inline const std::string& IdentValue() const override { return value_; }
 
 private:
     std::string value_;
@@ -147,8 +147,8 @@ private:
 class IntToken : public Token {
 public:
     IntToken(uint64_t value, Span span) : Token(span), value_(value) {}
-    inline bool is_int() const override { return true; }
-    inline uint64_t int_value() const override { return value_; }
+    inline bool IsInt() const override { return true; }
+    inline uint64_t IntValue() const override { return value_; }
 
 private:
     uint64_t value_;
@@ -158,8 +158,8 @@ class StringToken : public Token {
 public:
     StringToken(std::string&& value, Span span)
         : Token(span), value_(std::move(value)) {}
-    inline bool is_string() const override { return true; }
-    inline const std::string& string_value() const override { return value_; }
+    inline bool IsString() const override { return true; }
+    inline const std::string& StringValue() const override { return value_; }
 
 private:
     std::string value_;
@@ -168,8 +168,8 @@ private:
 class CharToken : public Token {
 public:
     CharToken(char value, Span span) : Token(span), value_(value) {}
-    inline bool is_char() const override { return true; }
-    inline char char_value() const override { return value_; }
+    inline bool IsChar() const override { return true; }
+    inline char CharValue() const override { return value_; }
 
 private:
     char value_;

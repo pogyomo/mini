@@ -4,49 +4,49 @@ namespace mini {
 
 namespace hir {
 
-void ExpressionStatement::print(PrintableContext &ctx) const {
-    expr_->print(ctx);
-    ctx.printer().print(";");
+void ExpressionStatement::Print(PrintableContext &ctx) const {
+    expr_->Print(ctx);
+    ctx.printer().Print(";");
 }
 
-void ReturnStatement::print(PrintableContext &ctx) const {
-    ctx.printer().print("return");
+void ReturnStatement::Print(PrintableContext &ctx) const {
+    ctx.printer().Print("return");
     if (ret_value_) {
-        ctx.printer().print(" ");
-        ret_value_.value()->print(ctx);
+        ctx.printer().Print(" ");
+        ret_value_.value()->Print(ctx);
     }
-    ctx.printer().print(";");
+    ctx.printer().Print(";");
 }
 
-void WhileStatement::print(PrintableContext &ctx) const {
-    ctx.printer().print("while (");
-    cond_->print(ctx);
-    ctx.printer().print(") ");
-    body_->print(ctx);
+void WhileStatement::Print(PrintableContext &ctx) const {
+    ctx.printer().Print("while (");
+    cond_->Print(ctx);
+    ctx.printer().Print(") ");
+    body_->Print(ctx);
 }
 
-void IfStatement::print(PrintableContext &ctx) const {
-    ctx.printer().print("if (");
-    cond_->print(ctx);
-    ctx.printer().print(") ");
-    then_body_->print(ctx);
+void IfStatement::Print(PrintableContext &ctx) const {
+    ctx.printer().Print("if (");
+    cond_->Print(ctx);
+    ctx.printer().Print(") ");
+    then_body_->Print(ctx);
     if (else_body_) {
-        ctx.printer().print(" else ");
-        else_body_.value()->print(ctx);
+        ctx.printer().Print(" else ");
+        else_body_.value()->Print(ctx);
     }
 }
 
-void BlockStatement::print(PrintableContext &ctx) const {
-    ctx.printer().shiftr();
-    ctx.printer().println("{");
+void BlockStatement::Print(PrintableContext &ctx) const {
+    ctx.printer().ShiftR();
+    ctx.printer().PrintLn("{");
     for (size_t i = 0; i < stmts_.size(); i++) {
-        stmts_.at(i)->print(ctx);
+        stmts_.at(i)->Print(ctx);
         if (i == stmts_.size() - 1) {
-            ctx.printer().shiftl();
+            ctx.printer().ShiftL();
         }
-        ctx.printer().println("");
+        ctx.printer().PrintLn("");
     }
-    ctx.printer().print("}");
+    ctx.printer().Print("}");
 }
 
 }  // namespace hir

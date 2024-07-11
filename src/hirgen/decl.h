@@ -12,9 +12,9 @@ namespace mini {
 class DeclVarReg : public ast::DeclarationVisitor {
 public:
     DeclVarReg(HirGenContext &ctx) : ctx_(ctx) {}
-    void visit(const ast::FunctionDeclaration &decl) override;
-    void visit(const ast::StructDeclaration &decl) override;
-    void visit(const ast::EnumDeclaration &decl) override;
+    void Visit(const ast::FunctionDeclaration &decl) override;
+    void Visit(const ast::StructDeclaration &decl) override;
+    void Visit(const ast::EnumDeclaration &decl) override;
 
 private:
     HirGenContext &ctx_;
@@ -26,9 +26,9 @@ public:
         : success_(false), decl_(nullptr), ctx_(ctx) {}
     explicit operator bool() const { return success_; }
     std::unique_ptr<hir::Declaration> &decl() { return decl_; }
-    void visit(const ast::FunctionDeclaration &decl) override;
-    void visit(const ast::StructDeclaration &decl) override;
-    void visit(const ast::EnumDeclaration &decl) override;
+    void Visit(const ast::FunctionDeclaration &decl) override;
+    void Visit(const ast::StructDeclaration &decl) override;
+    void Visit(const ast::EnumDeclaration &decl) override;
 
 private:
     bool success_;

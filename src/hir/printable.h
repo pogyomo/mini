@@ -15,17 +15,17 @@ class AutoIndentPrinter {
 public:
     AutoIndentPrinter(std::ostream &os, uint16_t width)
         : os_(os), width_(width), depth_(0) {}
-    inline void shiftr() { depth_++; }
-    inline void shiftl() {
+    inline void ShiftR() { depth_++; }
+    inline void ShiftL() {
         if (depth_)
             depth_--;
         else
-            fatal_error("shiftl with depth == 0");
+            FatalError("shiftl with depth == 0");
     }
     inline uint16_t depth() const { return depth_; }
-    inline void print(const std::string &s) { os_ << s; }
-    inline void println(const std::string &s) {
-        print(s);
+    inline void Print(const std::string &s) { os_ << s; }
+    inline void PrintLn(const std::string &s) {
+        Print(s);
         os_ << std::endl << std::string(depth_ * width_, ' ');
     }
 
@@ -47,10 +47,10 @@ private:
 class Printable {
 public:
     virtual ~Printable() {}
-    virtual void print(PrintableContext &ctx) const = 0;
-    virtual void println(PrintableContext &ctx) const {
-        print(ctx);
-        ctx.printer().println("");
+    virtual void Print(PrintableContext &ctx) const = 0;
+    virtual void PrintLn(PrintableContext &ctx) const {
+        Print(ctx);
+        ctx.printer().PrintLn("");
     }
 };
 

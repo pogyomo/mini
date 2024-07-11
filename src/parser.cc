@@ -24,8 +24,8 @@ namespace mini {
 // Returns true if `ts` reaches to eos, and report it.
 bool check_eos(Context &ctx, TokenStream &ts) {
     if (!ts) {
-        ReportInfo info(ts.last()->span(), "expected token after this", "");
-        report(ctx, ReportLevel::Error, info);
+        ReportInfo info(ts.Last()->span(), "expected token after this", "");
+        Report(ctx, ReportLevel::Error, info);
         return true;
     } else {
         return false;
@@ -37,16 +37,16 @@ bool check_ident(Context &ctx, TokenStream &ts) {
     if (check_eos(ctx, ts)) {
         return true;
     } else {
-        if (!ts.token()->is_ident()) {
-            if (ts.has_prev()) {
-                ReportInfo info(ts.prev()->span(),
+        if (!ts.CurrToken()->IsIdent()) {
+            if (ts.HasPrev()) {
+                ReportInfo info(ts.PrevToken()->span(),
                                 "expected identifier after this", "");
-                report(ctx, ReportLevel::Error, info);
+                Report(ctx, ReportLevel::Error, info);
                 return true;
             } else {
-                ReportInfo info(ts.token()->span(),
+                ReportInfo info(ts.CurrToken()->span(),
                                 "expected this to be identifier", "");
-                report(ctx, ReportLevel::Error, info);
+                Report(ctx, ReportLevel::Error, info);
                 return true;
             }
         } else {
@@ -60,18 +60,18 @@ bool check_punct(Context &ctx, TokenStream &ts, PunctTokenKind kind) {
     if (check_eos(ctx, ts)) {
         return true;
     } else {
-        if (!ts.token()->is_punct_of(kind)) {
-            if (ts.has_prev()) {
-                ReportInfo info(ts.prev()->span(),
-                                "expected `" + to_string(kind) + "` after this",
+        if (!ts.CurrToken()->IsPunctOf(kind)) {
+            if (ts.HasPrev()) {
+                ReportInfo info(ts.PrevToken()->span(),
+                                "expected `" + ToString(kind) + "` after this",
                                 "");
-                report(ctx, ReportLevel::Error, info);
+                Report(ctx, ReportLevel::Error, info);
                 return true;
             } else {
-                ReportInfo info(ts.token()->span(),
-                                "expected this to be `" + to_string(kind) + "`",
+                ReportInfo info(ts.CurrToken()->span(),
+                                "expected this to be `" + ToString(kind) + "`",
                                 "");
-                report(ctx, ReportLevel::Error, info);
+                Report(ctx, ReportLevel::Error, info);
                 return true;
             }
         } else {
@@ -85,18 +85,18 @@ bool check_keyword(Context &ctx, TokenStream &ts, KeywordTokenKind kind) {
     if (check_eos(ctx, ts)) {
         return true;
     } else {
-        if (!ts.token()->is_keyword_of(kind)) {
-            if (ts.has_prev()) {
-                ReportInfo info(ts.prev()->span(),
-                                "expected `" + to_string(kind) + "` after this",
+        if (!ts.CurrToken()->IsKeywordOf(kind)) {
+            if (ts.HasPrev()) {
+                ReportInfo info(ts.PrevToken()->span(),
+                                "expected `" + ToString(kind) + "` after this",
                                 "");
-                report(ctx, ReportLevel::Error, info);
+                Report(ctx, ReportLevel::Error, info);
                 return true;
             } else {
-                ReportInfo info(ts.token()->span(),
-                                "expected this to be `" + to_string(kind) + "`",
+                ReportInfo info(ts.CurrToken()->span(),
+                                "expected this to be `" + ToString(kind) + "`",
                                 "");
-                report(ctx, ReportLevel::Error, info);
+                Report(ctx, ReportLevel::Error, info);
                 return true;
             }
         } else {
@@ -105,45 +105,45 @@ bool check_keyword(Context &ctx, TokenStream &ts, KeywordTokenKind kind) {
     }
 }
 
-std::optional<std::unique_ptr<ast::Expression>> parse_expr(Context &ctx,
-                                                           TokenStream &ts) {
-    auto state = ts.state();
-    ctx.suppress_report();
+std::optional<std::unique_ptr<ast::Expression>> ParseExpr(Context &ctx,
+                                                          TokenStream &ts) {
+    auto state = ts.State();
+    ctx.SuppressReport();
 
-    auto lhs = parse_unary_expr(ctx, ts);
+    auto lhs = ParseUnaryExpr(ctx, ts);
     if (!lhs) {
-        ts.set_state(state);
-        ctx.activate_report();
-        return parse_logical_or_expr(ctx, ts);
+        ts.SetState(state);
+        ctx.ActivateReport();
+        return ParseLogicalOrExpr(ctx, ts);
     }
 
-    if (!ts || !ts.token()->is_punct_of(PunctTokenKind::Assign)) {
-        ts.set_state(state);
-        ctx.activate_report();
-        return parse_logical_or_expr(ctx, ts);
+    if (!ts || !ts.CurrToken()->IsPunctOf(PunctTokenKind::Assign)) {
+        ts.SetState(state);
+        ctx.ActivateReport();
+        return ParseLogicalOrExpr(ctx, ts);
     }
     ast::InfixExpression::Op op(ast::InfixExpression::Op::Kind::Assign,
-                                ts.token()->span());
-    ts.advance();
+                                ts.CurrToken()->span());
+    ts.Advance();
 
-    ctx.activate_report();
-    auto rhs = parse_expr(ctx, ts);
+    ctx.ActivateReport();
+    auto rhs = ParseExpr(ctx, ts);
     if (!rhs) return std::nullopt;
 
     return std::make_unique<ast::InfixExpression>(op, std::move(*lhs),
                                                   std::move(*rhs));
 }
 
-std::optional<std::unique_ptr<ast::Expression>> parse_logical_or_expr(
+std::optional<std::unique_ptr<ast::Expression>> ParseLogicalOrExpr(
     Context &ctx, TokenStream &ts) {
-    auto lhs = parse_logical_and_expr(ctx, ts);
+    auto lhs = ParseLogicalAndExpr(ctx, ts);
     if (!lhs) return std::nullopt;
     while (ts) {
-        if (ts.token()->is_punct_of(PunctTokenKind::Or)) {
+        if (ts.CurrToken()->IsPunctOf(PunctTokenKind::Or)) {
             ast::InfixExpression::Op op(ast::InfixExpression::Op::Kind::Or,
-                                        ts.token()->span());
-            ts.advance();
-            auto rhs = parse_logical_or_expr(ctx, ts);
+                                        ts.CurrToken()->span());
+            ts.Advance();
+            auto rhs = ParseLogicalOrExpr(ctx, ts);
             if (!rhs) return std::nullopt;
             lhs = std::make_unique<ast::InfixExpression>(op, std::move(*lhs),
                                                          std::move(*rhs));
@@ -154,16 +154,16 @@ std::optional<std::unique_ptr<ast::Expression>> parse_logical_or_expr(
     return lhs;
 }
 
-std::optional<std::unique_ptr<ast::Expression>> parse_logical_and_expr(
+std::optional<std::unique_ptr<ast::Expression>> ParseLogicalAndExpr(
     Context &ctx, TokenStream &ts) {
-    auto lhs = parse_inclusive_or_expr(ctx, ts);
+    auto lhs = ParseInclusiveOrExpr(ctx, ts);
     if (!lhs) return std::nullopt;
     while (ts) {
-        if (ts.token()->is_punct_of(PunctTokenKind::And)) {
+        if (ts.CurrToken()->IsPunctOf(PunctTokenKind::And)) {
             ast::InfixExpression::Op op(ast::InfixExpression::Op::Kind::And,
-                                        ts.token()->span());
-            ts.advance();
-            auto rhs = parse_logical_and_expr(ctx, ts);
+                                        ts.CurrToken()->span());
+            ts.Advance();
+            auto rhs = ParseLogicalAndExpr(ctx, ts);
             if (!rhs) return std::nullopt;
             lhs = std::make_unique<ast::InfixExpression>(op, std::move(*lhs),
                                                          std::move(*rhs));
@@ -174,16 +174,16 @@ std::optional<std::unique_ptr<ast::Expression>> parse_logical_and_expr(
     return lhs;
 }
 
-std::optional<std::unique_ptr<ast::Expression>> parse_inclusive_or_expr(
+std::optional<std::unique_ptr<ast::Expression>> ParseInclusiveOrExpr(
     Context &ctx, TokenStream &ts) {
-    auto lhs = parse_exclusive_or_expr(ctx, ts);
+    auto lhs = ParseExclusiveOrExpr(ctx, ts);
     if (!lhs) return std::nullopt;
     while (ts) {
-        if (ts.token()->is_punct_of(PunctTokenKind::Vertical)) {
+        if (ts.CurrToken()->IsPunctOf(PunctTokenKind::Vertical)) {
             ast::InfixExpression::Op op(ast::InfixExpression::Op::Kind::BitOr,
-                                        ts.token()->span());
-            ts.advance();
-            auto rhs = parse_inclusive_or_expr(ctx, ts);
+                                        ts.CurrToken()->span());
+            ts.Advance();
+            auto rhs = ParseInclusiveOrExpr(ctx, ts);
             if (!rhs) return std::nullopt;
             lhs = std::make_unique<ast::InfixExpression>(op, std::move(*lhs),
                                                          std::move(*rhs));
@@ -194,16 +194,16 @@ std::optional<std::unique_ptr<ast::Expression>> parse_inclusive_or_expr(
     return lhs;
 }
 
-std::optional<std::unique_ptr<ast::Expression>> parse_exclusive_or_expr(
+std::optional<std::unique_ptr<ast::Expression>> ParseExclusiveOrExpr(
     Context &ctx, TokenStream &ts) {
-    auto lhs = parse_and_expr(ctx, ts);
+    auto lhs = ParseAndExpr(ctx, ts);
     if (!lhs) return std::nullopt;
     while (ts) {
-        if (ts.token()->is_punct_of(PunctTokenKind::Hat)) {
+        if (ts.CurrToken()->IsPunctOf(PunctTokenKind::Hat)) {
             ast::InfixExpression::Op op(ast::InfixExpression::Op::Kind::BitXor,
-                                        ts.token()->span());
-            ts.advance();
-            auto rhs = parse_exclusive_or_expr(ctx, ts);
+                                        ts.CurrToken()->span());
+            ts.Advance();
+            auto rhs = ParseExclusiveOrExpr(ctx, ts);
             if (!rhs) return std::nullopt;
             lhs = std::make_unique<ast::InfixExpression>(op, std::move(*lhs),
                                                          std::move(*rhs));
@@ -214,16 +214,16 @@ std::optional<std::unique_ptr<ast::Expression>> parse_exclusive_or_expr(
     return lhs;
 }
 
-std::optional<std::unique_ptr<ast::Expression>> parse_and_expr(
-    Context &ctx, TokenStream &ts) {
-    auto lhs = parse_equality_expr(ctx, ts);
+std::optional<std::unique_ptr<ast::Expression>> ParseAndExpr(Context &ctx,
+                                                             TokenStream &ts) {
+    auto lhs = ParseEqualityExpr(ctx, ts);
     if (!lhs) return std::nullopt;
     while (ts) {
-        if (ts.token()->is_punct_of(PunctTokenKind::Ampersand)) {
+        if (ts.CurrToken()->IsPunctOf(PunctTokenKind::Ampersand)) {
             ast::InfixExpression::Op op(ast::InfixExpression::Op::Kind::BitAnd,
-                                        ts.token()->span());
-            ts.advance();
-            auto rhs = parse_and_expr(ctx, ts);
+                                        ts.CurrToken()->span());
+            ts.Advance();
+            auto rhs = ParseAndExpr(ctx, ts);
             if (!rhs) return std::nullopt;
             lhs = std::make_unique<ast::InfixExpression>(op, std::move(*lhs),
                                                          std::move(*rhs));
@@ -234,24 +234,24 @@ std::optional<std::unique_ptr<ast::Expression>> parse_and_expr(
     return lhs;
 }
 
-std::optional<std::unique_ptr<ast::Expression>> parse_equality_expr(
+std::optional<std::unique_ptr<ast::Expression>> ParseEqualityExpr(
     Context &ctx, TokenStream &ts) {
-    auto lhs = parse_relational_expr(ctx, ts);
+    auto lhs = ParseRelationalExpr(ctx, ts);
     if (!lhs) return std::nullopt;
     while (ts) {
-        if (ts.token()->is_punct_of(PunctTokenKind::EQ)) {
+        if (ts.CurrToken()->IsPunctOf(PunctTokenKind::EQ)) {
             ast::InfixExpression::Op op(ast::InfixExpression::Op::Kind::EQ,
-                                        ts.token()->span());
-            ts.advance();
-            auto rhs = parse_equality_expr(ctx, ts);
+                                        ts.CurrToken()->span());
+            ts.Advance();
+            auto rhs = ParseEqualityExpr(ctx, ts);
             if (!rhs) return std::nullopt;
             lhs = std::make_unique<ast::InfixExpression>(op, std::move(*lhs),
                                                          std::move(*rhs));
-        } else if (ts.token()->is_punct_of(PunctTokenKind::NE)) {
+        } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::NE)) {
             ast::InfixExpression::Op op(ast::InfixExpression::Op::Kind::NE,
-                                        ts.token()->span());
-            ts.advance();
-            auto rhs = parse_equality_expr(ctx, ts);
+                                        ts.CurrToken()->span());
+            ts.Advance();
+            auto rhs = ParseEqualityExpr(ctx, ts);
             if (!rhs) return std::nullopt;
             lhs = std::make_unique<ast::InfixExpression>(op, std::move(*lhs),
                                                          std::move(*rhs));
@@ -262,40 +262,40 @@ std::optional<std::unique_ptr<ast::Expression>> parse_equality_expr(
     return lhs;
 }
 
-std::optional<std::unique_ptr<ast::Expression>> parse_relational_expr(
+std::optional<std::unique_ptr<ast::Expression>> ParseRelationalExpr(
     Context &ctx, TokenStream &ts) {
-    auto lhs = parse_shift_expr(ctx, ts);
+    auto lhs = ParseShiftExpr(ctx, ts);
     if (!lhs) return std::nullopt;
     while (ts) {
-        if (ts.token()->is_punct_of(PunctTokenKind::LT)) {
+        if (ts.CurrToken()->IsPunctOf(PunctTokenKind::LT)) {
             ast::InfixExpression::Op op(ast::InfixExpression::Op::Kind::LT,
-                                        ts.token()->span());
-            ts.advance();
-            auto rhs = parse_relational_expr(ctx, ts);
+                                        ts.CurrToken()->span());
+            ts.Advance();
+            auto rhs = ParseRelationalExpr(ctx, ts);
             if (!rhs) return std::nullopt;
             lhs = std::make_unique<ast::InfixExpression>(op, std::move(*lhs),
                                                          std::move(*rhs));
-        } else if (ts.token()->is_punct_of(PunctTokenKind::LE)) {
+        } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::LE)) {
             ast::InfixExpression::Op op(ast::InfixExpression::Op::Kind::LE,
-                                        ts.token()->span());
-            ts.advance();
-            auto rhs = parse_relational_expr(ctx, ts);
+                                        ts.CurrToken()->span());
+            ts.Advance();
+            auto rhs = ParseRelationalExpr(ctx, ts);
             if (!rhs) return std::nullopt;
             lhs = std::make_unique<ast::InfixExpression>(op, std::move(*lhs),
                                                          std::move(*rhs));
-        } else if (ts.token()->is_punct_of(PunctTokenKind::GT)) {
+        } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::GT)) {
             ast::InfixExpression::Op op(ast::InfixExpression::Op::Kind::GT,
-                                        ts.token()->span());
-            ts.advance();
-            auto rhs = parse_relational_expr(ctx, ts);
+                                        ts.CurrToken()->span());
+            ts.Advance();
+            auto rhs = ParseRelationalExpr(ctx, ts);
             if (!rhs) return std::nullopt;
             lhs = std::make_unique<ast::InfixExpression>(op, std::move(*lhs),
                                                          std::move(*rhs));
-        } else if (ts.token()->is_punct_of(PunctTokenKind::GE)) {
+        } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::GE)) {
             ast::InfixExpression::Op op(ast::InfixExpression::Op::Kind::GE,
-                                        ts.token()->span());
-            ts.advance();
-            auto rhs = parse_relational_expr(ctx, ts);
+                                        ts.CurrToken()->span());
+            ts.Advance();
+            auto rhs = ParseRelationalExpr(ctx, ts);
             if (!rhs) return std::nullopt;
             lhs = std::make_unique<ast::InfixExpression>(op, std::move(*lhs),
                                                          std::move(*rhs));
@@ -306,24 +306,24 @@ std::optional<std::unique_ptr<ast::Expression>> parse_relational_expr(
     return lhs;
 }
 
-std::optional<std::unique_ptr<ast::Expression>> parse_shift_expr(
+std::optional<std::unique_ptr<ast::Expression>> ParseShiftExpr(
     Context &ctx, TokenStream &ts) {
-    auto lhs = parse_additive_expr(ctx, ts);
+    auto lhs = ParseAdditiveExpr(ctx, ts);
     if (!lhs) return std::nullopt;
     while (ts) {
-        if (ts.token()->is_punct_of(PunctTokenKind::LShift)) {
+        if (ts.CurrToken()->IsPunctOf(PunctTokenKind::LShift)) {
             ast::InfixExpression::Op op(ast::InfixExpression::Op::Kind::LShift,
-                                        ts.token()->span());
-            ts.advance();
-            auto rhs = parse_shift_expr(ctx, ts);
+                                        ts.CurrToken()->span());
+            ts.Advance();
+            auto rhs = ParseShiftExpr(ctx, ts);
             if (!rhs) return std::nullopt;
             lhs = std::make_unique<ast::InfixExpression>(op, std::move(*lhs),
                                                          std::move(*rhs));
-        } else if (ts.token()->is_punct_of(PunctTokenKind::RShift)) {
+        } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::RShift)) {
             ast::InfixExpression::Op op(ast::InfixExpression::Op::Kind::RShift,
-                                        ts.token()->span());
-            ts.advance();
-            auto rhs = parse_shift_expr(ctx, ts);
+                                        ts.CurrToken()->span());
+            ts.Advance();
+            auto rhs = ParseShiftExpr(ctx, ts);
             if (!rhs) return std::nullopt;
             lhs = std::make_unique<ast::InfixExpression>(op, std::move(*lhs),
                                                          std::move(*rhs));
@@ -334,24 +334,24 @@ std::optional<std::unique_ptr<ast::Expression>> parse_shift_expr(
     return lhs;
 }
 
-std::optional<std::unique_ptr<ast::Expression>> parse_additive_expr(
+std::optional<std::unique_ptr<ast::Expression>> ParseAdditiveExpr(
     Context &ctx, TokenStream &ts) {
-    auto lhs = parse_multiplicative_expr(ctx, ts);
+    auto lhs = ParseMultiplicativeExpr(ctx, ts);
     if (!lhs) return std::nullopt;
     while (ts) {
-        if (ts.token()->is_punct_of(PunctTokenKind::Plus)) {
+        if (ts.CurrToken()->IsPunctOf(PunctTokenKind::Plus)) {
             ast::InfixExpression::Op op(ast::InfixExpression::Op::Kind::Add,
-                                        ts.token()->span());
-            ts.advance();
-            auto rhs = parse_additive_expr(ctx, ts);
+                                        ts.CurrToken()->span());
+            ts.Advance();
+            auto rhs = ParseAdditiveExpr(ctx, ts);
             if (!rhs) return std::nullopt;
             lhs = std::make_unique<ast::InfixExpression>(op, std::move(*lhs),
                                                          std::move(*rhs));
-        } else if (ts.token()->is_punct_of(PunctTokenKind::Minus)) {
+        } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::Minus)) {
             ast::InfixExpression::Op op(ast::InfixExpression::Op::Kind::Sub,
-                                        ts.token()->span());
-            ts.advance();
-            auto rhs = parse_additive_expr(ctx, ts);
+                                        ts.CurrToken()->span());
+            ts.Advance();
+            auto rhs = ParseAdditiveExpr(ctx, ts);
             if (!rhs) return std::nullopt;
             lhs = std::make_unique<ast::InfixExpression>(op, std::move(*lhs),
                                                          std::move(*rhs));
@@ -362,32 +362,32 @@ std::optional<std::unique_ptr<ast::Expression>> parse_additive_expr(
     return lhs;
 }
 
-std::optional<std::unique_ptr<ast::Expression>> parse_multiplicative_expr(
+std::optional<std::unique_ptr<ast::Expression>> ParseMultiplicativeExpr(
     Context &ctx, TokenStream &ts) {
-    auto lhs = parse_cast_expr(ctx, ts);
+    auto lhs = ParseCastExpr(ctx, ts);
     if (!lhs) return std::nullopt;
     while (ts) {
-        if (ts.token()->is_punct_of(PunctTokenKind::Star)) {
+        if (ts.CurrToken()->IsPunctOf(PunctTokenKind::Star)) {
             ast::InfixExpression::Op op(ast::InfixExpression::Op::Kind::Mul,
-                                        ts.token()->span());
-            ts.advance();
-            auto rhs = parse_multiplicative_expr(ctx, ts);
+                                        ts.CurrToken()->span());
+            ts.Advance();
+            auto rhs = ParseMultiplicativeExpr(ctx, ts);
             if (!rhs) return std::nullopt;
             lhs = std::make_unique<ast::InfixExpression>(op, std::move(*lhs),
                                                          std::move(*rhs));
-        } else if (ts.token()->is_punct_of(PunctTokenKind::Slash)) {
+        } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::Slash)) {
             ast::InfixExpression::Op op(ast::InfixExpression::Op::Kind::Div,
-                                        ts.token()->span());
-            ts.advance();
-            auto rhs = parse_multiplicative_expr(ctx, ts);
+                                        ts.CurrToken()->span());
+            ts.Advance();
+            auto rhs = ParseMultiplicativeExpr(ctx, ts);
             if (!rhs) return std::nullopt;
             lhs = std::make_unique<ast::InfixExpression>(op, std::move(*lhs),
                                                          std::move(*rhs));
-        } else if (ts.token()->is_punct_of(PunctTokenKind::Percent)) {
+        } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::Percent)) {
             ast::InfixExpression::Op op(ast::InfixExpression::Op::Kind::Mod,
-                                        ts.token()->span());
-            ts.advance();
-            auto rhs = parse_multiplicative_expr(ctx, ts);
+                                        ts.CurrToken()->span());
+            ts.Advance();
+            auto rhs = ParseMultiplicativeExpr(ctx, ts);
             if (!rhs) return std::nullopt;
             lhs = std::make_unique<ast::InfixExpression>(op, std::move(*lhs),
                                                          std::move(*rhs));
@@ -398,16 +398,16 @@ std::optional<std::unique_ptr<ast::Expression>> parse_multiplicative_expr(
     return lhs;
 }
 
-std::optional<std::unique_ptr<ast::Expression>> parse_cast_expr(
-    Context &ctx, TokenStream &ts) {
-    auto expr = parse_unary_expr(ctx, ts);
+std::optional<std::unique_ptr<ast::Expression>> ParseCastExpr(Context &ctx,
+                                                              TokenStream &ts) {
+    auto expr = ParseUnaryExpr(ctx, ts);
     if (!expr) return std::nullopt;
     while (ts) {
-        if (ts.token()->is_keyword_of(KeywordTokenKind::As)) {
-            ast::As as_kw(ts.token()->span());
-            ts.advance();
+        if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::As)) {
+            ast::As as_kw(ts.CurrToken()->span());
+            ts.Advance();
 
-            auto type = parse_type(ctx, ts);
+            auto type = ParseType(ctx, ts);
             if (!type) return std::nullopt;
 
             expr = std::make_unique<ast::CastExpression>(
@@ -419,143 +419,145 @@ std::optional<std::unique_ptr<ast::Expression>> parse_cast_expr(
     return expr;
 }
 
-std::optional<std::unique_ptr<ast::Expression>> parse_unary_expr(
+std::optional<std::unique_ptr<ast::Expression>> ParseUnaryExpr(
     Context &ctx, TokenStream &ts) {
     TRY(check_eos(ctx, ts));
-    if (ts.token()->is_punct_of(PunctTokenKind::Ampersand)) {
+    if (ts.CurrToken()->IsPunctOf(PunctTokenKind::Ampersand)) {
         ast::UnaryExpression::Op op(ast::UnaryExpression::Op::Kind::Ref,
-                                    ts.token()->span());
-        ts.advance();
+                                    ts.CurrToken()->span());
+        ts.Advance();
 
-        auto expr = parse_unary_expr(ctx, ts);
+        auto expr = ParseUnaryExpr(ctx, ts);
         if (!expr) return std::nullopt;
 
         return std::make_unique<ast::UnaryExpression>(op, std::move(*expr));
-    } else if (ts.token()->is_punct_of(PunctTokenKind::Star)) {
+    } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::Star)) {
         ast::UnaryExpression::Op op(ast::UnaryExpression::Op::Kind::Deref,
-                                    ts.token()->span());
-        ts.advance();
+                                    ts.CurrToken()->span());
+        ts.Advance();
 
-        auto expr = parse_unary_expr(ctx, ts);
+        auto expr = ParseUnaryExpr(ctx, ts);
         if (!expr) return std::nullopt;
 
         return std::make_unique<ast::UnaryExpression>(op, std::move(*expr));
-    } else if (ts.token()->is_punct_of(PunctTokenKind::Minus)) {
+    } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::Minus)) {
         ast::UnaryExpression::Op op(ast::UnaryExpression::Op::Kind::Minus,
-                                    ts.token()->span());
-        ts.advance();
+                                    ts.CurrToken()->span());
+        ts.Advance();
 
-        auto expr = parse_unary_expr(ctx, ts);
+        auto expr = ParseUnaryExpr(ctx, ts);
         if (!expr) return std::nullopt;
 
         return std::make_unique<ast::UnaryExpression>(op, std::move(*expr));
-    } else if (ts.token()->is_punct_of(PunctTokenKind::Tilde)) {
+    } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::Tilde)) {
         ast::UnaryExpression::Op op(ast::UnaryExpression::Op::Kind::Inv,
-                                    ts.token()->span());
-        ts.advance();
+                                    ts.CurrToken()->span());
+        ts.Advance();
 
-        auto expr = parse_unary_expr(ctx, ts);
+        auto expr = ParseUnaryExpr(ctx, ts);
         if (!expr) return std::nullopt;
 
         return std::make_unique<ast::UnaryExpression>(op, std::move(*expr));
-    } else if (ts.token()->is_punct_of(PunctTokenKind::Exclamation)) {
+    } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::Exclamation)) {
         ast::UnaryExpression::Op op(ast::UnaryExpression::Op::Kind::Neg,
-                                    ts.token()->span());
-        ts.advance();
+                                    ts.CurrToken()->span());
+        ts.Advance();
 
-        auto expr = parse_unary_expr(ctx, ts);
+        auto expr = ParseUnaryExpr(ctx, ts);
         if (!expr) return std::nullopt;
 
         return std::make_unique<ast::UnaryExpression>(op, std::move(*expr));
-    } else if (ts.token()->is_keyword_of(KeywordTokenKind::ESizeof)) {
-        ast::ESizeof esizeof_kw(ts.token()->span());
-        ts.advance();
+    } else if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::ESizeof)) {
+        ast::ESizeof esizeof_kw(ts.CurrToken()->span());
+        ts.Advance();
 
-        auto expr = parse_expr(ctx, ts);
+        auto expr = ParseExpr(ctx, ts);
         if (!expr) return std::nullopt;
 
         return std::make_unique<ast::ESizeofExpression>(esizeof_kw,
                                                         std::move(*expr));
-    } else if (ts.token()->is_keyword_of(KeywordTokenKind::TSizeof)) {
-        ast::TSizeof tsizeof_kw(ts.token()->span());
-        ts.advance();
+    } else if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::TSizeof)) {
+        ast::TSizeof tsizeof_kw(ts.CurrToken()->span());
+        ts.Advance();
 
-        auto type = parse_type(ctx, ts);
+        auto type = ParseType(ctx, ts);
         if (!type) return std::nullopt;
 
         return std::make_unique<ast::TSizeofExpression>(tsizeof_kw,
                                                         std::move(*type));
     } else {
-        return parse_postfix_expr(ctx, ts);
+        return ParsePostfixExpr(ctx, ts);
     }
 }
 
-std::optional<std::unique_ptr<ast::Expression>> parse_postfix_expr(
+std::optional<std::unique_ptr<ast::Expression>> ParsePostfixExpr(
     Context &ctx, TokenStream &ts) {
-    auto expr = parse_primary_expr(ctx, ts);
+    auto expr = ParsePrimaryExpr(ctx, ts);
     if (!expr) return std::nullopt;
     while (ts) {
-        if (ts.token()->is_punct_of(PunctTokenKind::LSquare)) {
-            ast::LSquare lsquare(ts.token()->span());
-            ts.advance();
+        if (ts.CurrToken()->IsPunctOf(PunctTokenKind::LSquare)) {
+            ast::LSquare lsquare(ts.CurrToken()->span());
+            ts.Advance();
 
-            auto index = parse_expr(ctx, ts);
+            auto index = ParseExpr(ctx, ts);
             if (!index) return std::nullopt;
 
             TRY(check_punct(ctx, ts, PunctTokenKind::RSquare));
-            ast::RSquare rsquare(ts.token()->span());
-            ts.advance();
+            ast::RSquare rsquare(ts.CurrToken()->span());
+            ts.Advance();
 
             expr = std::make_unique<ast::IndexExpression>(
                 std::move(*expr), lsquare, std::move(*index), rsquare);
-        } else if (ts.token()->is_punct_of(PunctTokenKind::LParen)) {
-            ast::LParen lparen(ts.token()->span());
-            ts.advance();
+        } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::LParen)) {
+            ast::LParen lparen(ts.CurrToken()->span());
+            ts.Advance();
 
             std::vector<std::unique_ptr<ast::Expression>> args;
             while (true) {
                 TRY(check_eos(ctx, ts));
-                if (ts.token()->is_punct_of(PunctTokenKind::RParen) &&
+                if (ts.CurrToken()->IsPunctOf(PunctTokenKind::RParen) &&
                     args.empty()) {
-                    ast::RParen rparen(ts.token()->span());
-                    ts.advance();
+                    ast::RParen rparen(ts.CurrToken()->span());
+                    ts.Advance();
 
                     expr = std::make_unique<ast::CallExpression>(
                         std::move(*expr), lparen, std::move(args), rparen);
                     break;
                 } else {
-                    auto arg = parse_expr(ctx, ts);
+                    auto arg = ParseExpr(ctx, ts);
                     if (!arg) return std::nullopt;
 
                     args.emplace_back(std::move(*arg));
 
-                    if (ts.token()->is_punct_of(PunctTokenKind::RParen)) {
-                        ast::RParen rparen(ts.token()->span());
-                        ts.advance();
+                    if (ts.CurrToken()->IsPunctOf(PunctTokenKind::RParen)) {
+                        ast::RParen rparen(ts.CurrToken()->span());
+                        ts.Advance();
 
                         expr = std::make_unique<ast::CallExpression>(
                             std::move(*expr), lparen, std::move(args), rparen);
                         break;
-                    } else if (ts.token()->is_punct_of(PunctTokenKind::Comma)) {
-                        ts.advance();
+                    } else if (ts.CurrToken()->IsPunctOf(
+                                   PunctTokenKind::Comma)) {
+                        ts.Advance();
                         continue;
                     } else {
-                        ReportInfo info(ts.token()->span(), "unexpected token",
+                        ReportInfo info(ts.CurrToken()->span(),
+                                        "unexpected token",
                                         "expected `)` or `,`");
-                        report(ctx, ReportLevel::Error, info);
+                        Report(ctx, ReportLevel::Error, info);
                         return std::nullopt;
                     }
                 }
             }
-        } else if (ts.token()->is_punct_of(PunctTokenKind::Dot)) {
-            ast::Dot dot(ts.token()->span());
-            ts.advance();
+        } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::Dot)) {
+            ast::Dot dot(ts.CurrToken()->span());
+            ts.Advance();
 
             TRY(check_ident(ctx, ts));
-            std::string value = ts.token()->ident_value();
+            std::string value = ts.CurrToken()->IdentValue();
             ast::AccessExpressionField field(std::move(value),
-                                             ts.token()->span());
-            ts.advance();
+                                             ts.CurrToken()->span());
+            ts.Advance();
 
             expr = std::make_unique<ast::AccessExpression>(
                 std::move(*expr), dot, std::move(field));
@@ -566,68 +568,69 @@ std::optional<std::unique_ptr<ast::Expression>> parse_postfix_expr(
     return expr;
 }
 
-std::optional<std::unique_ptr<ast::Expression>> parse_primary_expr(
+std::optional<std::unique_ptr<ast::Expression>> ParsePrimaryExpr(
     Context &ctx, TokenStream &ts) {
     TRY(check_eos(ctx, ts));
-    if (ts.token()->is_ident()) {
-        std::string value1 = ts.token()->ident_value();
-        auto span1 = ts.token()->span();
-        ts.advance();
+    if (ts.CurrToken()->IsIdent()) {
+        std::string value1 = ts.CurrToken()->IdentValue();
+        auto span1 = ts.CurrToken()->span();
+        ts.Advance();
 
-        if (ts && ts.token()->is_punct_of(PunctTokenKind::ColonColon)) {
-            ast::ColonColon colon_colon(ts.token()->span());
-            ts.advance();
+        if (ts && ts.CurrToken()->IsPunctOf(PunctTokenKind::ColonColon)) {
+            ast::ColonColon colon_colon(ts.CurrToken()->span());
+            ts.Advance();
 
             TRY(check_ident(ctx, ts));
-            std::string value2 = ts.token()->ident_value();
-            auto span2 = ts.token()->span();
-            ts.advance();
+            std::string value2 = ts.CurrToken()->IdentValue();
+            auto span2 = ts.CurrToken()->span();
+            ts.Advance();
 
             ast::EnumSelectExpressionSrc src(std::move(value1), span1);
             ast::EnumSelectExpressionDst dst(std::move(value1), span1);
             return std::make_unique<ast::EnumSelectExpression>(
                 std::move(dst), colon_colon, std::move(src));
-        } else if (ts && ts.token()->is_punct_of(PunctTokenKind::LCurly)) {
-            ast::LCurly lcurly(ts.token()->span());
-            ts.advance();
+        } else if (ts && ts.CurrToken()->IsPunctOf(PunctTokenKind::LCurly)) {
+            ast::LCurly lcurly(ts.CurrToken()->span());
+            ts.Advance();
 
             std::vector<ast::StructExpressionInit> inits;
             while (true) {
                 TRY(check_eos(ctx, ts));
-                if (ts.token()->is_punct_of(PunctTokenKind::RCurly)) {
+                if (ts.CurrToken()->IsPunctOf(PunctTokenKind::RCurly)) {
                     break;
-                } else if (ts.token()->is_ident()) {
+                } else if (ts.CurrToken()->IsIdent()) {
                     ast::StructExpressionInitName name(
-                        std::string(ts.token()->ident_value()),
-                        ts.token()->span());
-                    ts.advance();
+                        std::string(ts.CurrToken()->IdentValue()),
+                        ts.CurrToken()->span());
+                    ts.Advance();
 
                     TRY(check_punct(ctx, ts, PunctTokenKind::Colon));
-                    ast::Colon colon(ts.token()->span());
-                    ts.advance();
+                    ast::Colon colon(ts.CurrToken()->span());
+                    ts.Advance();
 
-                    auto value = parse_expr(ctx, ts);
+                    auto value = ParseExpr(ctx, ts);
                     if (!value) return std::nullopt;
 
                     inits.emplace_back(std::move(name), colon,
                                        std::move(*value));
 
-                    if (ts && ts.token()->is_punct_of(PunctTokenKind::Comma)) {
-                        ts.advance();
+                    if (ts &&
+                        ts.CurrToken()->IsPunctOf(PunctTokenKind::Comma)) {
+                        ts.Advance();
                     } else {
                         break;
                     }
                 } else {
-                    ReportInfo info(ts.token()->span(),
+                    ReportInfo info(ts.CurrToken()->span(),
                                     "expected identifier or }", "");
-                    report(ctx, ReportLevel::Error, info);
+                    Report(ctx, ReportLevel::Error, info);
                     return std::nullopt;
                 }
             }
 
             TRY(check_punct(ctx, ts, PunctTokenKind::RCurly));
-            ast::RCurly rcurly(ts.token()->span());
-            ts.advance();
+            ast::RCurly rcurly(ts.CurrToken()->span());
+            ts.Advance();
 
             ast::StructExpressionName name(std::move(value1), span1);
             return std::make_unique<ast::StructExpression>(
@@ -636,23 +639,23 @@ std::optional<std::unique_ptr<ast::Expression>> parse_primary_expr(
             return std::make_unique<ast::VariableExpression>(std::move(value1),
                                                              span1);
         }
-    } else if (ts.token()->is_punct_of(PunctTokenKind::LCurly)) {
-        ast::LCurly lcurly(ts.token()->span());
-        ts.advance();
+    } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::LCurly)) {
+        ast::LCurly lcurly(ts.CurrToken()->span());
+        ts.Advance();
 
         std::vector<std::unique_ptr<ast::Expression>> inits;
         while (true) {
             TRY(check_eos(ctx, ts));
-            if (ts.token()->is_punct_of(PunctTokenKind::RCurly)) {
+            if (ts.CurrToken()->IsPunctOf(PunctTokenKind::RCurly)) {
                 break;
             } else {
-                auto value = parse_expr(ctx, ts);
+                auto value = ParseExpr(ctx, ts);
                 if (!value) return std::nullopt;
 
                 inits.emplace_back(std::move(*value));
 
-                if (ts && ts.token()->is_punct_of(PunctTokenKind::Comma)) {
-                    ts.advance();
+                if (ts && ts.CurrToken()->IsPunctOf(PunctTokenKind::Comma)) {
+                    ts.Advance();
                 } else {
                     break;
                 }
@@ -660,308 +663,308 @@ std::optional<std::unique_ptr<ast::Expression>> parse_primary_expr(
         }
 
         TRY(check_punct(ctx, ts, PunctTokenKind::RCurly));
-        ast::RCurly rcurly(ts.token()->span());
-        ts.advance();
+        ast::RCurly rcurly(ts.CurrToken()->span());
+        ts.Advance();
 
         return std::make_unique<ast::ArrayExpression>(lcurly, std::move(inits),
                                                       rcurly);
-    } else if (ts.token()->is_int()) {
-        uint64_t value = ts.token()->int_value();
-        auto span = ts.token()->span();
-        ts.advance();
+    } else if (ts.CurrToken()->IsInt()) {
+        uint64_t value = ts.CurrToken()->IntValue();
+        auto span = ts.CurrToken()->span();
+        ts.Advance();
 
         return std::make_unique<ast::IntegerExpression>(value, span);
-    } else if (ts.token()->is_string()) {
-        std::string value = ts.token()->string_value();
-        auto span = ts.token()->span();
-        ts.advance();
+    } else if (ts.CurrToken()->IsString()) {
+        std::string value = ts.CurrToken()->StringValue();
+        auto span = ts.CurrToken()->span();
+        ts.Advance();
 
         return std::make_unique<ast::StringExpression>(std::move(value), span);
-    } else if (ts.token()->is_char()) {
-        char value = ts.token()->char_value();
-        auto span = ts.token()->span();
-        ts.advance();
+    } else if (ts.CurrToken()->IsChar()) {
+        char value = ts.CurrToken()->CharValue();
+        auto span = ts.CurrToken()->span();
+        ts.Advance();
 
         return std::make_unique<ast::CharExpression>(value, span);
-    } else if (ts.token()->is_punct_of(PunctTokenKind::LParen)) {
-        ts.advance();
-        auto expr = parse_expr(ctx, ts);
+    } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::LParen)) {
+        ts.Advance();
+        auto expr = ParseExpr(ctx, ts);
         if (!expr) return std::nullopt;
 
         TRY(check_punct(ctx, ts, PunctTokenKind::RParen));
-        ts.advance();
+        ts.Advance();
 
         return expr;
-    } else if (ts.token()->is_keyword_of(KeywordTokenKind::True)) {
-        auto span = ts.token()->span();
-        ts.advance();
+    } else if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::True)) {
+        auto span = ts.CurrToken()->span();
+        ts.Advance();
 
         return std::make_unique<ast::BoolExpression>(true, span);
-    } else if (ts.token()->is_keyword_of(KeywordTokenKind::False)) {
-        auto span = ts.token()->span();
-        ts.advance();
+    } else if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::False)) {
+        auto span = ts.CurrToken()->span();
+        ts.Advance();
 
         return std::make_unique<ast::BoolExpression>(false, span);
     } else {
-        ReportInfo info(ts.token()->span(), "unexpected token found",
+        ReportInfo info(ts.CurrToken()->span(), "unexpected token found",
                         "expected identifier, integer or `(`");
-        report(ctx, ReportLevel::Error, info);
+        Report(ctx, ReportLevel::Error, info);
         return std::nullopt;
     }
 }
 
-std::optional<std::unique_ptr<ast::Type>> parse_type(Context &ctx,
-                                                     TokenStream &ts) {
+std::optional<std::unique_ptr<ast::Type>> ParseType(Context &ctx,
+                                                    TokenStream &ts) {
     TRY(check_eos(ctx, ts));
-    if (ts.token()->is_keyword_of(KeywordTokenKind::Void)) {
+    if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::Void)) {
         auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::Void,
-                                                       ts.token()->span());
-        ts.advance();
+                                                       ts.CurrToken()->span());
+        ts.Advance();
         return type;
-    } else if (ts.token()->is_keyword_of(KeywordTokenKind::ISize)) {
+    } else if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::ISize)) {
         auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::ISize,
-                                                       ts.token()->span());
-        ts.advance();
+                                                       ts.CurrToken()->span());
+        ts.Advance();
         return type;
-    } else if (ts.token()->is_keyword_of(KeywordTokenKind::Int8)) {
+    } else if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::Int8)) {
         auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::Int8,
-                                                       ts.token()->span());
-        ts.advance();
+                                                       ts.CurrToken()->span());
+        ts.Advance();
         return type;
-    } else if (ts.token()->is_keyword_of(KeywordTokenKind::Int16)) {
+    } else if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::Int16)) {
         auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::Int16,
-                                                       ts.token()->span());
-        ts.advance();
+                                                       ts.CurrToken()->span());
+        ts.Advance();
         return type;
-    } else if (ts.token()->is_keyword_of(KeywordTokenKind::Int32)) {
+    } else if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::Int32)) {
         auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::Int32,
-                                                       ts.token()->span());
-        ts.advance();
+                                                       ts.CurrToken()->span());
+        ts.Advance();
         return type;
-    } else if (ts.token()->is_keyword_of(KeywordTokenKind::Int64)) {
+    } else if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::Int64)) {
         auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::Int64,
-                                                       ts.token()->span());
-        ts.advance();
+                                                       ts.CurrToken()->span());
+        ts.Advance();
         return type;
-    } else if (ts.token()->is_keyword_of(KeywordTokenKind::USize)) {
+    } else if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::USize)) {
         auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::USize,
-                                                       ts.token()->span());
-        ts.advance();
+                                                       ts.CurrToken()->span());
+        ts.Advance();
         return type;
-    } else if (ts.token()->is_keyword_of(KeywordTokenKind::UInt8)) {
+    } else if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::UInt8)) {
         auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::UInt8,
-                                                       ts.token()->span());
-        ts.advance();
+                                                       ts.CurrToken()->span());
+        ts.Advance();
         return type;
-    } else if (ts.token()->is_keyword_of(KeywordTokenKind::UInt16)) {
+    } else if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::UInt16)) {
         auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::UInt16,
-                                                       ts.token()->span());
-        ts.advance();
+                                                       ts.CurrToken()->span());
+        ts.Advance();
         return type;
-    } else if (ts.token()->is_keyword_of(KeywordTokenKind::UInt32)) {
+    } else if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::UInt32)) {
         auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::UInt32,
-                                                       ts.token()->span());
-        ts.advance();
+                                                       ts.CurrToken()->span());
+        ts.Advance();
         return type;
-    } else if (ts.token()->is_keyword_of(KeywordTokenKind::UInt64)) {
+    } else if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::UInt64)) {
         auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::UInt64,
-                                                       ts.token()->span());
-        ts.advance();
+                                                       ts.CurrToken()->span());
+        ts.Advance();
         return type;
-    } else if (ts.token()->is_keyword_of(KeywordTokenKind::Bool)) {
+    } else if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::Bool)) {
         auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::Bool,
-                                                       ts.token()->span());
-        ts.advance();
+                                                       ts.CurrToken()->span());
+        ts.Advance();
         return type;
-    } else if (ts.token()->is_keyword_of(KeywordTokenKind::Char)) {
+    } else if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::Char)) {
         auto type = std::make_unique<ast::BuiltinType>(ast::BuiltinType::Char,
-                                                       ts.token()->span());
-        ts.advance();
+                                                       ts.CurrToken()->span());
+        ts.Advance();
         return type;
-    } else if (ts.token()->is_punct_of(PunctTokenKind::Star)) {
-        ast::Star star(ts.token()->span());
-        ts.advance();
-        auto of = parse_type(ctx, ts);
+    } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::Star)) {
+        ast::Star star(ts.CurrToken()->span());
+        ts.Advance();
+        auto of = ParseType(ctx, ts);
         if (!of) return std::nullopt;
         return std::make_unique<ast::PointerType>(star, std::move(*of));
-    } else if (ts.token()->is_punct_of(PunctTokenKind::LParen)) {
-        return parse_array_type(ctx, ts);
-    } else if (ts.token()->is_ident()) {
-        auto name = ts.token()->ident_value();
-        auto span = ts.token()->span();
-        ts.advance();
+    } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::LParen)) {
+        return ParseArrayType(ctx, ts);
+    } else if (ts.CurrToken()->IsIdent()) {
+        auto name = ts.CurrToken()->IdentValue();
+        auto span = ts.CurrToken()->span();
+        ts.Advance();
         return std::make_unique<ast::NameType>(std::move(name), span);
     } else {
-        ReportInfo info(ts.token()->span(),
+        ReportInfo info(ts.CurrToken()->span(),
                         "expected one of `int`, `uint`, `(` or identifier", "");
-        report(ctx, ReportLevel::Error, info);
-        ts.advance();
+        Report(ctx, ReportLevel::Error, info);
+        ts.Advance();
         return std::nullopt;
     }
 }
 
-std::optional<std::unique_ptr<ast::ArrayType>> parse_array_type(
-    Context &ctx, TokenStream &ts) {
+std::optional<std::unique_ptr<ast::ArrayType>> ParseArrayType(Context &ctx,
+                                                              TokenStream &ts) {
     TRY(check_punct(ctx, ts, PunctTokenKind::LParen));
-    ast::LParen lparen(ts.token()->span());
-    ts.advance();
+    ast::LParen lparen(ts.CurrToken()->span());
+    ts.Advance();
 
-    auto of = parse_type(ctx, ts);
+    auto of = ParseType(ctx, ts);
     if (!of) return std::nullopt;
 
     TRY(check_punct(ctx, ts, PunctTokenKind::RParen));
-    ast::RParen rparen(ts.token()->span());
-    ts.advance();
+    ast::RParen rparen(ts.CurrToken()->span());
+    ts.Advance();
 
     TRY(check_punct(ctx, ts, PunctTokenKind::LSquare));
-    ast::LSquare lsquare(ts.token()->span());
-    ts.advance();
+    ast::LSquare lsquare(ts.CurrToken()->span());
+    ts.Advance();
 
     TRY(check_eos(ctx, ts));
     std::optional<std::unique_ptr<ast::Expression>> size;
-    if (!ts.token()->is_punct_of(PunctTokenKind::RSquare)) {
-        size = parse_expr(ctx, ts);
+    if (!ts.CurrToken()->IsPunctOf(PunctTokenKind::RSquare)) {
+        size = ParseExpr(ctx, ts);
         if (!size) return std::nullopt;
     }
 
     TRY(check_punct(ctx, ts, PunctTokenKind::RSquare));
-    ast::RSquare rsquare(ts.token()->span());
-    ts.advance();
+    ast::RSquare rsquare(ts.CurrToken()->span());
+    ts.Advance();
 
     return std::make_unique<ast::ArrayType>(lparen, std::move(*of), rparen,
                                             lsquare, std::move(*size), rsquare);
 }
 
-std::optional<std::unique_ptr<ast::Statement>> parse_stmt(Context &ctx,
-                                                          TokenStream &ts) {
+std::optional<std::unique_ptr<ast::Statement>> ParseStmt(Context &ctx,
+                                                         TokenStream &ts) {
     TRY(check_eos(ctx, ts));
-    if (ts.token()->is_keyword_of(KeywordTokenKind::Return)) {
-        return parse_return_stmt(ctx, ts);
-    } else if (ts.token()->is_keyword_of(KeywordTokenKind::Break)) {
-        return parse_break_stmt(ctx, ts);
-    } else if (ts.token()->is_keyword_of(KeywordTokenKind::Continue)) {
-        return parse_continue_stmt(ctx, ts);
-    } else if (ts.token()->is_keyword_of(KeywordTokenKind::While)) {
-        return parse_while_stmt(ctx, ts);
-    } else if (ts.token()->is_keyword_of(KeywordTokenKind::If)) {
-        return parse_if_stmt(ctx, ts);
-    } else if (ts.token()->is_punct_of(PunctTokenKind::LCurly)) {
-        return parse_block_stmt(ctx, ts);
+    if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::Return)) {
+        return ParseReturnStmt(ctx, ts);
+    } else if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::Break)) {
+        return ParseBreakStmt(ctx, ts);
+    } else if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::Continue)) {
+        return ParseContinueStmt(ctx, ts);
+    } else if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::While)) {
+        return ParseWhileStmt(ctx, ts);
+    } else if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::If)) {
+        return ParseIfStmt(ctx, ts);
+    } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::LCurly)) {
+        return ParseBlockStmt(ctx, ts);
     } else {
-        return parse_expr_stmt(ctx, ts);
+        return ParseExprStmt(ctx, ts);
     }
 }
 
-std::optional<std::unique_ptr<ast::ExpressionStatement>> parse_expr_stmt(
+std::optional<std::unique_ptr<ast::ExpressionStatement>> ParseExprStmt(
     Context &ctx, TokenStream &ts) {
-    auto expr = parse_expr(ctx, ts);
+    auto expr = ParseExpr(ctx, ts);
     if (!expr) return std::nullopt;
 
     TRY(check_punct(ctx, ts, PunctTokenKind::Semicolon));
-    ast::Semicolon semicolon(ts.token()->span());
-    ts.advance();
+    ast::Semicolon semicolon(ts.CurrToken()->span());
+    ts.Advance();
 
     return std::make_unique<ast::ExpressionStatement>(std::move(*expr),
                                                       semicolon);
 }
 
-std::optional<std::unique_ptr<ast::ReturnStatement>> parse_return_stmt(
+std::optional<std::unique_ptr<ast::ReturnStatement>> ParseReturnStmt(
     Context &ctx, TokenStream &ts) {
     TRY(check_keyword(ctx, ts, KeywordTokenKind::Return));
-    ast::Return return_kw(ts.token()->span());
-    ts.advance();
+    ast::Return return_kw(ts.CurrToken()->span());
+    ts.Advance();
 
     std::optional<std::unique_ptr<ast::Expression>> expr;
     TRY(check_eos(ctx, ts));
-    if (!ts.token()->is_punct_of(PunctTokenKind::Semicolon)) {
-        expr = parse_expr(ctx, ts);
+    if (!ts.CurrToken()->IsPunctOf(PunctTokenKind::Semicolon)) {
+        expr = ParseExpr(ctx, ts);
         if (!expr) return std::nullopt;
     }
 
     TRY(check_punct(ctx, ts, PunctTokenKind::Semicolon));
-    ast::Semicolon semicolon(ts.token()->span());
-    ts.advance();
+    ast::Semicolon semicolon(ts.CurrToken()->span());
+    ts.Advance();
 
     return std::make_unique<ast::ReturnStatement>(return_kw, std::move(expr),
                                                   semicolon);
 }
 
-std::optional<std::unique_ptr<ast::BreakStatement>> parse_break_stmt(
+std::optional<std::unique_ptr<ast::BreakStatement>> ParseBreakStmt(
     Context &ctx, TokenStream &ts) {
     TRY(check_keyword(ctx, ts, KeywordTokenKind::Break));
-    ast::Break break_kw(ts.token()->span());
-    ts.advance();
+    ast::Break break_kw(ts.CurrToken()->span());
+    ts.Advance();
 
     TRY(check_punct(ctx, ts, PunctTokenKind::Semicolon));
-    ast::Semicolon semicolon(ts.token()->span());
-    ts.advance();
+    ast::Semicolon semicolon(ts.CurrToken()->span());
+    ts.Advance();
 
     return std::make_unique<ast::BreakStatement>(break_kw, semicolon);
 }
 
-std::optional<std::unique_ptr<ast::ContinueStatement>> parse_continue_stmt(
+std::optional<std::unique_ptr<ast::ContinueStatement>> ParseContinueStmt(
     Context &ctx, TokenStream &ts) {
     TRY(check_keyword(ctx, ts, KeywordTokenKind::Continue));
-    ast::Continue continue_kw(ts.token()->span());
-    ts.advance();
+    ast::Continue continue_kw(ts.CurrToken()->span());
+    ts.Advance();
 
     TRY(check_punct(ctx, ts, PunctTokenKind::Semicolon));
-    ast::Semicolon semicolon(ts.token()->span());
-    ts.advance();
+    ast::Semicolon semicolon(ts.CurrToken()->span());
+    ts.Advance();
 
     return std::make_unique<ast::ContinueStatement>(continue_kw, semicolon);
 }
 
-std::optional<std::unique_ptr<ast::WhileStatement>> parse_while_stmt(
+std::optional<std::unique_ptr<ast::WhileStatement>> ParseWhileStmt(
     Context &ctx, TokenStream &ts) {
     TRY(check_keyword(ctx, ts, KeywordTokenKind::While));
-    ast::While while_kw(ts.token()->span());
-    ts.advance();
+    ast::While while_kw(ts.CurrToken()->span());
+    ts.Advance();
 
     TRY(check_punct(ctx, ts, PunctTokenKind::LParen));
-    ast::LParen lparen(ts.token()->span());
-    ts.advance();
+    ast::LParen lparen(ts.CurrToken()->span());
+    ts.Advance();
 
-    auto cond = parse_expr(ctx, ts);
+    auto cond = ParseExpr(ctx, ts);
     if (!cond) return std::nullopt;
 
     TRY(check_punct(ctx, ts, PunctTokenKind::RParen));
-    ast::RParen rparen(ts.token()->span());
-    ts.advance();
+    ast::RParen rparen(ts.CurrToken()->span());
+    ts.Advance();
 
-    auto body = parse_stmt(ctx, ts);
+    auto body = ParseStmt(ctx, ts);
     if (!body) return std::nullopt;
 
     return std::make_unique<ast::WhileStatement>(
         while_kw, lparen, std::move(*cond), rparen, std::move(*body));
 }
 
-std::optional<std::unique_ptr<ast::IfStatement>> parse_if_stmt(
-    Context &ctx, TokenStream &ts) {
+std::optional<std::unique_ptr<ast::IfStatement>> ParseIfStmt(Context &ctx,
+                                                             TokenStream &ts) {
     TRY(check_keyword(ctx, ts, KeywordTokenKind::If));
-    ast::If if_kw(ts.token()->span());
-    ts.advance();
+    ast::If if_kw(ts.CurrToken()->span());
+    ts.Advance();
 
     TRY(check_punct(ctx, ts, PunctTokenKind::LParen));
-    ast::LParen lparen(ts.token()->span());
-    ts.advance();
+    ast::LParen lparen(ts.CurrToken()->span());
+    ts.Advance();
 
-    auto cond = parse_expr(ctx, ts);
+    auto cond = ParseExpr(ctx, ts);
     if (!cond) return std::nullopt;
 
     TRY(check_punct(ctx, ts, PunctTokenKind::RParen));
-    ast::RParen rparen(ts.token()->span());
-    ts.advance();
+    ast::RParen rparen(ts.CurrToken()->span());
+    ts.Advance();
 
-    auto body = parse_stmt(ctx, ts);
+    auto body = ParseStmt(ctx, ts);
     if (!body) return std::nullopt;
 
     std::optional<ast::IfStatementElseClause> else_clause;
-    if (ts && ts.token()->is_keyword_of(KeywordTokenKind::Else)) {
-        ast::Else else_kw(ts.token()->span());
-        ts.advance();
+    if (ts && ts.CurrToken()->IsKeywordOf(KeywordTokenKind::Else)) {
+        ast::Else else_kw(ts.CurrToken()->span());
+        ts.Advance();
 
-        auto else_body = parse_stmt(ctx, ts);
+        auto else_body = ParseStmt(ctx, ts);
         if (!else_body) return std::nullopt;
 
         else_clause.emplace(else_kw, std::move(*else_body));
@@ -972,39 +975,40 @@ std::optional<std::unique_ptr<ast::IfStatement>> parse_if_stmt(
                                               std::move(else_clause));
 }
 
-std::optional<std::unique_ptr<ast::BlockStatement>> parse_block_stmt(
+std::optional<std::unique_ptr<ast::BlockStatement>> ParseBlockStmt(
     Context &ctx, TokenStream &ts) {
     TRY(check_punct(ctx, ts, PunctTokenKind::LCurly));
-    ast::LCurly lcurly(ts.token()->span());
-    ts.advance();
+    ast::LCurly lcurly(ts.CurrToken()->span());
+    ts.Advance();
 
     std::vector<ast::BlockStatementItem> items;
     while (true) {
         TRY(check_eos(ctx, ts));
-        if (ts.token()->is_keyword_of(KeywordTokenKind::Let)) {
-            ast::Let let_kw(ts.token()->span());
-            ts.advance();
+        if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::Let)) {
+            ast::Let let_kw(ts.CurrToken()->span());
+            ts.Advance();
 
             std::vector<ast::VariableDeclarationBody> names;
             while (true) {
                 TRY(check_ident(ctx, ts));
-                std::string value = ts.token()->ident_value();
-                ast::VariableName name(std::move(value), ts.token()->span());
-                ts.advance();
+                std::string value = ts.CurrToken()->IdentValue();
+                ast::VariableName name(std::move(value),
+                                       ts.CurrToken()->span());
+                ts.Advance();
 
                 TRY(check_punct(ctx, ts, PunctTokenKind::Colon));
-                ast::Colon colon(ts.token()->span());
-                ts.advance();
+                ast::Colon colon(ts.CurrToken()->span());
+                ts.Advance();
 
-                auto type = parse_type(ctx, ts);
+                auto type = ParseType(ctx, ts);
                 if (!type) return std::nullopt;
 
                 std::optional<ast::VariableInit> init;
-                if (ts && ts.token()->is_punct_of(PunctTokenKind::Assign)) {
-                    ast::Assign assign(ts.token()->span());
-                    ts.advance();
+                if (ts && ts.CurrToken()->IsPunctOf(PunctTokenKind::Assign)) {
+                    ast::Assign assign(ts.CurrToken()->span());
+                    ts.Advance();
 
-                    auto expr = parse_expr(ctx, ts);
+                    auto expr = ParseExpr(ctx, ts);
                     if (!expr) return std::nullopt;
 
                     init.emplace(assign, std::move(*expr));
@@ -1014,117 +1018,118 @@ std::optional<std::unique_ptr<ast::BlockStatement>> parse_block_stmt(
                                    std::move(init));
 
                 TRY(check_eos(ctx, ts));
-                if (ts.token()->is_punct_of(PunctTokenKind::Comma)) {
-                    ts.advance();
+                if (ts.CurrToken()->IsPunctOf(PunctTokenKind::Comma)) {
+                    ts.Advance();
                 } else {
                     break;
                 }
             }
 
             TRY(check_punct(ctx, ts, PunctTokenKind::Semicolon));
-            ast::Semicolon semicolon(ts.token()->span());
-            ts.advance();
+            ast::Semicolon semicolon(ts.CurrToken()->span());
+            ts.Advance();
 
             items.emplace_back(
                 ast::VariableDeclarations(let_kw, std::move(names), semicolon));
-        } else if (ts.token()->is_punct_of(PunctTokenKind::RCurly)) {
-            ast::RCurly rcurly(ts.token()->span());
-            ts.advance();
+        } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::RCurly)) {
+            ast::RCurly rcurly(ts.CurrToken()->span());
+            ts.Advance();
             return std::make_unique<ast::BlockStatement>(
                 lcurly, std::move(items), rcurly);
         } else {
-            auto stmt = parse_stmt(ctx, ts);
+            auto stmt = ParseStmt(ctx, ts);
             if (!stmt) return std::nullopt;
             items.emplace_back(std::move(*stmt));
         }
     }
 }
 
-std::optional<std::unique_ptr<ast::Declaration>> parse_decl(Context &ctx,
-                                                            TokenStream &ts) {
-    if (ts.token()->is_keyword_of(KeywordTokenKind::Function)) {
-        return parse_func_decl(ctx, ts);
-    } else if (ts.token()->is_keyword_of(KeywordTokenKind::Struct)) {
-        return parse_struct_decl(ctx, ts);
-    } else if (ts.token()->is_keyword_of(KeywordTokenKind::Enum)) {
-        return parse_enum_decl(ctx, ts);
+std::optional<std::unique_ptr<ast::Declaration>> ParseDecl(Context &ctx,
+                                                           TokenStream &ts) {
+    if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::Function)) {
+        return ParseFuncDecl(ctx, ts);
+    } else if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::Struct)) {
+        return ParseStructDecl(ctx, ts);
+    } else if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::Enum)) {
+        return ParseEnumDecl(ctx, ts);
     } else {
-        ReportInfo info(ts.token()->span(),
+        ReportInfo info(ts.CurrToken()->span(),
                         "expected one of `function`, `struct` or `enum`", "");
-        report(ctx, ReportLevel::Error, info);
+        Report(ctx, ReportLevel::Error, info);
         return std::nullopt;
     }
 }
 
-std::optional<std::unique_ptr<ast::FunctionDeclaration>> parse_func_decl(
+std::optional<std::unique_ptr<ast::FunctionDeclaration>> ParseFuncDecl(
     Context &ctx, TokenStream &ts) {
     TRY(check_keyword(ctx, ts, KeywordTokenKind::Function));
-    ast::Function function_kw(ts.token()->span());
-    ts.advance();
+    ast::Function function_kw(ts.CurrToken()->span());
+    ts.Advance();
 
     TRY(check_ident(ctx, ts));
-    std::string value = ts.token()->ident_value();
-    ast::FunctionDeclarationName name(std::move(value), ts.token()->span());
-    ts.advance();
+    std::string value = ts.CurrToken()->IdentValue();
+    ast::FunctionDeclarationName name(std::move(value), ts.CurrToken()->span());
+    ts.Advance();
 
     TRY(check_punct(ctx, ts, PunctTokenKind::LParen));
-    ast::LParen lparen(ts.token()->span());
-    ts.advance();
+    ast::LParen lparen(ts.CurrToken()->span());
+    ts.Advance();
 
     TRY(check_eos(ctx, ts));
     std::vector<ast::FunctionDeclarationParameter> params;
-    if (!ts.token()->is_punct_of(PunctTokenKind::RParen)) {
+    if (!ts.CurrToken()->IsPunctOf(PunctTokenKind::RParen)) {
         while (true) {
             TRY(check_eos(ctx, ts));
-            if (ts.token()->is_ident()) {
-                std::string value = ts.token()->ident_value();
-                ast::FunctionDeclarationParameterName name(std::move(value),
-                                                           ts.token()->span());
-                ts.advance();
+            if (ts.CurrToken()->IsIdent()) {
+                std::string value = ts.CurrToken()->IdentValue();
+                ast::FunctionDeclarationParameterName name(
+                    std::move(value), ts.CurrToken()->span());
+                ts.Advance();
 
                 TRY(check_punct(ctx, ts, PunctTokenKind::Colon));
-                ast::Colon colon(ts.token()->span());
-                ts.advance();
+                ast::Colon colon(ts.CurrToken()->span());
+                ts.Advance();
 
-                auto type = parse_type(ctx, ts);
+                auto type = ParseType(ctx, ts);
                 if (!type) return std::nullopt;
 
                 params.emplace_back(std::move(name), colon, std::move(*type));
 
                 TRY(check_eos(ctx, ts));
-                if (ts.token()->is_punct_of(PunctTokenKind::RParen)) {
+                if (ts.CurrToken()->IsPunctOf(PunctTokenKind::RParen)) {
                     break;
-                } else if (ts.token()->is_punct_of(PunctTokenKind::Comma)) {
-                    ts.advance();
+                } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::Comma)) {
+                    ts.Advance();
                 }
-            } else if (ts.token()->is_punct_of(PunctTokenKind::RParen) &&
+            } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::RParen) &&
                        params.empty()) {
                 break;
             } else {
-                ReportInfo info(ts.token()->span(), "unexpected token found",
+                ReportInfo info(ts.CurrToken()->span(),
+                                "unexpected token found",
                                 "expected identifier or `)`");
-                report(ctx, ReportLevel::Error, info);
+                Report(ctx, ReportLevel::Error, info);
                 return std::nullopt;
             }
         }
     }
 
     TRY(check_punct(ctx, ts, PunctTokenKind::RParen));
-    ast::RParen rparen(ts.token()->span());
-    ts.advance();
+    ast::RParen rparen(ts.CurrToken()->span());
+    ts.Advance();
 
     std::optional<ast::FunctionDeclarationReturn> ret;
-    if (ts && ts.token()->is_punct_of(PunctTokenKind::Arrow)) {
-        ast::Arrow arrow(ts.token()->span());
-        ts.advance();
+    if (ts && ts.CurrToken()->IsPunctOf(PunctTokenKind::Arrow)) {
+        ast::Arrow arrow(ts.CurrToken()->span());
+        ts.Advance();
 
-        auto type = parse_type(ctx, ts);
+        auto type = ParseType(ctx, ts);
         if (!type) return std::nullopt;
 
         ret.emplace(arrow, std::move(*type));
     }
 
-    auto body = parse_block_stmt(ctx, ts);
+    auto body = ParseBlockStmt(ctx, ts);
     if (!body) return std::nullopt;
 
     return std::make_unique<ast::FunctionDeclaration>(
@@ -1132,98 +1137,99 @@ std::optional<std::unique_ptr<ast::FunctionDeclaration>> parse_func_decl(
         std::move(ret), std::move(*body));
 }
 
-std::optional<std::unique_ptr<ast::StructDeclaration>> parse_struct_decl(
+std::optional<std::unique_ptr<ast::StructDeclaration>> ParseStructDecl(
     Context &ctx, TokenStream &ts) {
     TRY(check_keyword(ctx, ts, KeywordTokenKind::Struct));
-    ast::Struct struct_kw(ts.token()->span());
-    ts.advance();
+    ast::Struct struct_kw(ts.CurrToken()->span());
+    ts.Advance();
 
     TRY(check_ident(ctx, ts));
-    std::string value = ts.token()->ident_value();
-    ast::StructDeclarationName name(std::move(value), ts.token()->span());
-    ts.advance();
+    std::string value = ts.CurrToken()->IdentValue();
+    ast::StructDeclarationName name(std::move(value), ts.CurrToken()->span());
+    ts.Advance();
 
     TRY(check_punct(ctx, ts, PunctTokenKind::LCurly));
-    ast::LCurly lcurly(ts.token()->span());
-    ts.advance();
+    ast::LCurly lcurly(ts.CurrToken()->span());
+    ts.Advance();
 
     std::vector<ast::StructDeclarationField> fields;
     while (true) {
         TRY(check_eos(ctx, ts));
-        if (ts.token()->is_ident()) {
-            std::string value = ts.token()->ident_value();
+        if (ts.CurrToken()->IsIdent()) {
+            std::string value = ts.CurrToken()->IdentValue();
             ast::StructDeclarationFieldName name(std::move(value),
-                                                 ts.token()->span());
-            ts.advance();
+                                                 ts.CurrToken()->span());
+            ts.Advance();
 
             TRY(check_punct(ctx, ts, PunctTokenKind::Colon));
-            ast::Colon colon(ts.token()->span());
-            ts.advance();
+            ast::Colon colon(ts.CurrToken()->span());
+            ts.Advance();
 
-            auto type = parse_type(ctx, ts);
+            auto type = ParseType(ctx, ts);
             if (!type) return std::nullopt;
 
             fields.emplace_back(std::move(name), colon, std::move(*type));
 
-            if (ts && ts.token()->is_punct_of(PunctTokenKind::Comma)) {
-                ts.advance();
+            if (ts && ts.CurrToken()->IsPunctOf(PunctTokenKind::Comma)) {
+                ts.Advance();
             } else {
                 break;
             }
-        } else if (ts.token()->is_punct_of(PunctTokenKind::RCurly)) {
+        } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::RCurly)) {
             break;
         } else {
-            if (ts.has_prev()) {
-                ReportInfo info(ts.prev()->span(), "unexpected token",
+            if (ts.HasPrev()) {
+                ReportInfo info(ts.PrevToken()->span(), "unexpected token",
                                 "expected identifier or `}` after this");
-                report(ctx, ReportLevel::Error, info);
+                Report(ctx, ReportLevel::Error, info);
                 return std::nullopt;
             } else {
-                ReportInfo info(ts.token()->span(), "unexpected token",
+                ReportInfo info(ts.CurrToken()->span(), "unexpected token",
                                 "expected this to be identifier or `}`");
-                report(ctx, ReportLevel::Error, info);
+                Report(ctx, ReportLevel::Error, info);
                 return std::nullopt;
             }
         }
     }
 
     TRY(check_punct(ctx, ts, PunctTokenKind::RCurly));
-    ast::RCurly rcurly(ts.token()->span());
-    ts.advance();
+    ast::RCurly rcurly(ts.CurrToken()->span());
+    ts.Advance();
 
     return std::make_unique<ast::StructDeclaration>(
         struct_kw, std::move(name), lcurly, std::move(fields), rcurly);
 }
 
-std::optional<std::unique_ptr<ast::EnumDeclaration>> parse_enum_decl(
+std::optional<std::unique_ptr<ast::EnumDeclaration>> ParseEnumDecl(
     Context &ctx, TokenStream &ts) {
     TRY(check_keyword(ctx, ts, KeywordTokenKind::Enum));
-    ast::Enum enum_kw(ts.token()->span());
-    ts.advance();
+    ast::Enum enum_kw(ts.CurrToken()->span());
+    ts.Advance();
 
     TRY(check_ident(ctx, ts));
-    std::string value = ts.token()->ident_value();
-    ast::EnumDeclarationName name(std::move(value), ts.token()->span());
-    ts.advance();
+    std::string value = ts.CurrToken()->IdentValue();
+    ast::EnumDeclarationName name(std::move(value), ts.CurrToken()->span());
+    ts.Advance();
 
     TRY(check_punct(ctx, ts, PunctTokenKind::LCurly));
-    ast::LCurly lcurly(ts.token()->span());
-    ts.advance();
+    ast::LCurly lcurly(ts.CurrToken()->span());
+    ts.Advance();
 
     std::vector<ast::EnumDeclarationField> fields;
     while (true) {
         TRY(check_eos(ctx, ts));
-        if (ts.token()->is_ident()) {
+        if (ts.CurrToken()->IsIdent()) {
             ast::EnumDeclarationFieldName name(
-                std::string(ts.token()->ident_value()), ts.token()->span());
-            ts.advance();
+                std::string(ts.CurrToken()->IdentValue()),
+                ts.CurrToken()->span());
+            ts.Advance();
 
             std::optional<ast::EnumDeclarationFieldInit> init;
-            if (ts && ts.token()->is_punct_of(PunctTokenKind::Assign)) {
-                ast::Assign assign(ts.token()->span());
-                ts.advance();
+            if (ts && ts.CurrToken()->IsPunctOf(PunctTokenKind::Assign)) {
+                ast::Assign assign(ts.CurrToken()->span());
+                ts.Advance();
 
-                auto value = parse_logical_or_expr(ctx, ts);
+                auto value = ParseLogicalOrExpr(ctx, ts);
                 if (!value) return std::nullopt;
 
                 init.emplace(assign, std::move(*value));
@@ -1231,44 +1237,44 @@ std::optional<std::unique_ptr<ast::EnumDeclaration>> parse_enum_decl(
 
             fields.emplace_back(std::move(name), std::move(init));
 
-            if (ts && ts.token()->is_punct_of(PunctTokenKind::Comma)) {
-                ts.advance();
+            if (ts && ts.CurrToken()->IsPunctOf(PunctTokenKind::Comma)) {
+                ts.Advance();
             } else {
                 break;
             }
-        } else if (ts.token()->is_punct_of(PunctTokenKind::RCurly)) {
+        } else if (ts.CurrToken()->IsPunctOf(PunctTokenKind::RCurly)) {
             break;
         } else {
-            if (ts.has_prev()) {
-                ReportInfo info(ts.prev()->span(), "unexpected token",
+            if (ts.HasPrev()) {
+                ReportInfo info(ts.PrevToken()->span(), "unexpected token",
                                 "expected identifier or `}` after this");
-                report(ctx, ReportLevel::Error, info);
+                Report(ctx, ReportLevel::Error, info);
                 return std::nullopt;
             } else {
-                ReportInfo info(ts.token()->span(), "unexpected token",
+                ReportInfo info(ts.CurrToken()->span(), "unexpected token",
                                 "expected this to be identifier or `}`");
-                report(ctx, ReportLevel::Error, info);
+                Report(ctx, ReportLevel::Error, info);
                 return std::nullopt;
             }
         }
     }
 
     TRY(check_punct(ctx, ts, PunctTokenKind::RCurly));
-    ast::RCurly rcurly(ts.token()->span());
-    ts.advance();
+    ast::RCurly rcurly(ts.CurrToken()->span());
+    ts.Advance();
 
     return std::make_unique<ast::EnumDeclaration>(
         enum_kw, std::move(name), lcurly, std::move(fields), rcurly);
 }
 
-ParserResult parse_file(Context &ctx, const std::string &path) {
-    auto tokens = lex_file(ctx, path);
+ParserResult ParseFile(Context &ctx, const std::string &path) {
+    auto tokens = LexFile(ctx, path);
     if (!tokens) return std::nullopt;
     TokenStream ts(std::move(*tokens));
 
     std::vector<std::unique_ptr<ast::Declaration>> res;
     while (ts) {
-        auto decl = parse_decl(ctx, ts);
+        auto decl = ParseDecl(ctx, ts);
         if (!decl.has_value()) return std::nullopt;
         res.emplace_back(std::move(*decl));
     }

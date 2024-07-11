@@ -13,9 +13,9 @@ namespace mini {
 bool hirgen_block_item(HirGenContext &ctx, const ast::BlockStatementItem &item,
                        std::vector<std::unique_ptr<hir::Statement>> &stmts,
                        std::vector<hir::VariableDeclaration> &decls) {
-    if (item.is_stmt()) {
+    if (item.IsStmt()) {
         StmtHirGen gen(ctx);
-        item.stmt()->accept(gen);
+        item.stmt()->Accept(gen);
         if (!gen) return false;
 
         stmts.emplace_back(std::move(gen.stmt()));
@@ -23,21 +23,21 @@ bool hirgen_block_item(HirGenContext &ctx, const ast::BlockStatementItem &item,
     } else {
         for (const auto &body : item.decl().bodies()) {
             TypeHirGen gen(ctx);
-            body.type()->accept(gen);
+            body.type()->Accept(gen);
             if (!gen) return false;
 
             hir::VariableDeclarationName name(
-                std::string(ctx.translator().regvar(body.name().name())),
+                std::string(ctx.translator().RegVar(body.name().name())),
                 body.name().span());
             decls.emplace_back(gen.type(), std::move(name));
 
             if (body.init()) {
                 ExprHirGen gen(ctx);
-                body.init()->expr()->accept(gen);
+                body.init()->expr()->Accept(gen);
                 if (!gen) return false;
 
                 auto lhs = std::make_unique<hir::VariableExpression>(
-                    std::string(ctx.translator().translate(body.name().name())),
+                    std::string(ctx.translator().Translate(body.name().name())),
                     body.name().span());
                 hir::InfixExpression::Op op(hir::InfixExpression::Op::Assign,
                                             body.init()->assign().span());

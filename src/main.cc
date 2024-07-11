@@ -23,18 +23,18 @@ public:
                 if (i < argc - 1) {
                     output.emplace(argv[++i]);
                 } else {
-                    mini::fatal_error("expect output filename after -o");
+                    mini::FatalError("expect output filename after -o");
                 }
             } else {
                 if (input) {
-                    mini::fatal_error("duplicated input file name");
+                    mini::FatalError("duplicated input file name");
                 } else {
                     input.emplace(argv[i]);
                 }
             }
         }
         if (!input) {
-            mini::fatal_error("expected input file name");
+            mini::FatalError("expected input file name");
         } else {
             input_ = input.value();
             output_ = output;
@@ -55,26 +55,26 @@ int main(int argc, char *argv[]) {
     Arguments args(argc, argv);
     if (args.emit_hir()) {
         mini::Context ctx;
-        auto decls = mini::hirgen_file(ctx, args.input());
+        auto decls = mini::HirgenFile(ctx, args.input());
         if (!decls) std::exit(EXIT_FAILURE);
         if (args.output()) {
             std::ofstream ofs(args.output().value());
             if (ofs.bad()) {
-                mini::fatal_error("failed to open output file");
+                mini::FatalError("failed to open output file");
             }
             for (const auto &decl : decls.value()) {
                 mini::hir::PrintableContext ctx(ofs, 4);
-                decl->println(ctx);
-                ctx.printer().println("");
+                decl->PrintLn(ctx);
+                ctx.printer().PrintLn("");
             }
         } else {
             for (const auto &decl : decls.value()) {
                 mini::hir::PrintableContext ctx(std::cout, 4);
-                decl->println(ctx);
-                ctx.printer().println("");
+                decl->PrintLn(ctx);
+                ctx.printer().PrintLn("");
             }
         }
     } else {
-        mini::fatal_error("not yet implemented");
+        mini::FatalError("not yet implemented");
     }
 }

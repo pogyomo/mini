@@ -20,15 +20,15 @@ class EnumDeclaration;
 class DeclarationVisitor {
 public:
     virtual ~DeclarationVisitor() {}
-    virtual void visit(const FunctionDeclaration& decl) = 0;
-    virtual void visit(const StructDeclaration& decl) = 0;
-    virtual void visit(const EnumDeclaration& decl) = 0;
+    virtual void Visit(const FunctionDeclaration& decl) = 0;
+    virtual void Visit(const StructDeclaration& decl) = 0;
+    virtual void Visit(const EnumDeclaration& decl) = 0;
 };
 
 class Declaration : public Node {
 public:
     virtual ~Declaration() {}
-    virtual void accept(DeclarationVisitor& visitor) const = 0;
+    virtual void Accept(DeclarationVisitor& visitor) const = 0;
 };
 
 class FunctionDeclarationName : public Node {
@@ -101,8 +101,8 @@ public:
           rparen_(rparen),
           ret_(std::move(ret)),
           body_(std::move(body)) {}
-    inline void accept(DeclarationVisitor& visitor) const override {
-        visitor.visit(*this);
+    inline void Accept(DeclarationVisitor& visitor) const override {
+        visitor.Visit(*this);
     }
     inline Span span() const override {
         return function_kw_.span() + body_->span();
@@ -177,8 +177,8 @@ public:
           lcurly_(lcurly),
           fields_(std::move(fields)),
           rcurly_(rcurly) {}
-    inline void accept(DeclarationVisitor& visitor) const override {
-        visitor.visit(*this);
+    inline void Accept(DeclarationVisitor& visitor) const override {
+        visitor.Visit(*this);
     }
     inline Span span() const override {
         return struct_kw_.span() + rcurly_.span();
@@ -265,8 +265,8 @@ public:
           lcurly_(lcurly),
           fields_(std::move(fields)),
           rcurly_(rcurly) {}
-    inline void accept(DeclarationVisitor& visitor) const override {
-        visitor.visit(*this);
+    inline void Accept(DeclarationVisitor& visitor) const override {
+        visitor.Visit(*this);
     }
     inline Span span() const override {
         return enum_kw_.span() + rcurly_.span();

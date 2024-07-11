@@ -18,13 +18,13 @@ public:
     explicit operator bool() const { return success_; }
     std::unique_ptr<hir::Statement> &stmt() { return stmt_; }
     std::vector<hir::VariableDeclaration> &decls() { return decls_; }
-    void visit(const ast::ExpressionStatement &stmt) override;
-    void visit(const ast::ReturnStatement &stmt) override;
-    void visit(const ast::BreakStatement &stmt) override;
-    void visit(const ast::ContinueStatement &stmt) override;
-    void visit(const ast::WhileStatement &stmt) override;
-    void visit(const ast::IfStatement &stmt) override;
-    void visit(const ast::BlockStatement &stmt) override;
+    void Visit(const ast::ExpressionStatement &stmt) override;
+    void Visit(const ast::ReturnStatement &stmt) override;
+    void Visit(const ast::BreakStatement &stmt) override;
+    void Visit(const ast::ContinueStatement &stmt) override;
+    void Visit(const ast::WhileStatement &stmt) override;
+    void Visit(const ast::IfStatement &stmt) override;
+    void Visit(const ast::BlockStatement &stmt) override;
 
 private:
     bool success_;

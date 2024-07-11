@@ -22,15 +22,15 @@ class FunctionDeclaration;
 class DeclarationVisitor {
 public:
     virtual ~DeclarationVisitor() {}
-    virtual void visit(const StructDeclaration &decl) = 0;
-    virtual void visit(const EnumDeclaration &decl) = 0;
-    virtual void visit(const FunctionDeclaration &decl) = 0;
+    virtual void Visit(const StructDeclaration &decl) = 0;
+    virtual void Visit(const EnumDeclaration &decl) = 0;
+    virtual void Visit(const FunctionDeclaration &decl) = 0;
 };
 
 class Declaration : public Printable {
 public:
     Declaration(Span span) : span_(span) {}
-    virtual void accept(DeclarationVisitor &visitor) const = 0;
+    virtual void Accept(DeclarationVisitor &visitor) const = 0;
     inline Span span() const { return span_; }
 
 private:
@@ -83,10 +83,10 @@ public:
         : Declaration(span),
           name_(std::move(name)),
           fields_(std::move(fields)) {}
-    inline void accept(DeclarationVisitor &visitor) const override {
-        visitor.visit(*this);
+    inline void Accept(DeclarationVisitor &visitor) const override {
+        visitor.Visit(*this);
     }
-    void print(PrintableContext &ctx) const override;
+    void Print(PrintableContext &ctx) const override;
     inline const StructDeclarationName &name() const { return name_; }
     inline const std::vector<StructDeclarationField> &fields() const {
         return fields_;
@@ -154,10 +154,10 @@ public:
         : Declaration(span),
           name_(std::move(name)),
           fields_(std::move(fields)) {}
-    inline void accept(DeclarationVisitor &visitor) const override {
-        visitor.visit(*this);
+    inline void Accept(DeclarationVisitor &visitor) const override {
+        visitor.Visit(*this);
     }
-    void print(PrintableContext &ctx) const override;
+    void Print(PrintableContext &ctx) const override;
     inline const EnumDeclarationName &name() const { return name_; }
     inline const std::vector<EnumDeclarationField> &fields() const {
         return fields_;
@@ -245,10 +245,10 @@ public:
           ret_(ret),
           decls_(std::move(decls)),
           body_(std::move(body)) {}
-    inline void accept(DeclarationVisitor &visitor) const override {
-        visitor.visit(*this);
+    inline void Accept(DeclarationVisitor &visitor) const override {
+        visitor.Visit(*this);
     }
-    void print(PrintableContext &ctx) const override;
+    void Print(PrintableContext &ctx) const override;
     inline const FunctionDeclarationName &name() const { return name_; }
     inline const std::vector<FunctionDeclarationParam> &params() const {
         return params_;

@@ -14,7 +14,7 @@ namespace mini {
 using HirgenResult =
     std::optional<std::vector<std::unique_ptr<hir::Declaration>>>;
 
-HirgenResult hirgen_file(Context &ctx, const std::string &path);
+HirgenResult HirgenFile(Context &ctx, const std::string &path);
 
 }  // namespace mini
 

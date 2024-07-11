@@ -30,28 +30,28 @@ class ArrayExpression;
 class ExpressionVisitor {
 public:
     virtual ~ExpressionVisitor() {}
-    virtual void visit(const UnaryExpression& expr) = 0;
-    virtual void visit(const InfixExpression& expr) = 0;
-    virtual void visit(const IndexExpression& expr) = 0;
-    virtual void visit(const CallExpression& expr) = 0;
-    virtual void visit(const AccessExpression& expr) = 0;
-    virtual void visit(const CastExpression& expr) = 0;
-    virtual void visit(const ESizeofExpression& expr) = 0;
-    virtual void visit(const TSizeofExpression& expr) = 0;
-    virtual void visit(const EnumSelectExpression& expr) = 0;
-    virtual void visit(const VariableExpression& expr) = 0;
-    virtual void visit(const IntegerExpression& expr) = 0;
-    virtual void visit(const StringExpression& expr) = 0;
-    virtual void visit(const CharExpression& expr) = 0;
-    virtual void visit(const BoolExpression& expr) = 0;
-    virtual void visit(const StructExpression& expr) = 0;
-    virtual void visit(const ArrayExpression& expr) = 0;
+    virtual void Visit(const UnaryExpression& expr) = 0;
+    virtual void Visit(const InfixExpression& expr) = 0;
+    virtual void Visit(const IndexExpression& expr) = 0;
+    virtual void Visit(const CallExpression& expr) = 0;
+    virtual void Visit(const AccessExpression& expr) = 0;
+    virtual void Visit(const CastExpression& expr) = 0;
+    virtual void Visit(const ESizeofExpression& expr) = 0;
+    virtual void Visit(const TSizeofExpression& expr) = 0;
+    virtual void Visit(const EnumSelectExpression& expr) = 0;
+    virtual void Visit(const VariableExpression& expr) = 0;
+    virtual void Visit(const IntegerExpression& expr) = 0;
+    virtual void Visit(const StringExpression& expr) = 0;
+    virtual void Visit(const CharExpression& expr) = 0;
+    virtual void Visit(const BoolExpression& expr) = 0;
+    virtual void Visit(const StructExpression& expr) = 0;
+    virtual void Visit(const ArrayExpression& expr) = 0;
 };
 
 class Expression : public Node {
 public:
     virtual ~Expression() {}
-    virtual void accept(ExpressionVisitor& visitor) const = 0;
+    virtual void Accept(ExpressionVisitor& visitor) const = 0;
 };
 
 class UnaryExpression : public Expression {
@@ -75,8 +75,8 @@ public:
     };
     UnaryExpression(Op op, std::unique_ptr<Expression>&& expr)
         : op_(op), expr_(std::move(expr)) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
-        return visitor.visit(*this);
+    inline void Accept(ExpressionVisitor& visitor) const override {
+        return visitor.Visit(*this);
     }
     inline Span span() const override { return op_.span() + expr_->span(); }
     inline Op op() const { return op_; }
@@ -123,8 +123,8 @@ public:
     InfixExpression(Op op, std::unique_ptr<Expression>&& lhs,
                     std::unique_ptr<Expression>&& rhs)
         : op_(op), lhs_(std::move(lhs)), rhs_(std::move(rhs)) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
-        return visitor.visit(*this);
+    inline void Accept(ExpressionVisitor& visitor) const override {
+        return visitor.Visit(*this);
     }
     inline Span span() const override { return lhs_->span() + rhs_->span(); }
     inline Op op() const { return op_; }
@@ -145,8 +145,8 @@ public:
           lsquare_(lsquare),
           index_(std::move(index)),
           rsquare_(rsquare) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
-        return visitor.visit(*this);
+    inline void Accept(ExpressionVisitor& visitor) const override {
+        return visitor.Visit(*this);
     }
     inline Span span() const override {
         return expr_->span() + rsquare_.span();
@@ -172,8 +172,8 @@ public:
           lparen_(lparen),
           args_(std::move(args)),
           rparen_(rparen) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
-        return visitor.visit(*this);
+    inline void Accept(ExpressionVisitor& visitor) const override {
+        return visitor.Visit(*this);
     }
     inline Span span() const override { return func_->span() + rparen_.span(); }
     inline const std::unique_ptr<Expression>& func() const { return func_; }
@@ -207,8 +207,8 @@ public:
     AccessExpression(std::unique_ptr<Expression>&& expr, Dot dot,
                      AccessExpressionField&& field)
         : expr_(std::move(expr)), dot_(dot), field_(std::move(field)) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
-        return visitor.visit(*this);
+    inline void Accept(ExpressionVisitor& visitor) const override {
+        return visitor.Visit(*this);
     }
     inline Span span() const override { return expr_->span() + field_.span(); }
     inline const std::unique_ptr<Expression>& expr() const { return expr_; }
@@ -226,8 +226,8 @@ public:
     CastExpression(std::unique_ptr<Expression>&& expr, As as_kw,
                    const std::shared_ptr<Type>& type)
         : expr_(std::move(expr)), as_kw_(as_kw), type_(type) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
-        return visitor.visit(*this);
+    inline void Accept(ExpressionVisitor& visitor) const override {
+        return visitor.Visit(*this);
     }
     inline Span span() const override { return expr_->span() + type_->span(); }
     inline const std::unique_ptr<Expression>& expr() const { return expr_; }
@@ -244,8 +244,8 @@ class ESizeofExpression : public Expression {
 public:
     ESizeofExpression(ESizeof esizeof_kw, std::unique_ptr<Expression>&& expr)
         : esizeof_kw_(esizeof_kw), expr_(std::move(expr)) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
-        return visitor.visit(*this);
+    inline void Accept(ExpressionVisitor& visitor) const override {
+        return visitor.Visit(*this);
     }
     inline Span span() const override {
         return esizeof_kw_.span() + expr_->span();
@@ -262,8 +262,8 @@ class TSizeofExpression : public Expression {
 public:
     TSizeofExpression(TSizeof tsizeof_kw, std::unique_ptr<Type>&& type)
         : tsizeof_kw_(tsizeof_kw), type_(std::move(type)) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
-        return visitor.visit(*this);
+    inline void Accept(ExpressionVisitor& visitor) const override {
+        return visitor.Visit(*this);
     }
     inline Span span() const override {
         return tsizeof_kw_.span() + type_->span();
@@ -307,8 +307,8 @@ public:
         : dst_(std::move(dst)),
           colon_colon_(colon_colon),
           src_(std::move(src)) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
-        return visitor.visit(*this);
+    inline void Accept(ExpressionVisitor& visitor) const override {
+        return visitor.Visit(*this);
     }
     inline Span span() const override { return dst_.span() + src_.span(); }
     inline const EnumSelectExpressionDst& dst() const { return dst_; }
@@ -325,8 +325,8 @@ class VariableExpression : public Expression {
 public:
     VariableExpression(std::string&& value, Span span)
         : value_(std::move(value)), span_(span) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
-        return visitor.visit(*this);
+    inline void Accept(ExpressionVisitor& visitor) const override {
+        return visitor.Visit(*this);
     }
     inline Span span() const override { return span_; }
     inline const std::string& value() const { return value_; }
@@ -339,8 +339,8 @@ private:
 class IntegerExpression : public Expression {
 public:
     IntegerExpression(uint64_t value, Span span) : value_(value), span_(span) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
-        return visitor.visit(*this);
+    inline void Accept(ExpressionVisitor& visitor) const override {
+        return visitor.Visit(*this);
     }
     inline Span span() const override { return span_; }
     inline uint64_t value() const { return value_; }
@@ -354,8 +354,8 @@ class StringExpression : public Expression {
 public:
     StringExpression(std::string&& value, Span span)
         : value_(std::move(value)), span_(span) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
-        return visitor.visit(*this);
+    inline void Accept(ExpressionVisitor& visitor) const override {
+        return visitor.Visit(*this);
     }
     inline Span span() const override { return span_; }
     inline const std::string& value() const { return value_; }
@@ -368,8 +368,8 @@ private:
 class CharExpression : public Expression {
 public:
     CharExpression(char value, Span span) : value_(value), span_(span) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
-        return visitor.visit(*this);
+    inline void Accept(ExpressionVisitor& visitor) const override {
+        return visitor.Visit(*this);
     }
     inline Span span() const override { return span_; }
     inline char value() const { return value_; }
@@ -382,8 +382,8 @@ private:
 class BoolExpression : public Expression {
 public:
     BoolExpression(bool value, Span span) : value_(value), span_(span) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
-        return visitor.visit(*this);
+    inline void Accept(ExpressionVisitor& visitor) const override {
+        return visitor.Visit(*this);
     }
     inline Span span() const override { return span_; }
     inline bool value() const { return value_; }
@@ -441,8 +441,8 @@ public:
           lcurly_(lcurly),
           inits_(std::move(inits)),
           rcurly_(rcurly) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
-        return visitor.visit(*this);
+    inline void Accept(ExpressionVisitor& visitor) const override {
+        return visitor.Visit(*this);
     }
     inline Span span() const override { return name_.span() + rcurly_.span(); }
     inline const StructExpressionName& name() const { return name_; }
@@ -465,8 +465,8 @@ public:
                     std::vector<std::unique_ptr<Expression>>&& inits,
                     RCurly rcurly)
         : lcurly_(lcurly), inits_(std::move(inits)), rcurly_(rcurly) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
-        return visitor.visit(*this);
+    inline void Accept(ExpressionVisitor& visitor) const override {
+        return visitor.Visit(*this);
     }
     inline Span span() const override {
         return lcurly_.span() + rcurly_.span();
