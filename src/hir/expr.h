@@ -528,9 +528,9 @@ public:
         return visitor.visit(*this);
     }
     void print(PrintableContext& ctx) const override {
-        ctx.printer().shiftr();
-        ctx.printer().println(fmt::format("{} {{", name_.value()));
         if (!inits_.empty()) {
+            ctx.printer().shiftr();
+            ctx.printer().println(fmt::format("{} {{", name_.value()));
             for (size_t i = 0; i < inits_.size(); i++) {
                 auto& init = inits_.at(i);
                 ctx.printer().print(fmt::format("{}: ", init.name().value()));
@@ -541,8 +541,10 @@ public:
                 }
                 ctx.printer().println("");
             }
+            ctx.printer().print("}");
+        } else {
+            ctx.printer().print("{}");
         }
-        ctx.printer().print("}");
     }
     inline const StructExpressionName& name() const { return name_; }
     inline const std::vector<StructExpressionInit>& inits() const {
@@ -562,9 +564,9 @@ public:
         return visitor.visit(*this);
     }
     void print(PrintableContext& ctx) const override {
-        ctx.printer().shiftr();
-        ctx.printer().println("{");
         if (!inits_.empty()) {
+            ctx.printer().shiftr();
+            ctx.printer().println("{");
             for (size_t i = 0; i < inits_.size(); i++) {
                 auto& init = inits_.at(i);
                 init->print(ctx);
@@ -574,8 +576,10 @@ public:
                 }
                 ctx.printer().println("");
             }
+            ctx.printer().print("}");
+        } else {
+            ctx.printer().print("{}");
         }
-        ctx.printer().print("}");
     }
     inline const std::vector<std::unique_ptr<Expression>>& inits() const {
         return inits_;
