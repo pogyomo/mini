@@ -39,7 +39,7 @@ void ArrayType::Print(PrintableContext &ctx) const {
     if (size_) {
         ctx.printer().Print("(");
         of_->Print(ctx);
-        ctx.printer().Print(fmt::format(")[{}]", size_.value()));
+        ctx.printer().Print(")[{}]", size_.value());
     } else {
         ctx.printer().Print("(");
         of_->Print(ctx);

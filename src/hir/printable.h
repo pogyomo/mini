@@ -4,8 +4,11 @@
 #include <cstdint>
 #include <ostream>
 #include <string>
+#include <utility>
 
 #include "../panic.h"
+#include "fmt/base.h"
+#include "fmt/format.h"
 
 namespace mini {
 
@@ -23,9 +26,15 @@ public:
             FatalError("shiftl with depth == 0");
     }
     inline uint16_t depth() const { return depth_; }
-    inline void Print(const std::string &s) { os_ << s; }
-    inline void PrintLn(const std::string &s) {
-        Print(s);
+
+    template <typename... T>
+    inline void Print(fmt::format_string<T...> fmt, T &&...args) {
+        os_ << fmt::format(fmt, std::forward<T>(args)...);
+    }
+
+    template <typename... T>
+    inline void PrintLn(fmt::format_string<T...> fmt, T &&...args) {
+        os_ << fmt::format(fmt, std::forward<T>(args)...);
         os_ << std::endl << std::string(depth_ * width_, ' ');
     }
 

@@ -295,7 +295,7 @@ public:
         return visitor.Visit(*this);
     }
     inline void Print(PrintableContext& ctx) const override {
-        ctx.printer().Print(fmt::format("{}::{}", src_.value(), dst_.value()));
+        ctx.printer().Print("{}::{}", src_.value(), dst_.value());
     }
     inline const EnumSelectExpressionSrc& src() const { return src_; }
     inline const EnumSelectExpressionDst& dst() const { return dst_; }
@@ -329,7 +329,7 @@ public:
         return visitor.Visit(*this);
     }
     inline void Print(PrintableContext& ctx) const override {
-        ctx.printer().Print(fmt::format("{}", value_));
+        ctx.printer().Print("{}", value_);
     }
     inline uint64_t value() const { return value_; }
 
@@ -345,7 +345,7 @@ public:
         return visitor.Visit(*this);
     }
     inline void Print(PrintableContext& ctx) const override {
-        ctx.printer().Print(fmt::format("\"{}\"", value_));
+        ctx.printer().Print("\"{}\"", value_);
     }
     inline const std::string& value() const { return value_; }
 
@@ -360,7 +360,7 @@ public:
         return visitor.Visit(*this);
     }
     inline void Print(PrintableContext& ctx) const override {
-        ctx.printer().Print(fmt::format("{}", value_));
+        ctx.printer().Print("{}", value_);
     }
     inline char value() const { return value_; }
 
@@ -375,7 +375,7 @@ public:
         return visitor.Visit(*this);
     }
     inline void Print(PrintableContext& ctx) const override {
-        ctx.printer().Print(fmt::format("{}", value_));
+        ctx.printer().Print("{}", value_);
     }
     inline bool value() const { return value_; }
 

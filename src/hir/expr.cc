@@ -1,7 +1,5 @@
 #include "expr.h"
 
-#include "fmt/format.h"
-
 namespace mini {
 
 namespace hir {
@@ -24,7 +22,7 @@ std::string UnaryExpression::Op::to_string() const {
 }
 
 void UnaryExpression::Print(PrintableContext& ctx) const {
-    ctx.printer().Print(fmt::format("({}", op_.to_string()));
+    ctx.printer().Print("({}", op_.to_string());
     expr_->Print(ctx);
     ctx.printer().Print(")");
 }
@@ -77,7 +75,7 @@ std::string InfixExpression::Op::to_string() const {
 void InfixExpression::Print(PrintableContext& ctx) const {
     ctx.printer().Print("(");
     lhs_->Print(ctx);
-    ctx.printer().Print(fmt::format(" {} ", op_.to_string()));
+    ctx.printer().Print(" {} ", op_.to_string());
     rhs_->Print(ctx);
     ctx.printer().Print(")");
 }
@@ -104,7 +102,7 @@ void CallExpression::Print(PrintableContext& ctx) const {
 
 void AccessExpression::Print(PrintableContext& ctx) const {
     expr_->Print(ctx);
-    ctx.printer().Print(fmt::format(".{}", field_.value()));
+    ctx.printer().Print(".{}", field_.value());
 }
 
 void CastExpression::Print(PrintableContext& ctx) const {
@@ -126,10 +124,10 @@ void TSizeofExpression::Print(PrintableContext& ctx) const {
 void StructExpression::Print(PrintableContext& ctx) const {
     if (!inits_.empty()) {
         ctx.printer().ShiftR();
-        ctx.printer().PrintLn(fmt::format("{} {{", name_.value()));
+        ctx.printer().PrintLn("{} {{", name_.value());
         for (size_t i = 0; i < inits_.size(); i++) {
             auto& init = inits_.at(i);
-            ctx.printer().Print(fmt::format("{}: ", init.name().value()));
+            ctx.printer().Print("{}: ", init.name().value());
             init.value()->Print(ctx);
             ctx.printer().Print(",");
             if (i == inits_.size() - 1) {

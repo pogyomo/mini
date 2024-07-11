@@ -7,7 +7,6 @@
 #include <string>
 
 #include "../span.h"
-#include "fmt/format.h"
 #include "printable.h"
 
 namespace mini {
@@ -107,7 +106,7 @@ public:
         visitor.Visit(*this);
     }
     inline void Print(PrintableContext &ctx) const override {
-        ctx.printer().Print(fmt::format("{}", value_));
+        ctx.printer().Print("{}", value_);
     }
     const std::string &value() const { return value_; }
 

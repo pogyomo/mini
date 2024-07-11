@@ -38,7 +38,7 @@ void IfStatement::Print(PrintableContext &ctx) const {
 
 void BlockStatement::Print(PrintableContext &ctx) const {
     ctx.printer().ShiftR();
-    ctx.printer().PrintLn("{");
+    ctx.printer().PrintLn("{{");
     for (size_t i = 0; i < stmts_.size(); i++) {
         stmts_.at(i)->Print(ctx);
         if (i == stmts_.size() - 1) {
@@ -46,7 +46,7 @@ void BlockStatement::Print(PrintableContext &ctx) const {
         }
         ctx.printer().PrintLn("");
     }
-    ctx.printer().Print("}");
+    ctx.printer().Print("}}");
 }
 
 }  // namespace hir
