@@ -60,10 +60,10 @@ void Report(Context &ctx, ReportLevel level, const ReportInfo &info) {
         std::cerr << "  " << start.row() << "|" << line << std::endl;
         for (int i = 0; i < 2 + row_width; i++) std::cerr << ' ';
         std::cerr << "|";
-        for (int i = 0; i < start.offset(); i++) std::cerr << ' ';
+        for (size_t i = 0; i < start.offset(); i++) std::cerr << ' ';
         start_color(std::cerr, level);
         std::cerr << '^';
-        for (int i = start.offset() + 1; i <= end.offset(); i++)
+        for (size_t i = start.offset() + 1; i <= end.offset(); i++)
             std::cerr << '~';
         end_color(std::cerr);
         std::cerr << " " << info.info() << std::endl;
@@ -75,10 +75,10 @@ void Report(Context &ctx, ReportLevel level, const ReportInfo &info) {
         std::cerr << start.row() << "|" << sline << std::endl;
         for (int i = 0; i < 2 + row_width; i++) std::cerr << ' ';
         std::cerr << '|';
-        for (int i = 0; i < start.offset(); i++) std::cerr << ' ';
+        for (size_t i = 0; i < start.offset(); i++) std::cerr << ' ';
         start_color(std::cerr, level);
         std::cerr << '^';
-        for (int i = start.offset() + 1; i < sline.size(); i++)
+        for (size_t i = start.offset() + 1; i < sline.size(); i++)
             std::cerr << '~';
         end_color(std::cerr);
         std::cerr << std::endl;
@@ -95,7 +95,7 @@ void Report(Context &ctx, ReportLevel level, const ReportInfo &info) {
         for (int i = 0; i < 2 + row_width; i++) std::cerr << ' ';
         std::cerr << '|';
         start_color(std::cerr, level);
-        for (int i = 0; i <= end.offset(); i++) std::cerr << '~';
+        for (size_t i = 0; i <= end.offset(); i++) std::cerr << '~';
         end_color(std::cerr);
         std::cerr << " " << info.info() << std::endl;
     }

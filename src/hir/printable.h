@@ -14,7 +14,7 @@ namespace hir {
 class AutoIndentPrinter {
 public:
     AutoIndentPrinter(std::ostream &os, uint16_t width)
-        : os_(os), width_(width), depth_(0) {}
+        : os_(os), depth_(0), width_(width) {}
     inline void ShiftR() { depth_++; }
     inline void ShiftL() {
         if (depth_)
