@@ -1,6 +1,7 @@
 #ifndef MINI_HIRGEN_EXPR_H_
 #define MINI_HIRGEN_EXPR_H_
 
+#include <iostream>
 #include <memory>
 #include <string>
 
