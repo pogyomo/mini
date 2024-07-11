@@ -1,12 +1,15 @@
 #ifndef MINI_HIR_STMT_H_
 #define MINI_HIR_STMT_H_
 
+#include <iostream>
 #include <memory>
 #include <optional>
+#include <string>
 #include <vector>
 
 #include "../span.h"
 #include "expr.h"
+#include "printable.h"
 
 namespace mini {
 
@@ -32,7 +35,7 @@ public:
     virtual void visit(const BlockStatement &stmt) = 0;
 };
 
-class Statement {
+class Statement : public Printable {
 public:
     Statement(Span span) : span_(span) {}
     virtual void accept(StatementVisitor &visitor) const = 0;
@@ -49,6 +52,10 @@ public:
     inline void accept(StatementVisitor &visitor) const override {
         visitor.visit(*this);
     }
+    void print(PrintableContext &ctx) const override {
+        expr_->print(ctx);
+        ctx.printer().print(";");
+    }
     inline const std::unique_ptr<Expression> &expr() const { return expr_; }
 
 private:
@@ -61,6 +68,11 @@ public:
         : Statement(span), ret_value_(std::move(ret_value)) {}
     inline void accept(StatementVisitor &visitor) const override {
         visitor.visit(*this);
+    }
+    void print(PrintableContext &ctx) const override {
+        ctx.printer().print("return ");
+        ret_value_->print(ctx);
+        ctx.printer().print(";");
     }
     inline const std::unique_ptr<Expression> &ret_value() const {
         return ret_value_;
@@ -76,6 +88,9 @@ public:
     inline void accept(StatementVisitor &visitor) const override {
         visitor.visit(*this);
     }
+    void print(PrintableContext &ctx) const override {
+        ctx.printer().print("break;");
+    }
 };
 
 class ContinueStatement : public Statement {
@@ -83,6 +98,9 @@ public:
     ContinueStatement(Span span) : Statement(span) {}
     inline void accept(StatementVisitor &visitor) const override {
         visitor.visit(*this);
+    }
+    void print(PrintableContext &ctx) const override {
+        ctx.printer().print("continue;");
     }
 };
 
@@ -93,6 +111,12 @@ public:
         : Statement(span), cond_(std::move(cond)), body_(std::move(body)) {}
     inline void accept(StatementVisitor &visitor) const override {
         visitor.visit(*this);
+    }
+    void print(PrintableContext &ctx) const override {
+        ctx.printer().print("while (");
+        cond_->print(ctx);
+        ctx.printer().print(") ");
+        body_->print(ctx);
     }
     inline const std::unique_ptr<Expression> &cond() const { return cond_; }
     inline const std::unique_ptr<Statement> &body() const { return body_; }
@@ -115,6 +139,16 @@ public:
     inline void accept(StatementVisitor &visitor) const override {
         visitor.visit(*this);
     }
+    void print(PrintableContext &ctx) const override {
+        ctx.printer().print("if (");
+        cond_->print(ctx);
+        ctx.printer().print(") ");
+        then_body_->print(ctx);
+        if (else_body_) {
+            ctx.printer().print(" ");
+            else_body_.value()->print(ctx);
+        }
+    }
     inline const std::unique_ptr<Expression> &cond() const { return cond_; }
     inline const std::unique_ptr<Statement> &then_body() const {
         return then_body_;
@@ -135,6 +169,18 @@ public:
         : Statement(span), stmts_(std::move(stmts)) {}
     inline void accept(StatementVisitor &visitor) const override {
         visitor.visit(*this);
+    }
+    void print(PrintableContext &ctx) const override {
+        ctx.printer().shiftr();
+        ctx.printer().println("{");
+        for (size_t i = 0; i < stmts_.size(); i++) {
+            stmts_.at(i)->print(ctx);
+            if (i == stmts_.size() - 1) {
+                ctx.printer().shiftl();
+            }
+            ctx.printer().println("");
+        }
+        ctx.printer().print("}");
     }
     inline const std::vector<std::unique_ptr<Statement>> &stmts() const {
         return stmts_;

@@ -7,6 +7,8 @@
 #include <vector>
 
 #include "../span.h"
+#include "fmt/format.h"
+#include "printable.h"
 #include "stmt.h"
 #include "type.h"
 
@@ -26,7 +28,7 @@ public:
     virtual void visit(const FunctionDeclaration &decl) = 0;
 };
 
-class Declaration {
+class Declaration : public Printable {
 public:
     Declaration(Span span) : span_(span) {}
     virtual void accept(DeclarationVisitor &visitor) const = 0;
@@ -84,6 +86,21 @@ public:
           fields_(std::move(fields)) {}
     inline void accept(DeclarationVisitor &visitor) const override {
         visitor.visit(*this);
+    }
+    void print(PrintableContext &ctx) const override {
+        ctx.printer().shiftr();
+        ctx.printer().println(fmt::format("struct {} {{", name_.value()));
+        for (size_t i = 0; i < fields_.size(); i++) {
+            auto &field = fields_.at(i);
+            ctx.printer().print(fmt::format("{}: ", field.name().value()));
+            field.type()->print(ctx);
+            ctx.printer().print(",");
+            if (i == fields_.size() - 1) {
+                ctx.printer().shiftl();
+            }
+            ctx.printer().println("");
+        }
+        ctx.printer().print("}");
     }
     inline const StructDeclarationName &name() const { return name_; }
     inline const std::vector<StructDeclarationField> &fields() const {
@@ -154,6 +171,24 @@ public:
           fields_(std::move(fields)) {}
     inline void accept(DeclarationVisitor &visitor) const override {
         visitor.visit(*this);
+    }
+    void print(PrintableContext &ctx) const override {
+        ctx.printer().shiftr();
+        ctx.printer().println(fmt::format("enum {} {{", name_.value()));
+        for (size_t i = 0; i < fields_.size(); i++) {
+            auto &field = fields_.at(i);
+            if (i == fields_.size() - 1) {
+                ctx.printer().shiftl();
+            }
+            ctx.printer().print(fmt::format("{} = {}", field.name().value(),
+                                            field.value().value()));
+            ctx.printer().print(",");
+            if (i == fields_.size() - 1) {
+                ctx.printer().shiftl();
+            }
+            ctx.printer().println("");
+        }
+        ctx.printer().print("}");
     }
     inline const EnumDeclarationName &name() const { return name_; }
     inline const std::vector<EnumDeclarationField> &fields() const {
@@ -244,6 +279,33 @@ public:
           body_(std::move(body)) {}
     inline void accept(DeclarationVisitor &visitor) const override {
         visitor.visit(*this);
+    }
+    void print(PrintableContext &ctx) const override {
+        ctx.printer().print(fmt::format("function {} (", name_.value()));
+        if (!params_.empty()) {
+            auto param = params_.at(0);
+            ctx.printer().print(fmt::format("{}: ", param.name().value()));
+            param.type()->println(ctx);
+            for (size_t i = 1; i < params_.size(); i++) {
+                ctx.printer().print(", ");
+                auto param = params_.at(i);
+                ctx.printer().print(fmt::format("{}: ", param.name().value()));
+                param.type()->println(ctx);
+            }
+        }
+        ctx.printer().shiftr();
+        ctx.printer().println(") {");
+        for (size_t i = 0; i < decls_.size(); i++) {
+            auto &decl = decls_.at(i);
+            if (i == decls_.size() - 1) {
+                ctx.printer().shiftl();
+            }
+            ctx.printer().print(fmt::format("let {}: ", decl.name().value()));
+            decl.type()->print(ctx);
+            ctx.printer().println(",");
+        }
+        ctx.printer().print("} ");
+        body_->print(ctx);
     }
     inline const FunctionDeclarationName &name() const { return name_; }
     inline const std::vector<FunctionDeclarationParam> &params() const {
