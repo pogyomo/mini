@@ -84,8 +84,8 @@ public:
     Token(Span span) : span_(span) {}
     virtual ~Token() {}
     Span span() const { return span_; }
-    virtual bool IsPunctOf(PunctTokenKind kind) const { return false; }
-    virtual bool IsKeywordOf(KeywordTokenKind kind) const { return false; }
+    virtual bool IsPunctOf(PunctTokenKind) const { return false; }
+    virtual bool IsKeywordOf(KeywordTokenKind) const { return false; }
     virtual bool IsIdent() const { return false; }
     virtual bool IsInt() const { return false; }
     virtual bool IsString() const { return false; }
