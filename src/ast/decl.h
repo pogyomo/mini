@@ -1,7 +1,6 @@
 #ifndef MINI_AST_DECL_H_
 #define MINI_AST_DECL_H_
 
-#include <cstdint>
 #include <optional>
 #include <string>
 

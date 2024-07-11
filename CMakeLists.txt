@@ -8,8 +8,17 @@ add_executable(${PROJECT_NAME})
 target_sources(${PROJECT_NAME} PRIVATE
     src/ast/stmt.cc
     src/ast/type.cc
+    src/eval.cc
+    src/hir/decl.cc
+    src/hir/expr.cc
+    src/hir/stmt.cc
+    src/hir/type.cc
+    src/hirgen/decl.cc
+    src/hirgen/expr.cc
     src/hirgen/hirgen.cc
     src/hirgen/item.cc
+    src/hirgen/stmt.cc
+    src/hirgen/type.cc
     src/lexer.cc
     src/main.cc
     src/parser.cc

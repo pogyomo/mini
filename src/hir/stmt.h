@@ -51,10 +51,7 @@ public:
     inline void accept(StatementVisitor &visitor) const override {
         visitor.visit(*this);
     }
-    void print(PrintableContext &ctx) const override {
-        expr_->print(ctx);
-        ctx.printer().print(";");
-    }
+    void print(PrintableContext &ctx) const override;
     inline const std::unique_ptr<Expression> &expr() const { return expr_; }
 
 private:
@@ -69,14 +66,7 @@ public:
     inline void accept(StatementVisitor &visitor) const override {
         visitor.visit(*this);
     }
-    void print(PrintableContext &ctx) const override {
-        ctx.printer().print("return");
-        if (ret_value_) {
-            ctx.printer().print(" ");
-            ret_value_.value()->print(ctx);
-        }
-        ctx.printer().print(";");
-    }
+    void print(PrintableContext &ctx) const override;
     inline const std::optional<std::unique_ptr<Expression>> &ret_value() const {
         return ret_value_;
     }
@@ -91,7 +81,7 @@ public:
     inline void accept(StatementVisitor &visitor) const override {
         visitor.visit(*this);
     }
-    void print(PrintableContext &ctx) const override {
+    inline void print(PrintableContext &ctx) const override {
         ctx.printer().print("break;");
     }
 };
@@ -102,7 +92,7 @@ public:
     inline void accept(StatementVisitor &visitor) const override {
         visitor.visit(*this);
     }
-    void print(PrintableContext &ctx) const override {
+    inline void print(PrintableContext &ctx) const override {
         ctx.printer().print("continue;");
     }
 };
@@ -115,12 +105,7 @@ public:
     inline void accept(StatementVisitor &visitor) const override {
         visitor.visit(*this);
     }
-    void print(PrintableContext &ctx) const override {
-        ctx.printer().print("while (");
-        cond_->print(ctx);
-        ctx.printer().print(") ");
-        body_->print(ctx);
-    }
+    void print(PrintableContext &ctx) const override;
     inline const std::unique_ptr<Expression> &cond() const { return cond_; }
     inline const std::unique_ptr<Statement> &body() const { return body_; }
 
@@ -142,16 +127,7 @@ public:
     inline void accept(StatementVisitor &visitor) const override {
         visitor.visit(*this);
     }
-    void print(PrintableContext &ctx) const override {
-        ctx.printer().print("if (");
-        cond_->print(ctx);
-        ctx.printer().print(") ");
-        then_body_->print(ctx);
-        if (else_body_) {
-            ctx.printer().print(" else ");
-            else_body_.value()->print(ctx);
-        }
-    }
+    void print(PrintableContext &ctx) const override;
     inline const std::unique_ptr<Expression> &cond() const { return cond_; }
     inline const std::unique_ptr<Statement> &then_body() const {
         return then_body_;
@@ -173,18 +149,7 @@ public:
     inline void accept(StatementVisitor &visitor) const override {
         visitor.visit(*this);
     }
-    void print(PrintableContext &ctx) const override {
-        ctx.printer().shiftr();
-        ctx.printer().println("{");
-        for (size_t i = 0; i < stmts_.size(); i++) {
-            stmts_.at(i)->print(ctx);
-            if (i == stmts_.size() - 1) {
-                ctx.printer().shiftl();
-            }
-            ctx.printer().println("");
-        }
-        ctx.printer().print("}");
-    }
+    void print(PrintableContext &ctx) const override;
     inline const std::vector<std::unique_ptr<Statement>> &stmts() const {
         return stmts_;
     }

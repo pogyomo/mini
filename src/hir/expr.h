@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "../span.h"
-#include "fmt/format.h"
 #include "printable.h"
 #include "type.h"
 
@@ -75,22 +74,7 @@ public:
             Neg,    // "!"
         };
         Op(Kind kind, Span span) : kind_(kind), span_(span) {}
-        std::string to_string() const {
-            if (kind_ == Op::Ref) {
-                return "&";
-            } else if (kind_ == Op::Deref) {
-                return "*";
-            } else if (kind_ == Op::Minus) {
-                return "-";
-            } else if (kind_ == Op::Inv) {
-                return "~";
-            } else if (kind_ == Op::Neg) {
-                return "!";
-            } else {
-                fatal_error("unreachable");
-                return "";
-            }
-        }
+        std::string to_string() const;
         inline Span span() const { return span_; }
         inline Kind kind() const { return kind_; }
 
@@ -103,11 +87,7 @@ public:
     inline void accept(ExpressionVisitor& visitor) const override {
         return visitor.visit(*this);
     }
-    void print(PrintableContext& ctx) const override {
-        ctx.printer().print(fmt::format("({}", op_.to_string()));
-        expr_->print(ctx);
-        ctx.printer().print(")");
-    }
+    void print(PrintableContext& ctx) const override;
     inline Op op() const { return op_; }
     inline const std::unique_ptr<Expression>& expr() const { return expr_; }
 
@@ -142,50 +122,7 @@ public:
             RShift   // ">>"
         };
         Op(Kind kind, Span span) : kind_(kind), span_(span) {}
-        std::string to_string() const {
-            if (kind_ == Op::Add) {
-                return "+";
-            } else if (kind_ == Op::Sub) {
-                return "-";
-            } else if (kind_ == Op::Mul) {
-                return "*";
-            } else if (kind_ == Op::Div) {
-                return "/";
-            } else if (kind_ == Op::Mod) {
-                return "%";
-            } else if (kind_ == Op::Or) {
-                return "||";
-            } else if (kind_ == Op::And) {
-                return "&&";
-            } else if (kind_ == Op::BitOr) {
-                return "|";
-            } else if (kind_ == Op::BitAnd) {
-                return "&";
-            } else if (kind_ == Op::BitXor) {
-                return "^";
-            } else if (kind_ == Op::Assign) {
-                return "=";
-            } else if (kind_ == Op::EQ) {
-                return "==";
-            } else if (kind_ == Op::NE) {
-                return "!=";
-            } else if (kind_ == Op::LT) {
-                return "<";
-            } else if (kind_ == Op::LE) {
-                return "<=";
-            } else if (kind_ == Op::GT) {
-                return ">";
-            } else if (kind_ == Op::GE) {
-                return ">=";
-            } else if (kind_ == Op::LShift) {
-                return "<<";
-            } else if (kind_ == Op::RShift) {
-                return ">>";
-            } else {
-                fatal_error("unreachable");
-                return "";
-            }
-        }
+        std::string to_string() const;
         inline Span span() const { return span_; }
         inline Kind kind() const { return kind_; }
 
@@ -202,13 +139,7 @@ public:
     inline void accept(ExpressionVisitor& visitor) const override {
         return visitor.visit(*this);
     }
-    void print(PrintableContext& ctx) const override {
-        ctx.printer().print("(");
-        lhs_->print(ctx);
-        ctx.printer().print(fmt::format(" {} ", op_.to_string()));
-        rhs_->print(ctx);
-        ctx.printer().print(")");
-    }
+    void print(PrintableContext& ctx) const override;
     inline const std::unique_ptr<Expression>& lhs() const { return lhs_; }
     inline Op op() const { return op_; }
     inline const std::unique_ptr<Expression>& rhs() const { return rhs_; }
@@ -227,12 +158,7 @@ public:
     inline void accept(ExpressionVisitor& visitor) const override {
         return visitor.visit(*this);
     }
-    void print(PrintableContext& ctx) const override {
-        expr_->print(ctx);
-        ctx.printer().print("[");
-        index_->print(ctx);
-        ctx.printer().print("]");
-    }
+    void print(PrintableContext& ctx) const override;
     inline const std::unique_ptr<Expression>& expr() const { return expr_; }
     inline const std::unique_ptr<Expression>& index() const { return index_; }
 
@@ -249,18 +175,7 @@ public:
     inline void accept(ExpressionVisitor& visitor) const override {
         return visitor.visit(*this);
     }
-    void print(PrintableContext& ctx) const override {
-        func_->print(ctx);
-        ctx.printer().print("(");
-        if (!args_.empty()) {
-            args_.front()->print(ctx);
-            for (size_t i = 1; i < args_.size(); i++) {
-                ctx.printer().print(", ");
-                args_.at(i)->print(ctx);
-            }
-        }
-        ctx.printer().print(")");
-    }
+    void print(PrintableContext& ctx) const override;
     inline const std::unique_ptr<Expression>& func() const { return func_; }
     inline const std::vector<std::unique_ptr<Expression>>& args() const {
         return args_;
@@ -291,10 +206,7 @@ public:
     inline void accept(ExpressionVisitor& visitor) const override {
         return visitor.visit(*this);
     }
-    void print(PrintableContext& ctx) const override {
-        expr_->print(ctx);
-        ctx.printer().print(fmt::format(".{}", field_.value()));
-    }
+    void print(PrintableContext& ctx) const override;
     inline const std::unique_ptr<Expression>& func() const { return expr_; }
     inline const AccessExpressionField& field() const { return field_; }
 
@@ -313,11 +225,7 @@ public:
     inline void accept(ExpressionVisitor& visitor) const override {
         return visitor.visit(*this);
     }
-    void print(PrintableContext& ctx) const override {
-        expr_->print(ctx);
-        ctx.printer().print(" as ");
-        cast_type_->print(ctx);
-    }
+    void print(PrintableContext& ctx) const override;
     inline const std::unique_ptr<Expression>& expr() const { return expr_; }
     inline const std::shared_ptr<Type>& cast_type() const { return cast_type_; }
 
@@ -333,10 +241,7 @@ public:
     inline void accept(ExpressionVisitor& visitor) const override {
         return visitor.visit(*this);
     }
-    void print(PrintableContext& ctx) const override {
-        ctx.printer().print("esizeof ");
-        expr_->print(ctx);
-    }
+    void print(PrintableContext& ctx) const override;
     inline const std::unique_ptr<Expression>& expr() const { return expr_; }
 
 private:
@@ -350,10 +255,7 @@ public:
     inline void accept(ExpressionVisitor& visitor) const override {
         return visitor.visit(*this);
     }
-    void print(PrintableContext& ctx) const override {
-        ctx.printer().print("tsizeof ");
-        type_->print(ctx);
-    }
+    void print(PrintableContext& ctx) const override;
     inline const std::shared_ptr<Type>& type() const { return type_; }
 
 private:
@@ -392,7 +294,7 @@ public:
     inline void accept(ExpressionVisitor& visitor) const override {
         return visitor.visit(*this);
     }
-    void print(PrintableContext& ctx) const override {
+    inline void print(PrintableContext& ctx) const override {
         ctx.printer().print(fmt::format("{}::{}", src_.value(), dst_.value()));
     }
     inline const EnumSelectExpressionSrc& src() const { return src_; }
@@ -410,7 +312,7 @@ public:
     inline void accept(ExpressionVisitor& visitor) const override {
         return visitor.visit(*this);
     }
-    void print(PrintableContext& ctx) const override {
+    inline void print(PrintableContext& ctx) const override {
         ctx.printer().print(value_);
     }
     inline const std::string& value() const { return value_; }
@@ -426,7 +328,7 @@ public:
     inline void accept(ExpressionVisitor& visitor) const override {
         return visitor.visit(*this);
     }
-    void print(PrintableContext& ctx) const override {
+    inline void print(PrintableContext& ctx) const override {
         ctx.printer().print(fmt::format("{}", value_));
     }
     inline uint64_t value() const { return value_; }
@@ -442,7 +344,7 @@ public:
     inline void accept(ExpressionVisitor& visitor) const override {
         return visitor.visit(*this);
     }
-    void print(PrintableContext& ctx) const override {
+    inline void print(PrintableContext& ctx) const override {
         ctx.printer().print(fmt::format("\"{}\"", value_));
     }
     inline const std::string& value() const { return value_; }
@@ -457,7 +359,7 @@ public:
     inline void accept(ExpressionVisitor& visitor) const override {
         return visitor.visit(*this);
     }
-    void print(PrintableContext& ctx) const override {
+    inline void print(PrintableContext& ctx) const override {
         ctx.printer().print(fmt::format("{}", value_));
     }
     inline char value() const { return value_; }
@@ -472,7 +374,7 @@ public:
     inline void accept(ExpressionVisitor& visitor) const override {
         return visitor.visit(*this);
     }
-    void print(PrintableContext& ctx) const override {
+    inline void print(PrintableContext& ctx) const override {
         ctx.printer().print(fmt::format("{}", value_));
     }
     inline bool value() const { return value_; }
@@ -527,25 +429,7 @@ public:
     inline void accept(ExpressionVisitor& visitor) const override {
         return visitor.visit(*this);
     }
-    void print(PrintableContext& ctx) const override {
-        if (!inits_.empty()) {
-            ctx.printer().shiftr();
-            ctx.printer().println(fmt::format("{} {{", name_.value()));
-            for (size_t i = 0; i < inits_.size(); i++) {
-                auto& init = inits_.at(i);
-                ctx.printer().print(fmt::format("{}: ", init.name().value()));
-                init.value()->print(ctx);
-                ctx.printer().print(",");
-                if (i == inits_.size() - 1) {
-                    ctx.printer().shiftl();
-                }
-                ctx.printer().println("");
-            }
-            ctx.printer().print("}");
-        } else {
-            ctx.printer().print("{}");
-        }
-    }
+    void print(PrintableContext& ctx) const override;
     inline const StructExpressionName& name() const { return name_; }
     inline const std::vector<StructExpressionInit>& inits() const {
         return inits_;
@@ -563,24 +447,7 @@ public:
     inline void accept(ExpressionVisitor& visitor) const override {
         return visitor.visit(*this);
     }
-    void print(PrintableContext& ctx) const override {
-        if (!inits_.empty()) {
-            ctx.printer().shiftr();
-            ctx.printer().println("{");
-            for (size_t i = 0; i < inits_.size(); i++) {
-                auto& init = inits_.at(i);
-                init->print(ctx);
-                ctx.printer().print(",");
-                if (i == inits_.size() - 1) {
-                    ctx.printer().shiftl();
-                }
-                ctx.printer().println("");
-            }
-            ctx.printer().print("}");
-        } else {
-            ctx.printer().print("{}");
-        }
-    }
+    void print(PrintableContext& ctx) const override;
     inline const std::vector<std::unique_ptr<Expression>>& inits() const {
         return inits_;
     }
