@@ -32,9 +32,6 @@ void EnumDeclaration::Print(PrintableContext &ctx) const {
         ctx.printer().PrintLn(fmt::format("enum {} {{", name_.value()));
         for (size_t i = 0; i < fields_.size(); i++) {
             auto &field = fields_.at(i);
-            if (i == fields_.size() - 1) {
-                ctx.printer().ShiftL();
-            }
             ctx.printer().Print(fmt::format("{} = {}", field.name().value(),
                                             field.value().value()));
             ctx.printer().Print(",");
