@@ -882,7 +882,7 @@ std::optional<std::unique_ptr<ast::ReturnStatement>> parse_return_stmt(
     ast::Semicolon semicolon(ts.token()->span());
     ts.advance();
 
-    return std::make_unique<ast::ReturnStatement>(return_kw, std::move(*expr),
+    return std::make_unique<ast::ReturnStatement>(return_kw, std::move(expr),
                                                   semicolon);
 }
 

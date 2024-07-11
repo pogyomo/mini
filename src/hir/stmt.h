@@ -1,7 +1,6 @@
 #ifndef MINI_HIR_STMT_H_
 #define MINI_HIR_STMT_H_
 
-#include <iostream>
 #include <memory>
 #include <optional>
 #include <string>
@@ -64,22 +63,26 @@ private:
 
 class ReturnStatement : public Statement {
 public:
-    ReturnStatement(std::unique_ptr<Expression> &&ret_value, Span span)
+    ReturnStatement(std::optional<std::unique_ptr<Expression>> &&ret_value,
+                    Span span)
         : Statement(span), ret_value_(std::move(ret_value)) {}
     inline void accept(StatementVisitor &visitor) const override {
         visitor.visit(*this);
     }
     void print(PrintableContext &ctx) const override {
-        ctx.printer().print("return ");
-        ret_value_->print(ctx);
+        ctx.printer().print("return");
+        if (ret_value_) {
+            ctx.printer().print(" ");
+            ret_value_.value()->print(ctx);
+        }
         ctx.printer().print(";");
     }
-    inline const std::unique_ptr<Expression> &ret_value() const {
+    inline const std::optional<std::unique_ptr<Expression>> &ret_value() const {
         return ret_value_;
     }
 
 private:
-    std::unique_ptr<Expression> ret_value_;
+    std::optional<std::unique_ptr<Expression>> ret_value_;
 };
 
 class BreakStatement : public Statement {

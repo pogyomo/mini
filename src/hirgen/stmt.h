@@ -40,8 +40,8 @@ public:
             ret_value.emplace(std::move(gen.expr()));
         }
 
-        stmt_ = std::make_unique<hir::ReturnStatement>(
-            std::move(ret_value.value()), stmt.span());
+        stmt_ = std::make_unique<hir::ReturnStatement>(std::move(ret_value),
+                                                       stmt.span());
         success_ = true;
     }
     void visit(const ast::BreakStatement &stmt) override {
