@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <optional>
@@ -55,6 +56,7 @@ int main(int argc, char *argv[]) {
     if (args.emit_hir()) {
         mini::Context ctx;
         auto decls = mini::hirgen_file(ctx, args.input());
+        if (!decls) std::exit(EXIT_FAILURE);
         if (args.output()) {
             std::ofstream ofs(args.output().value());
             if (ofs.bad()) {
