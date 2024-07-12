@@ -8,8 +8,9 @@ The `main` function should contained on a executable program, and the program st
 
 ```
 function main() {
-    int a = 10, b = 20;
-    return a + b;
+    let a: usize = 10;
+    let b: usize = 20;
+    a + b;
 }
 ```
 
