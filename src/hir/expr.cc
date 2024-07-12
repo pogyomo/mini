@@ -4,7 +4,7 @@ namespace mini {
 
 namespace hir {
 
-std::string UnaryExpression::Op::to_string() const {
+std::string UnaryExpression::Op::ToString() const {
     if (kind_ == Op::Ref) {
         return "&";
     } else if (kind_ == Op::Deref) {
@@ -22,12 +22,12 @@ std::string UnaryExpression::Op::to_string() const {
 }
 
 void UnaryExpression::Print(PrintableContext& ctx) const {
-    ctx.printer().Print("({}", op_.to_string());
+    ctx.printer().Print("({}", op_.ToString());
     expr_->Print(ctx);
     ctx.printer().Print(")");
 }
 
-std::string InfixExpression::Op::to_string() const {
+std::string InfixExpression::Op::ToString() const {
     if (kind_ == Op::Add) {
         return "+";
     } else if (kind_ == Op::Sub) {
@@ -75,7 +75,7 @@ std::string InfixExpression::Op::to_string() const {
 void InfixExpression::Print(PrintableContext& ctx) const {
     ctx.printer().Print("(");
     lhs_->Print(ctx);
-    ctx.printer().Print(" {} ", op_.to_string());
+    ctx.printer().Print(" {} ", op_.ToString());
     rhs_->Print(ctx);
     ctx.printer().Print(")");
 }

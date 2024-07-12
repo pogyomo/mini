@@ -55,7 +55,7 @@ public:
 class Expression : public Printable {
 public:
     Expression(Span span) : span_(span) {}
-    virtual void accept(ExpressionVisitor& visitor) const = 0;
+    virtual void Accept(ExpressionVisitor& visitor) const = 0;
     inline Span span() const { return span_; }
 
 private:
@@ -74,7 +74,7 @@ public:
             Neg,    // "!"
         };
         Op(Kind kind, Span span) : kind_(kind), span_(span) {}
-        std::string to_string() const;
+        std::string ToString() const;
         inline Span span() const { return span_; }
         inline Kind kind() const { return kind_; }
 
@@ -84,7 +84,7 @@ public:
     };
     UnaryExpression(Op op, std::unique_ptr<Expression>&& expr, Span span)
         : Expression(span), op_(op), expr_(std::move(expr)) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
+    inline void Accept(ExpressionVisitor& visitor) const override {
         return visitor.Visit(*this);
     }
     void Print(PrintableContext& ctx) const override;
@@ -122,7 +122,7 @@ public:
             RShift   // ">>"
         };
         Op(Kind kind, Span span) : kind_(kind), span_(span) {}
-        std::string to_string() const;
+        std::string ToString() const;
         inline Span span() const { return span_; }
         inline Kind kind() const { return kind_; }
 
@@ -136,7 +136,7 @@ public:
           lhs_(std::move(lhs)),
           op_(op),
           rhs_(std::move(rhs)) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
+    inline void Accept(ExpressionVisitor& visitor) const override {
         return visitor.Visit(*this);
     }
     void Print(PrintableContext& ctx) const override;
@@ -155,7 +155,7 @@ public:
     IndexExpression(std::unique_ptr<Expression>&& expr,
                     std::unique_ptr<Expression>&& index, Span span)
         : Expression(span), expr_(std::move(expr)), index_(std::move(index)) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
+    inline void Accept(ExpressionVisitor& visitor) const override {
         return visitor.Visit(*this);
     }
     void Print(PrintableContext& ctx) const override;
@@ -172,7 +172,7 @@ public:
     CallExpression(std::unique_ptr<Expression>&& func,
                    std::vector<std::unique_ptr<Expression>>&& args, Span span)
         : Expression(span), func_(std::move(func)), args_(std::move(args)) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
+    inline void Accept(ExpressionVisitor& visitor) const override {
         return visitor.Visit(*this);
     }
     void Print(PrintableContext& ctx) const override;
@@ -203,7 +203,7 @@ public:
     AccessExpression(std::unique_ptr<Expression>&& func,
                      AccessExpressionField&& field, Span span)
         : Expression(span), expr_(std::move(func)), field_(std::move(field)) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
+    inline void Accept(ExpressionVisitor& visitor) const override {
         return visitor.Visit(*this);
     }
     void Print(PrintableContext& ctx) const override;
@@ -222,7 +222,7 @@ public:
         : Expression(span),
           expr_(std::move(expr)),
           cast_type_(std::move(cast_type)) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
+    inline void Accept(ExpressionVisitor& visitor) const override {
         return visitor.Visit(*this);
     }
     void Print(PrintableContext& ctx) const override;
@@ -238,7 +238,7 @@ class ESizeofExpression : public Expression {
 public:
     ESizeofExpression(std::unique_ptr<Expression>&& expr, Span span)
         : Expression(span), expr_(std::move(expr)) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
+    inline void Accept(ExpressionVisitor& visitor) const override {
         return visitor.Visit(*this);
     }
     void Print(PrintableContext& ctx) const override;
@@ -252,7 +252,7 @@ class TSizeofExpression : public Expression {
 public:
     TSizeofExpression(const std::shared_ptr<Type>& type, Span span)
         : Expression(span), type_(type) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
+    inline void Accept(ExpressionVisitor& visitor) const override {
         return visitor.Visit(*this);
     }
     void Print(PrintableContext& ctx) const override;
@@ -291,7 +291,7 @@ public:
     EnumSelectExpression(EnumSelectExpressionSrc&& src,
                          EnumSelectExpressionDst&& dst, Span span)
         : Expression(span), src_(std::move(src)), dst_(std::move(dst)) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
+    inline void Accept(ExpressionVisitor& visitor) const override {
         return visitor.Visit(*this);
     }
     inline void Print(PrintableContext& ctx) const override {
@@ -309,7 +309,7 @@ class VariableExpression : public Expression {
 public:
     VariableExpression(std::string&& value, Span span)
         : Expression(span), value_(std::move(value)) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
+    inline void Accept(ExpressionVisitor& visitor) const override {
         return visitor.Visit(*this);
     }
     inline void Print(PrintableContext& ctx) const override {
@@ -325,7 +325,7 @@ class IntegerExpression : public Expression {
 public:
     IntegerExpression(uint64_t value, Span span)
         : Expression(span), value_(value) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
+    inline void Accept(ExpressionVisitor& visitor) const override {
         return visitor.Visit(*this);
     }
     inline void Print(PrintableContext& ctx) const override {
@@ -341,7 +341,7 @@ class StringExpression : public Expression {
 public:
     StringExpression(std::string&& value, Span span)
         : Expression(span), value_(std::move(value)) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
+    inline void Accept(ExpressionVisitor& visitor) const override {
         return visitor.Visit(*this);
     }
     inline void Print(PrintableContext& ctx) const override {
@@ -356,7 +356,7 @@ private:
 class CharExpression : public Expression {
 public:
     CharExpression(char value, Span span) : Expression(span), value_(value) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
+    inline void Accept(ExpressionVisitor& visitor) const override {
         return visitor.Visit(*this);
     }
     inline void Print(PrintableContext& ctx) const override {
@@ -371,7 +371,7 @@ private:
 class BoolExpression : public Expression {
 public:
     BoolExpression(bool value, Span span) : Expression(span), value_(value) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
+    inline void Accept(ExpressionVisitor& visitor) const override {
         return visitor.Visit(*this);
     }
     inline void Print(PrintableContext& ctx) const override {
@@ -426,7 +426,7 @@ public:
     StructExpression(StructExpressionName&& name,
                      std::vector<StructExpressionInit>&& inits, Span span)
         : Expression(span), name_(std::move(name)), inits_(std::move(inits)) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
+    inline void Accept(ExpressionVisitor& visitor) const override {
         return visitor.Visit(*this);
     }
     void Print(PrintableContext& ctx) const override;
@@ -444,7 +444,7 @@ class ArrayExpression : public Expression {
 public:
     ArrayExpression(std::vector<std::unique_ptr<Expression>>&& inits, Span span)
         : Expression(span), inits_(std::move(inits)) {}
-    inline void accept(ExpressionVisitor& visitor) const override {
+    inline void Accept(ExpressionVisitor& visitor) const override {
         return visitor.Visit(*this);
     }
     void Print(PrintableContext& ctx) const override;
