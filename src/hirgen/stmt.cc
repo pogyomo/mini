@@ -49,6 +49,7 @@ void StmtHirGen::Visit(const ast::WhileStatement &stmt) {
     StmtHirGen body_gen(ctx_);
     stmt.body()->Accept(body_gen);
     if (!body_gen) return;
+    decls_.insert(decls_.end(), body_gen.decls_.begin(), body_gen.decls_.end());
 
     stmt_ = std::make_unique<hir::WhileStatement>(
         std::move(cond_gen.expr()), std::move(body_gen.stmt_), stmt.span());
@@ -63,6 +64,7 @@ void StmtHirGen::Visit(const ast::IfStatement &stmt) {
     StmtHirGen then_gen(ctx_);
     stmt.body()->Accept(then_gen);
     if (!then_gen) return;
+    decls_.insert(decls_.end(), then_gen.decls_.begin(), then_gen.decls_.end());
 
     std::optional<std::unique_ptr<hir::Statement>> else_body;
     if (stmt.else_clause()) {
@@ -70,6 +72,8 @@ void StmtHirGen::Visit(const ast::IfStatement &stmt) {
         stmt.else_clause()->body()->Accept(else_gen);
         if (!else_gen) return;
         else_body.emplace(std::move(else_gen.stmt_));
+        decls_.insert(decls_.end(), else_gen.decls_.begin(),
+                      else_gen.decls_.end());
     }
 
     stmt_ = std::make_unique<hir::IfStatement>(
