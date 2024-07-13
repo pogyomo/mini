@@ -207,7 +207,7 @@ public:
         return visitor.Visit(*this);
     }
     void Print(PrintableContext& ctx) const override;
-    inline const std::unique_ptr<Expression>& func() const { return expr_; }
+    inline const std::unique_ptr<Expression>& expr() const { return expr_; }
     inline const AccessExpressionField& field() const { return field_; }
 
 private:
