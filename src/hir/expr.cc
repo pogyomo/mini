@@ -135,16 +135,16 @@ void StructExpression::Print(PrintableContext& ctx) const {
             }
             ctx.printer().PrintLn("");
         }
-        ctx.printer().Print("}");
+        ctx.printer().Print("}}");
     } else {
-        ctx.printer().Print("{}");
+        ctx.printer().Print("{{}}");
     }
 }
 
 void ArrayExpression::Print(PrintableContext& ctx) const {
     if (!inits_.empty()) {
         ctx.printer().ShiftR();
-        ctx.printer().PrintLn("{");
+        ctx.printer().PrintLn("{{");
         for (size_t i = 0; i < inits_.size(); i++) {
             auto& init = inits_.at(i);
             init->Print(ctx);
@@ -154,9 +154,9 @@ void ArrayExpression::Print(PrintableContext& ctx) const {
             }
             ctx.printer().PrintLn("");
         }
-        ctx.printer().Print("}");
+        ctx.printer().Print("}}");
     } else {
-        ctx.printer().Print("{}");
+        ctx.printer().Print("{{}}");
     }
 }
 
