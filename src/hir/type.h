@@ -31,6 +31,14 @@ class Type : public Printable {
 public:
     Type(Span span) : span_(span) {}
     virtual void Accept(TypeVisitor &visitor) const = 0;
+    virtual bool IsBuiltin() const { return false; }
+    virtual bool IsPointer() const { return false; }
+    virtual bool IsArray() const { return false; }
+    virtual bool IsName() const { return false; }
+    virtual BuiltinType *ToBuiltin() { return nullptr; }
+    virtual PointerType *ToPointer() { return nullptr; }
+    virtual ArrayType *ToArray() { return nullptr; }
+    virtual NameType *ToName() { return nullptr; }
     inline Span span() const { return span_; }
 
 private:
@@ -58,6 +66,8 @@ public:
     inline void Accept(TypeVisitor &visitor) const override {
         visitor.Visit(*this);
     }
+    inline bool IsBuiltin() const override { return true; }
+    inline BuiltinType *ToBuiltin() override { return this; }
     void Print(PrintableContext &ctx) const override;
     inline Kind kind() const { return kind_; }
 
@@ -72,6 +82,8 @@ public:
     inline void Accept(TypeVisitor &visitor) const override {
         visitor.Visit(*this);
     }
+    inline bool IsPointer() const override { return true; }
+    inline PointerType *ToPointer() override { return this; }
     inline void Print(PrintableContext &ctx) const override {
         ctx.printer().Print("*");
         of_->Print(ctx);
@@ -90,8 +102,11 @@ public:
     inline void Accept(TypeVisitor &visitor) const override {
         visitor.Visit(*this);
     }
+    inline bool IsArray() const override { return true; }
+    inline ArrayType *ToArray() override { return this; }
     void Print(PrintableContext &ctx) const override;
     const std::shared_ptr<Type> &of() const { return of_; }
+    inline std::optional<uint64_t> size() const { return size_; }
 
 private:
     std::shared_ptr<Type> of_;
@@ -105,6 +120,8 @@ public:
     inline void Accept(TypeVisitor &visitor) const override {
         visitor.Visit(*this);
     }
+    inline bool IsName() const override { return true; }
+    inline NameType *ToName() override { return this; }
     inline void Print(PrintableContext &ctx) const override {
         ctx.printer().Print("{}", value_);
     }
