@@ -38,6 +38,44 @@ The mini programming language support a few types described below:
 | array   | a list of value                 |
 | pointer | a value pointing to a value     |
 
+## Integer literal
+
+The type of integer literal is determined by its size. More precisly, if the integer cannot be represented by n-bit, but can be by m-bit, where n < m and n * 2 = m, the type will be uint**m**
+
+If the integer cannot be represented by 64-bit, this cause compile error.
+
+## Integer conversion
+
+Integers will be converted for infix operator when two integers has same sign, and the size rounded into bigger one.
+
+```
+let a: uint8 = 10;
+let b: uint16 = 20;
+let c: uint16 = a + b;
+```
+
+If unsigned integer was negated, it implicitly converted into signed one with same size.
+
+```
+let a: uint8 = 10;
+let b: int8 = -a;
+```
+
+The conversion for two integer with different sign cause compile error, and user should cast it explicitly.
+
+```
+let a: uint8 = 10;
+let b: int8 = -10;
+let c: int8 = a as int8 + b;
+```
+
+Storing integer with bigger size compare to the variable will cause compile error, and user should cast it explicitly
+
+```
+let a: uint64 = 10;
+let b: uint32 = a as uint32;
+```
+
 ## Constant Expression
 
 A constant expression is an expression which contains only integer literal and using only some arthemtic operator, and evaluated as `usize`.
