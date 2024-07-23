@@ -7,6 +7,7 @@
 #include <string>
 
 #include "../context.h"
+#include "../hir/root.h"
 
 namespace mini {
 
@@ -51,12 +52,15 @@ private:
 
 class HirGenContext {
 public:
-    HirGenContext(Context &ctx) : ctx_(ctx), translator_() {}
+    HirGenContext(Context &ctx, hir::StringTable &string_table)
+        : ctx_(ctx), string_table_(string_table), translator_() {}
     Context &ctx() { return ctx_; }
+    hir::StringTable &string_table() { return string_table_; }
     VariableTranslator &translator() { return translator_; }
 
 private:
     Context &ctx_;
+    hir::StringTable &string_table_;
     VariableTranslator translator_;
 };
 

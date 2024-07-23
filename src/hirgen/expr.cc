@@ -195,6 +195,7 @@ void ExprHirGen::Visit(const ast::IntegerExpression &expr) {
 void ExprHirGen::Visit(const ast::StringExpression &expr) {
     expr_ = std::make_unique<hir::StringExpression>(std::string(expr.value()),
                                                     expr.span());
+    ctx_.string_table().AddString(std::string(expr.value()));
     success_ = true;
 }
 

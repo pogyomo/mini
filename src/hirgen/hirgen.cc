@@ -6,24 +6,25 @@
 namespace mini {
 
 HirGenResult HirGenFile(Context &ctx, const std::string &path) {
-    auto decls = ParseFile(ctx, path);
-    if (!decls) return std::nullopt;
+    auto ast_decls = ParseFile(ctx, path);
+    if (!ast_decls) return std::nullopt;
 
-    HirGenContext gen_ctx(ctx);
+    hir::StringTable table;
+    HirGenContext gen_ctx(ctx, table);
 
-    for (const auto &decl : decls.value()) {
+    for (const auto &decl : ast_decls.value()) {
         DeclVarReg reg(gen_ctx);
         decl->Accept(reg);
     }
 
-    std::vector<std::unique_ptr<hir::Declaration>> res;
-    for (const auto &decl : decls.value()) {
+    std::vector<std::unique_ptr<hir::Declaration>> decls;
+    for (const auto &decl : ast_decls.value()) {
         DeclHirGen gen(gen_ctx);
         decl->Accept(gen);
         if (!gen) return std::nullopt;
-        res.emplace_back(std::move(gen.decl()));
+        decls.emplace_back(std::move(gen.decl()));
     }
-    return res;
+    return hir::Root(std::move(table), std::move(decls));
 }
 
 }  // namespace mini

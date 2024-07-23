@@ -5,7 +5,6 @@
 #include <string>
 
 #include "context.h"
-#include "hir/printable.h"
 #include "hirgen/hirgen.h"
 #include "panic.h"
 
@@ -55,24 +54,18 @@ int main(int argc, char *argv[]) {
     Arguments args(argc, argv);
     if (args.emit_hir()) {
         mini::Context ctx;
-        auto decls = mini::HirGenFile(ctx, args.input());
-        if (!decls) std::exit(EXIT_FAILURE);
+        auto root = mini::HirGenFile(ctx, args.input());
+        if (!root) std::exit(EXIT_FAILURE);
         if (args.output()) {
             std::ofstream ofs(args.output().value());
             if (ofs.bad()) {
                 mini::FatalError("failed to open output file");
             }
-            for (const auto &decl : decls.value()) {
-                mini::hir::PrintableContext ctx(ofs, 4);
-                decl->PrintLn(ctx);
-                ctx.printer().PrintLn("");
-            }
+            mini::hir::PrintableContext ctx(ofs, 4);
+            root->PrintLn(ctx);
         } else {
-            for (const auto &decl : decls.value()) {
-                mini::hir::PrintableContext ctx(std::cout, 4);
-                decl->PrintLn(ctx);
-                ctx.printer().PrintLn("");
-            }
+            mini::hir::PrintableContext ctx(std::cout, 4);
+            root->PrintLn(ctx);
         }
     } else {
         mini::FatalError("not yet implemented");
