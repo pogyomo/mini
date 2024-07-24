@@ -142,8 +142,6 @@ void TypeSizeCalc::Visit(const hir::NameType &type) {
             return;
         }
 
-        // TODO:
-        // * The order of fields is different from definition.
         size_ = 0;
         uint64_t align = 0;
         for (auto &[name, field] : entry) {

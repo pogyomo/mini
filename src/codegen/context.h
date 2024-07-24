@@ -141,8 +141,12 @@ public:
             uint64_t offset_;
         };
 
-        using iterator = std::map<std::string, Field>::iterator;
-        using const_iterator = std::map<std::string, Field>::const_iterator;
+        using map = std::vector<std::pair<std::string, Field>>;
+        using iterator = map::iterator;
+        using const_iterator = map::const_iterator;
+        using reference = map::reference;
+        using const_reference = map::const_reference;
+        using size_type = map::size_type;
 
         Entry(Span span)
             : size_and_offset_calculated_(false),
@@ -154,6 +158,9 @@ public:
         const_iterator begin() const { return fields_.begin(); }
         iterator end() { return fields_.end(); }
         const_iterator end() const { return fields_.end(); }
+        reference at(size_type n) { return fields_.at(n); }
+        const_reference at(size_type n) const { return fields_.at(n); }
+
         inline bool SizeAndOffsetCalculated() const {
             return size_and_offset_calculated_;
         }
@@ -166,23 +173,30 @@ public:
         inline void set_align(uint64_t align) { align_ = align; }
         inline uint64_t size() const { return size_; }
         inline uint64_t align() const { return align_; }
+
         inline Span span() const { return span_; }
-        inline bool Exists(const std::string &name) {
-            return fields_.find(name) != fields_.end();
+        inline bool Exists(const std::string &name) const {
+            for (const auto &[name_, _] : fields_) {
+                if (name == name_) return true;
+            }
+            return false;
         }
         inline void Insert(std::string &&name, Field &&type) {
-            fields_.insert(std::make_pair(name, type));
+            if (!Exists(name)) {
+                fields_.emplace_back(std::make_pair(name, type));
+            } else {
+                FatalError("{} already exists as struct field", name);
+            }
         }
         Field &Query(const std::string &name) {
-            if (!Exists(name)) {
-                FatalError("no such struct field exists: {}", name);
-            } else {
-                return fields_.at(name);
+            for (auto &[name_, field] : fields_) {
+                if (name == name_) return field;
             }
+            FatalError("no such struct field exists: {}", name);
         }
 
     private:
-        std::map<std::string, Field> fields_;
+        map fields_;
         bool size_and_offset_calculated_;
         bool align_calculated_;
         uint64_t size_;
