@@ -40,7 +40,7 @@ The mini programming language support a few types described below:
 
 ## Integer literal
 
-The type of integer literal is determined by its size. More precisly, if the integer cannot be represented by n-bit, but can be by m-bit, where n < m and n * 2 = m, the type will be uint**m**
+The type of integer literal is determined by its size. More precisly, if the integer cannot be represented by n-bit, but can be by m-bit, where n < m and n \* 2 = m, the type will be uint**m**
 
 If the integer cannot be represented by 64-bit, this cause compile error.
 
@@ -61,12 +61,12 @@ let a: uint8 = 10;
 let b: int8 = -a;
 ```
 
-The conversion for two integer with different sign cause compile error, and user should cast it explicitly.
+The conversion for two integer with different sign changes the sign of result.
 
 ```
 let a: uint8 = 10;
 let b: int8 = -10;
-let c: int8 = a as int8 + b;
+let c: int8 = a + b;
 ```
 
 Storing integer with bigger size compare to the variable will cause compile error, and user should cast it explicitly
@@ -75,6 +75,12 @@ Storing integer with bigger size compare to the variable will cause compile erro
 let a: uint64 = 10;
 let b: uint32 = a as uint32;
 ```
+
+## Function
+
+Functions cannot accept value which size is more thant 8 byte, and cannot accept more than 6 arguments.
+
+Also, function must returns value less than or equal to 8 byte.
 
 ## Constant Expression
 
@@ -184,6 +190,6 @@ The syntax of mini programming language is as follow:
 <struct-init> ::= <identifier> "{" <struct-initializers> "}"
 <struct-initializers> ::= <struct-initializer> [ "," [ <struct-initializers> ] ]
 <struct-initializer> ::= <identifier> ":" <expression>
-<array-init> ::= "{" <array-initializers> "}"
+<array-init> ::= "[" <array-initializers> "]"
 <array-initializers> ::= <expression> [ "," [ <array-initializers> ] ]
 ```
