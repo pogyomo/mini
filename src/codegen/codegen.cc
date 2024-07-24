@@ -25,6 +25,13 @@ bool CodeGenFile(Context &ctx, std::ostream &os, const std::string &path) {
     for (const auto &decl : root->decls()) {
         DeclCollect collect(gen_ctx);
         decl->Accept(collect);
+        if (!collect) return false;
+    }
+
+    for (const auto &decl : root->decls()) {
+        DeclPreprocess preprocess(gen_ctx);
+        decl->Accept(preprocess);
+        if (!preprocess) return false;
     }
 
     for (const auto &decl : root->decls()) {

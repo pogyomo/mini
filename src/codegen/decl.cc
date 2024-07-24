@@ -4,6 +4,7 @@
 #include <string>
 #include <utility>
 
+#include "../report.h"
 #include "context.h"
 #include "stmt.h"
 #include "type.h"
@@ -13,19 +14,31 @@ namespace mini {
 void DeclCollect::Visit(const hir::StructDeclaration &decl) {
     StructTable::Entry entry(decl.span());
     for (const auto &field : decl.fields()) {
+        if (entry.Exists(field.name().value())) {
+            ReportInfo info(field.span(), "duplicated field", "");
+            Report(ctx_.ctx(), ReportLevel::Error, info);
+            return;
+        }
         entry.Insert(std::string(field.name().value()), field.type());
     }
     ctx_.struct_table().Insert(std::string(decl.name().value()),
                                std::move(entry));
+    success_ = true;
 }
 
 void DeclCollect::Visit(const hir::EnumDeclaration &decl) {
     EnumTable::Entry entry(decl.span());
     for (const auto &field : decl.fields()) {
+        if (entry.Exists(field.name().value())) {
+            ReportInfo info(field.span(), "duplicated field", "");
+            Report(ctx_.ctx(), ReportLevel::Error, info);
+            return;
+        }
         entry.Insert(std::string(field.name().value()), field.value().value());
     }
     ctx_.enum_table().Insert(std::string(decl.name().value()),
                              std::move(entry));
+    success_ = true;
 }
 
 void DeclCollect::Visit(const hir::FunctionDeclaration &decl) {
@@ -35,6 +48,7 @@ void DeclCollect::Visit(const hir::FunctionDeclaration &decl) {
     }
     ctx_.func_info_table().Insert(std::string(decl.name().value()),
                                   std::move(entry));
+    success_ = true;
 }
 
 void DeclPreprocess::Visit(const hir::FunctionDeclaration &decl) {

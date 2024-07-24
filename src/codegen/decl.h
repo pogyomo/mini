@@ -8,12 +8,14 @@ namespace mini {
 
 class DeclCollect : public hir::DeclarationVisitor {
 public:
-    DeclCollect(CodeGenContext &ctx) : ctx_(ctx) {}
+    DeclCollect(CodeGenContext &ctx) : success_(false), ctx_(ctx) {}
+    explicit operator bool() const { return success_; }
     void Visit(const hir::StructDeclaration &decl) override;
     void Visit(const hir::EnumDeclaration &decl) override;
     void Visit(const hir::FunctionDeclaration &decl) override;
 
 private:
+    bool success_;
     CodeGenContext &ctx_;
 };
 
