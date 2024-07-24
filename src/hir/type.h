@@ -68,6 +68,12 @@ public:
     }
     inline bool IsBuiltin() const override { return true; }
     inline BuiltinType *ToBuiltin() override { return this; }
+    inline bool IsInteger() const {
+        return kind_ == ISize || kind_ == Int8 || kind_ == Int16 ||
+               kind_ == Int32 || kind_ == Int64 || kind_ == USize ||
+               kind_ == UInt8 || kind_ == UInt16 || kind_ == UInt32 ||
+               kind_ == UInt64;
+    }
     void Print(PrintableContext &ctx) const override;
     inline Kind kind() const { return kind_; }
 

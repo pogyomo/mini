@@ -1,5 +1,6 @@
 #include "decl.h"
 
+#include <cstdint>
 #include <string>
 #include <utility>
 
@@ -8,34 +9,6 @@
 #include "type.h"
 
 namespace mini {
-
-static bool ConstructLVarTable(CodeGenContext &ctx,
-                               const hir::FunctionDeclaration &decl) {
-    ctx.lvar_table().Clear();
-    ctx.lvar_table().ChangeSize(0);
-
-    for (const auto &decl : decl.decls()) {
-        TypeSizeCalc size(ctx);
-        decl.type()->Accept(size);
-        if (!size) return false;
-
-        TypeAlignCalc align(ctx);
-        decl.type()->Accept(align);
-        if (!align) return false;
-
-        ctx.lvar_table().AlignSize(align.align());
-
-        LVarTable::Entry entry(ctx.lvar_table().size());
-        ctx.lvar_table().Insert(std::string(decl.name().value()),
-                                std::move(entry));
-
-        ctx.lvar_table().AddSize(size.size());
-    }
-
-    ctx.lvar_table().AlignSize(16);
-
-    return true;
-}
 
 void DeclCollect::Visit(const hir::StructDeclaration &decl) {
     StructTable::Entry entry(decl.span());
@@ -56,18 +29,88 @@ void DeclCollect::Visit(const hir::EnumDeclaration &decl) {
 }
 
 void DeclCollect::Visit(const hir::FunctionDeclaration &decl) {
-    FuncSigTable::Entry entry(decl.ret(), decl.span());
+    FuncInfoTable::Entry entry(decl.ret(), decl.span());
     for (const auto &param : decl.params()) {
-        entry.InsertParam(std::string(param.name().value()), param.type());
+        entry.params().Insert(std::string(param.name().value()), param.type());
     }
-    ctx_.func_sig_table().Insert(std::string(decl.name().value()),
-                                 std::move(entry));
+    ctx_.func_info_table().Insert(std::string(decl.name().value()),
+                                  std::move(entry));
+}
+
+void DeclPreprocess::Visit(const hir::FunctionDeclaration &decl) {
+    auto &entry = ctx_.func_info_table().Query(decl.name().value());
+    auto &table = entry.lvar_table();
+    table.Clear();
+    table.ChangeCalleeSize(0);
+    table.ChangeCallerSize(0);
+
+    // Calculate stack memory of caller and callee for arguments.
+    uint8_t regnum = 0;
+    for (const auto &param : decl.params()) {
+        TypeSizeCalc size(ctx_);
+        param.type()->Accept(size);
+        if (!size) return;
+
+        TypeAlignCalc align(ctx_);
+        param.type()->Accept(align);
+        if (!align) return;
+
+        if (size.size() <= 8 && regnum < 6) {
+            // If the arguments is small enough to place it to register and
+            // unused register exists, assign the argument to available
+            // register, then allocate callee memory to store it.
+
+            table.AlignCalleeSize(align.align());
+
+            LVarTable::Entry entry(false, true, regnum, table.CalleeSize(),
+                                   param.type());
+            table.Insert(std::string(param.name().value()), std::move(entry));
+
+            table.AddCalleeSize(size.size());
+            regnum++;
+        } else {
+            // If the argument is too big to store to register, or no unused
+            // register exists, allocate caller stack to store it.
+
+            table.AlignCallerSize(align.align());
+
+            LVarTable::Entry entry(true, false, 0, table.CallerSize(),
+                                   param.type());
+            table.Insert(std::string(param.name().value()), std::move(entry));
+
+            table.AddCallerSize(size.size());
+        }
+    }
+
+    // Then, calculate size of stack memory at callee for local variables.
+    for (const auto &decl : decl.decls()) {
+        TypeSizeCalc size(ctx_);
+        decl.type()->Accept(size);
+        if (!size) return;
+
+        TypeAlignCalc align(ctx_);
+        decl.type()->Accept(align);
+        if (!align) return;
+
+        table.AlignCalleeSize(align.align());
+
+        LVarTable::Entry entry(false, false, 0, table.CalleeSize(),
+                               decl.type());
+        table.Insert(std::string(decl.name().value()), std::move(entry));
+
+        table.AddCalleeSize(size.size());
+    }
+
+    success_ = true;
 }
 
 void DeclCodeGen::Visit(const hir::FunctionDeclaration &decl) {
-    if (!ConstructLVarTable(ctx_, decl)) {
-        return;
-    }
+    ctx_.SetCurrFuncName(std::string(decl.name().value()));
+
+    auto callee_size = ctx_.func_info_table()
+                           .Query(decl.name().value())
+                           .lvar_table()
+                           .CalleeSize();
 
     ctx_.printer().PrintLn("  .text");
     ctx_.printer().PrintLn("  .type {}, @function", decl.name().value());
@@ -75,7 +118,19 @@ void DeclCodeGen::Visit(const hir::FunctionDeclaration &decl) {
     ctx_.printer().PrintLn("{}:", decl.name().value());
     ctx_.printer().PrintLn("  pushq %rbp");
     ctx_.printer().PrintLn("  movq %rsp, %rbp");
-    ctx_.printer().PrintLn("  subq ${}, %rsp", ctx_.lvar_table().size());
+    ctx_.printer().PrintLn("  subq ${}, %rsp", callee_size);
+
+    // Copy arguments passed by register to stack so that these can take its
+    // address.
+    auto &params = ctx_.func_info_table().Query(decl.name().value()).params();
+    for (const auto &[name, type] : params) {
+        auto &lvar = ctx_.lvar_table().Query(name);
+        if (lvar.ShouldInitializeWithReg()) {
+            auto src = lvar.InitRegName();
+            auto dst = lvar.AsmRepr();
+            ctx_.printer().PrintLn("  movq {}, {}", src, dst);
+        }
+    }
 
     StmtCodeGen gen(ctx_);
     decl.body().Accept(gen);
