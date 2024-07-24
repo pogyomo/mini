@@ -62,7 +62,7 @@ public:
         // Retruns offset where the value exists at
         // - `rbp-offset` is_caller_alloc == false
         // - `rbp+16+offset` is_caller_alloc == true
-        inline uint64_t offset() const { return offset_; }
+        inline uint64_t Offset() const { return offset_; }
 
         // Returns the representaion of this variable in assembly code.
         //
@@ -120,8 +120,8 @@ public:
 
 private:
     std::map<std::string, Entry> map_;
-    uint64_t callee_size_;
-    uint64_t caller_size_;
+    uint64_t callee_size_;  // The size callee should reserve.
+    uint64_t caller_size_;  // The size caller should reserve.
 };
 
 class StructTable {
@@ -133,8 +133,8 @@ public:
             Field(const std::shared_ptr<hir::Type> &type)
                 : type_(type), offset_(0) {}
             const std::shared_ptr<hir::Type> &type() const { return type_; }
-            void set_offset(uint64_t offset) { offset_ = offset; }
-            uint64_t offset() const { return offset_; }
+            void SetOffset(uint64_t offset) { offset_ = offset; }
+            uint64_t Offset() const { return offset_; }
 
         private:
             std::shared_ptr<hir::Type> type_;
@@ -169,10 +169,10 @@ public:
             size_and_offset_calculated_ = true;
         }
         inline void MarkAsAlignCalculated() { align_calculated_ = true; }
-        inline void set_size(uint64_t size) { size_ = size; }
-        inline void set_align(uint64_t align) { align_ = align; }
-        inline uint64_t size() const { return size_; }
-        inline uint64_t align() const { return align_; }
+        inline void SetSize(uint64_t size) { size_ = size; }
+        inline void SetAlign(uint64_t align) { align_ = align; }
+        inline uint64_t Size() const { return size_; }
+        inline uint64_t Align() const { return align_; }
 
         inline Span span() const { return span_; }
         inline bool Exists(const std::string &name) const {

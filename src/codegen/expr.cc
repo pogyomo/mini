@@ -164,23 +164,23 @@ void ExprCodeGen::Visit(const hir::AccessExpression &expr) {
         if (!size) return;
 
         if (size.size() == 1) {
-            ctx_.printer().PrintLn("  movb {}(%rax), %al", field.offset());
+            ctx_.printer().PrintLn("  movb {}(%rax), %al", field.Offset());
         } else if (size.size() == 2) {
-            ctx_.printer().PrintLn("  movw {}(%rax), %ax", field.offset());
+            ctx_.printer().PrintLn("  movw {}(%rax), %ax", field.Offset());
         } else if (size.size() == 4) {
-            ctx_.printer().PrintLn("  movl {}(%rax), %eax", field.offset());
+            ctx_.printer().PrintLn("  movl {}(%rax), %eax", field.Offset());
         } else if (size.size() == 8) {
-            ctx_.printer().PrintLn("  movq {}(%rax), %rax", field.offset());
+            ctx_.printer().PrintLn("  movq {}(%rax), %rax", field.Offset());
         } else {
             FatalError("unreachable");
         }
     } else if (field.type()->IsArray() ||
                (field.type()->IsName() &&
                 ctx_.struct_table().Exists(field.type()->ToName()->value()))) {
-        ctx_.printer().PrintLn("  addq ${}, %rax", field.offset());
+        ctx_.printer().PrintLn("  addq ${}, %rax", field.Offset());
     } else if (field.type()->IsName() &&
                ctx_.enum_table().Exists(field.type()->ToName()->value())) {
-        ctx_.printer().PrintLn("  movq {}(%rax), %rax", field.offset());
+        ctx_.printer().PrintLn("  movq {}(%rax), %rax", field.Offset());
     } else {
         FatalError("unreaclable");
     }
@@ -344,7 +344,7 @@ void ExprRValGen::Visit(const hir::VariableExpression &expr) {
 
     auto &entry = ctx_.lvar_table().Query(expr.value());
 
-    ctx_.printer().PrintLn("  leaq -{}(%rbp), %rax", entry.offset());
+    ctx_.printer().PrintLn("  leaq -{}(%rbp), %rax", entry.Offset());
 }
 
 void ExprRValGen::Visit(const hir::IntegerExpression &expr) {

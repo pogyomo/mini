@@ -57,7 +57,7 @@ void TypeAlignCalc::Visit(const hir::NameType &type) {
     if (ctx_.struct_table().Exists(type.value())) {
         auto &entry = ctx_.struct_table().Query(type.value());
         if (entry.AlignCalculated()) {
-            align_ = entry.align();
+            align_ = entry.Align();
             success_ = true;
             return;
         }
@@ -137,7 +137,7 @@ void TypeSizeCalc::Visit(const hir::NameType &type) {
     if (ctx_.struct_table().Exists(type.value())) {
         auto &entry = ctx_.struct_table().Query(type.value());
         if (entry.SizeAndOffsetCalculated()) {
-            size_ = entry.size();
+            size_ = entry.Size();
             success_ = true;
             return;
         }
@@ -155,17 +155,17 @@ void TypeSizeCalc::Visit(const hir::NameType &type) {
 
             while (size_ % align_calc.align() != 0) size_++;
 
-            field.set_offset(size_);
+            field.SetOffset(size_);
             size_ += size_calc.size_;
             align = std::max(align, align_calc.align());
         }
         while (size_ % align != 0) size_++;
 
         if (!entry.AlignCalculated()) {
-            entry.set_align(align);
+            entry.SetAlign(align);
             entry.MarkAsAlignCalculated();
         }
-        entry.set_size(size_);
+        entry.SetSize(size_);
         entry.MarkAsSizeAndOffsetCalculated();
 
         success_ = true;
