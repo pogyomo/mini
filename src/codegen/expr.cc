@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <string>
@@ -13,7 +14,8 @@
 
 namespace mini {
 
-static std::optional<std::string> IsVariable(const hir::Expression &expr) {
+static std::optional<std::string> IsVariable(
+    const std::unique_ptr<hir::Expression> &expr) {
     class IsVariable : public hir::ExpressionVisitor {
     public:
         IsVariable() : success_(false) {}
@@ -45,7 +47,7 @@ static std::optional<std::string> IsVariable(const hir::Expression &expr) {
     };
 
     IsVariable check;
-    expr.Accept(check);
+    expr->Accept(check);
     if (check) {
         return check.value();
     } else {
@@ -72,7 +74,7 @@ void ExprCodeGen::Visit(const hir::IndexExpression &expr) {
 }
 
 void ExprCodeGen::Visit(const hir::CallExpression &expr) {
-    auto var = IsVariable(expr);
+    auto var = IsVariable(expr.func());
     if (var && ctx_.func_info_table().Exists(var.value())) {
         auto &callee_info = ctx_.func_info_table().Query(var.value());
 
@@ -97,7 +99,7 @@ void ExprCodeGen::Visit(const hir::CallExpression &expr) {
         auto curr_size = caller_table.CalleeSize();
         if (curr_size != prev_size) {
             assert(curr_size > prev_size);
-            ctx_.printer().PrintLn("  addq ${}, %rsp", curr_size - prev_size);
+            ctx_.printer().PrintLn("  subq ${}, %rsp", curr_size - prev_size);
             caller_table.ChangeCallerSize(prev_size);
         }
 
@@ -258,7 +260,7 @@ void ExprCodeGen::Visit(const hir::VariableExpression &expr) {
     }
 
     auto &entry = ctx_.lvar_table().Query(expr.value());
-    ctx_.printer().PrintLn("movq {}, %rax", entry.AsmRepr());
+    ctx_.printer().PrintLn("  movq {}, %rax", entry.AsmRepr());
 
     inferred_ = entry.type();
     success_ = true;
