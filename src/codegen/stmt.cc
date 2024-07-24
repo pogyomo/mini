@@ -2,6 +2,7 @@
 
 #include <cassert>
 
+#include "../report.h"
 #include "expr.h"
 
 namespace mini {
@@ -27,9 +28,11 @@ void StmtCodeGen::Visit(const hir::ExpressionStatement &stmt) {
 void StmtCodeGen::Visit(const hir::ReturnStatement &stmt) {
     if (!stmt.ret_value()) {
         auto &func = ctx_.func_info_table().Query(ctx_.CurrFuncName());
-        if (func.ret_type()->IsBuiltin() &&
-            func.ret_type()->ToBuiltin()->kind() == hir::BuiltinType::Void) {
-            ctx_.printer().PrintLn("  retq");
+        if (!func.ret_type()->IsBuiltin() ||
+            func.ret_type()->ToBuiltin()->kind() != hir::BuiltinType::Void) {
+            ReportInfo info(stmt.span(), "incorrect return type", "");
+            Report(ctx_.ctx(), ReportLevel::Error, info);
+            return;
         }
     } else {
         ExprCodeGen gen(ctx_);
@@ -37,18 +40,21 @@ void StmtCodeGen::Visit(const hir::ReturnStatement &stmt) {
         if (!gen) return;
 
         // TODO: Check types
-        ctx_.printer().PrintLn("  retq");
     }
+
+    success_ = true;
 }
 
 void StmtCodeGen::Visit(const hir::BreakStatement &) {
     auto id = ctx_.label_id_generator().CurrId();
     ctx_.printer().PrintLn("  jmp L.END.{}", id);
+    success_ = true;
 }
 
 void StmtCodeGen::Visit(const hir::ContinueStatement &) {
     auto id = ctx_.label_id_generator().CurrId();
     ctx_.printer().PrintLn("  jmp L.START.{}", id);
+    success_ = true;
 }
 
 void StmtCodeGen::Visit(const hir::WhileStatement &stmt) {
@@ -68,6 +74,8 @@ void StmtCodeGen::Visit(const hir::WhileStatement &stmt) {
     ctx_.printer().PrintLn("  jmp L.START.{}", id);
 
     ctx_.printer().PrintLn("L.END.{}", id);
+
+    success_ = true;
 }
 
 void StmtCodeGen::Visit(const hir::IfStatement &stmt) {
@@ -94,6 +102,8 @@ void StmtCodeGen::Visit(const hir::IfStatement &stmt) {
     }
 
     ctx_.printer().PrintLn("L.END.{}:", id);
+
+    success_ = true;
 }
 
 void StmtCodeGen::Visit(const hir::BlockStatement &stmt) {
