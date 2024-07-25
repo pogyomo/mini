@@ -76,8 +76,8 @@ void DeclPreprocess::Visit(const hir::FunctionDeclaration &decl) {
 
             table.AlignCalleeSize(align.align());
 
-            LVarTable::Entry entry(false, true, regnum, table.CalleeSize(),
-                                   param.type());
+            LVarTable::Entry entry(LVarTable::Entry::CalleeAllocArg, regnum,
+                                   table.CalleeSize(), param.type());
             table.Insert(std::string(param.name().value()), std::move(entry));
 
             table.AddCalleeSize(size.size());
@@ -88,8 +88,8 @@ void DeclPreprocess::Visit(const hir::FunctionDeclaration &decl) {
 
             table.AlignCallerSize(align.align());
 
-            LVarTable::Entry entry(true, false, 0, table.CallerSize(),
-                                   param.type());
+            LVarTable::Entry entry(LVarTable::Entry::CallerAllocArg, 0,
+                                   table.CallerSize(), param.type());
             table.Insert(std::string(param.name().value()), std::move(entry));
 
             table.AddCallerSize(size.size());
@@ -108,8 +108,8 @@ void DeclPreprocess::Visit(const hir::FunctionDeclaration &decl) {
 
         table.AlignCalleeSize(align.align());
 
-        LVarTable::Entry entry(false, false, 0, table.CalleeSize(),
-                               decl.type());
+        LVarTable::Entry entry(LVarTable::Entry::CalleeLVar, 0,
+                               table.CalleeSize(), decl.type());
         table.Insert(std::string(decl.name().value()), std::move(entry));
 
         table.AddCalleeSize(size.size());

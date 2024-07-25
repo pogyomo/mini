@@ -16,24 +16,33 @@
 
 namespace mini {
 
+// A class represents a stack layout and local variables for a function.
 class LVarTable {
 public:
+    // Infomations for a local variable.
     class Entry {
     public:
-        Entry(bool is_caller_alloc, bool should_init_with_reg, uint8_t init_reg,
-              uint64_t offset, const std::shared_ptr<hir::Type> &type)
-            : is_caller_alloc_(is_caller_alloc),
-              should_init_with_reg_(should_init_with_reg),
-              init_reg_(init_reg),
-              offset_(offset),
-              type_(type) {}
+        enum Kind {
+            // The entry is callee local variable
+            CalleeLVar,
+
+            // The entry is argument that callee should allocate memory for it.
+            CalleeAllocArg,
+
+            // The entry is argument that caller should allocate memory for it.
+            CallerAllocArg,
+        };
+
+        Entry(Kind kind, uint8_t init_reg, uint64_t offset,
+              const std::shared_ptr<hir::Type> &type)
+            : kind_(kind), init_reg_(init_reg), offset_(offset), type_(type) {}
 
         const std::shared_ptr<hir::Type> &type() const { return type_; }
 
         // Returns true if the variable should be initialized with register:
         // the variable is arguments.
         inline bool ShouldInitializeWithReg() const {
-            return should_init_with_reg_;
+            return kind_ == Kind::CalleeAllocArg;
         }
 
         // Returns the position register which the variable should be
@@ -57,7 +66,9 @@ public:
         // the variable can be accessed with rbp + 16 + offset.
         // Otherwise the variable is allocated by callee and
         // accessable with rbp - offset.
-        inline bool IsCallerAlloc() const { return is_caller_alloc_; }
+        inline bool IsCallerAlloc() const {
+            return kind_ == Kind::CallerAllocArg;
+        }
 
         // Retruns offset where the value exists at
         // - `rbp-offset` is_caller_alloc == false
@@ -70,7 +81,7 @@ public:
         // - when IsCallerAlloc == true and offset == 8, returns "24(%rbp)"
         // - when IsCallerAlloc == false and offset == 8, returns "-8(%rbp)"
         inline std::string AsmRepr() const {
-            if (is_caller_alloc_) {
+            if (IsCallerAlloc()) {
                 return fmt::format("{}(%rbp)", offset_ + 16);
             } else {
                 return fmt::format("-{}(%rbp)", offset_);
@@ -78,8 +89,7 @@ public:
         }
 
     private:
-        bool is_caller_alloc_;
-        bool should_init_with_reg_;
+        Kind kind_;
         uint8_t init_reg_;
         uint64_t offset_;
         std::shared_ptr<hir::Type> type_;
@@ -124,8 +134,12 @@ private:
     uint64_t caller_size_;  // The size caller should reserve.
 };
 
+// A table which holds the struct fields for each struct and can be accessed it
+// by its name.
 class StructTable {
 public:
+    // Fields of a struct. Iterable and insertable, and the order of field
+    // obtained by iteration is same as the order of insertion.
     class Entry {
     public:
         class Field {
@@ -265,10 +279,17 @@ private:
     std::map<std::string, Entry> map_;
 };
 
+// A table which holds infomation about, for each function, the parameters,
+// return type, local variables and its layout.
 class FuncInfoTable {
 public:
+    // Infomations for a function.
     class Entry {
     public:
+        // Iterable and insertable tables which holds infomation of parameters
+        // of a function.
+        // The order of parameters obtained by iteration is same as the order of
+        // insertion.
         class Params {
         public:
             // NOTE:
