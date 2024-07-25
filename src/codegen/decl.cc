@@ -51,74 +51,11 @@ void DeclCollect::Visit(const hir::FunctionDeclaration &decl) {
     success_ = true;
 }
 
-void DeclPreprocess::Visit(const hir::FunctionDeclaration &decl) {
-    auto &entry = ctx_.func_info_table().Query(decl.name().value());
-    auto &table = entry.lvar_table();
-    table.Clear();
-    table.ChangeCalleeSize(0);
-    table.ChangeCallerSize(0);
-
-    // Calculate stack memory of caller and callee for arguments.
-    uint8_t regnum = 0;
-    for (const auto &param : decl.params()) {
-        TypeSizeCalc size(ctx_);
-        param.type()->Accept(size);
-        if (!size) return;
-
-        TypeAlignCalc align(ctx_);
-        param.type()->Accept(align);
-        if (!align) return;
-
-        if (size.size() <= 8 && regnum < 6) {
-            // If the arguments is small enough to place it to register and
-            // unused register exists, assign the argument to available
-            // register, then allocate callee memory to store it.
-
-            table.AlignCalleeSize(align.align());
-
-            LVarTable::Entry entry(LVarTable::Entry::CalleeAllocArg, regnum,
-                                   table.CalleeSize(), param.type());
-            table.Insert(std::string(param.name().value()), std::move(entry));
-
-            table.AddCalleeSize(size.size());
-            regnum++;
-        } else {
-            // If the argument is too big to store to register, or no unused
-            // register exists, allocate caller stack to store it.
-
-            table.AlignCallerSize(align.align());
-
-            LVarTable::Entry entry(LVarTable::Entry::CallerAllocArg, 0,
-                                   table.CallerSize(), param.type());
-            table.Insert(std::string(param.name().value()), std::move(entry));
-
-            table.AddCallerSize(size.size());
-        }
-    }
-
-    // Then, calculate size of stack memory at callee for local variables.
-    for (const auto &decl : decl.decls()) {
-        TypeSizeCalc size(ctx_);
-        decl.type()->Accept(size);
-        if (!size) return;
-
-        TypeAlignCalc align(ctx_);
-        decl.type()->Accept(align);
-        if (!align) return;
-
-        table.AlignCalleeSize(align.align());
-
-        LVarTable::Entry entry(LVarTable::Entry::CalleeLVar, 0,
-                               table.CalleeSize(), decl.type());
-        table.Insert(std::string(decl.name().value()), std::move(entry));
-
-        table.AddCalleeSize(size.size());
-    }
-
-    success_ = true;
-}
-
 void DeclCodeGen::Visit(const hir::FunctionDeclaration &decl) {
+    if (!ConstructLVarTable(ctx_, decl)) {
+        return;
+    }
+
     ctx_.SetCurrFuncName(std::string(decl.name().value()));
 
     auto callee_size = ctx_.func_info_table()
@@ -155,6 +92,74 @@ void DeclCodeGen::Visit(const hir::FunctionDeclaration &decl) {
     ctx_.printer().PrintLn("  retq");
 
     success_ = true;
+}
+
+bool ConstructLVarTable(CodeGenContext &ctx,
+                        const hir::FunctionDeclaration &decl) {
+    auto &entry = ctx.func_info_table().Query(decl.name().value());
+    auto &table = entry.lvar_table();
+    table.Clear();
+    table.ChangeCalleeSize(0);
+    table.ChangeCallerSize(0);
+
+    // Calculate stack memory of caller and callee for arguments.
+    uint8_t regnum = 0;
+    for (const auto &param : decl.params()) {
+        TypeSizeCalc size(ctx);
+        param.type()->Accept(size);
+        if (!size) return false;
+
+        TypeAlignCalc align(ctx);
+        param.type()->Accept(align);
+        if (!align) return false;
+
+        if (size.size() <= 8 && regnum < 6) {
+            // If the arguments is small enough to place it to register and
+            // unused register exists, assign the argument to available
+            // register, then allocate callee memory to store it.
+
+            table.AlignCalleeSize(align.align());
+
+            LVarTable::Entry entry(LVarTable::Entry::CalleeAllocArg, regnum,
+                                   table.CalleeSize(), param.type());
+            table.Insert(std::string(param.name().value()), std::move(entry));
+
+            table.AddCalleeSize(size.size());
+            regnum++;
+        } else {
+            // If the argument is too big to store to register, or no unused
+            // register exists, allocate caller stack to store it.
+
+            table.AlignCallerSize(align.align());
+
+            LVarTable::Entry entry(LVarTable::Entry::CallerAllocArg, 0,
+                                   table.CallerSize(), param.type());
+            table.Insert(std::string(param.name().value()), std::move(entry));
+
+            table.AddCallerSize(size.size());
+        }
+    }
+
+    // Then, calculate size of stack memory at callee for local variables.
+    for (const auto &decl : decl.decls()) {
+        TypeSizeCalc size(ctx);
+        decl.type()->Accept(size);
+        if (!size) return false;
+
+        TypeAlignCalc align(ctx);
+        decl.type()->Accept(align);
+        if (!align) return false;
+
+        table.AlignCalleeSize(align.align());
+
+        LVarTable::Entry entry(LVarTable::Entry::CalleeLVar, 0,
+                               table.CalleeSize(), decl.type());
+        table.Insert(std::string(decl.name().value()), std::move(entry));
+
+        table.AddCalleeSize(size.size());
+    }
+
+    return true;
 }
 
 }  // namespace mini

@@ -19,21 +19,6 @@ private:
     CodeGenContext &ctx_;
 };
 
-// For each function declaration, build LVarTable so that caller and callee know
-// how much need to allocate stack.
-class DeclPreprocess : public hir::DeclarationVisitor {
-public:
-    DeclPreprocess(CodeGenContext &ctx) : success_(false), ctx_(ctx) {}
-    explicit operator bool() const { return success_; }
-    void Visit(const hir::StructDeclaration &) override { success_ = true; }
-    void Visit(const hir::EnumDeclaration &) override { success_ = true; }
-    void Visit(const hir::FunctionDeclaration &decl) override;
-
-private:
-    bool success_;
-    CodeGenContext &ctx_;
-};
-
 class DeclCodeGen : public hir::DeclarationVisitor {
 public:
     DeclCodeGen(CodeGenContext &ctx) : success_(false), ctx_(ctx) {}
@@ -46,6 +31,11 @@ private:
     bool success_;
     CodeGenContext &ctx_;
 };
+
+// Build LVarTable for the function so that caller and callee know how much need
+// to allocate stack.
+bool ConstructLVarTable(CodeGenContext &ctx,
+                        const hir::FunctionDeclaration &decl);
 
 }  // namespace mini
 
