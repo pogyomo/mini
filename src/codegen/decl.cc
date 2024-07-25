@@ -118,13 +118,13 @@ bool ConstructLVarTable(CodeGenContext &ctx,
             // unused register exists, assign the argument to available
             // register, then allocate callee memory to store it.
 
+            table.AddCalleeSize(size.size());
             table.AlignCalleeSize(align.align());
 
             LVarTable::Entry entry(LVarTable::Entry::CalleeAllocArg, regnum,
                                    table.CalleeSize(), param.type());
             table.Insert(std::string(param.name().value()), std::move(entry));
 
-            table.AddCalleeSize(size.size());
             regnum++;
         } else {
             // If the argument is too big to store to register, or no unused
@@ -150,13 +150,12 @@ bool ConstructLVarTable(CodeGenContext &ctx,
         decl.type()->Accept(align);
         if (!align) return false;
 
+        table.AddCalleeSize(size.size());
         table.AlignCalleeSize(align.align());
 
         LVarTable::Entry entry(LVarTable::Entry::CalleeLVar, 0,
                                table.CalleeSize(), decl.type());
         table.Insert(std::string(decl.name().value()), std::move(entry));
-
-        table.AddCalleeSize(size.size());
     }
 
     return true;
