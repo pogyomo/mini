@@ -29,12 +29,6 @@ bool CodeGenFile(Context &ctx, std::ostream &os, const std::string &path) {
     }
 
     for (const auto &decl : root->decls()) {
-        DeclPreprocess preprocess(gen_ctx);
-        decl->Accept(preprocess);
-        if (!preprocess) return false;
-    }
-
-    for (const auto &decl : root->decls()) {
         DeclCodeGen gen(gen_ctx);
         decl->Accept(gen);
         if (!gen) return false;
