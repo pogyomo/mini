@@ -112,7 +112,8 @@ void ExprCodeGen::Visit(const hir::CallExpression &expr) {
             auto &param_info = callee_info.lvar_table().Query(
                 callee_info.params().at(i).first);
             if (param_info.ShouldInitializeWithReg()) {
-                ctx_.printer().PrintLn("  movq %rax, {}", param_info.AsmRepr());
+                ctx_.printer().PrintLn("  movq %rax, {}",
+                                       param_info.InitRegName());
             }
         }
 
@@ -277,14 +278,14 @@ void ExprCodeGen::Visit(const hir::IntegerExpression &expr) {
     } else {
         kind = hir::BuiltinType::UInt64;
     }
-    ctx_.printer().PrintLn(" movq ${}, %rax", expr.value());
+    ctx_.printer().PrintLn("  movq ${}, %rax", expr.value());
     inferred_ = std::make_shared<hir::BuiltinType>(kind, expr.span());
     success_ = true;
 }
 
 void ExprCodeGen::Visit(const hir::StringExpression &expr) {
     auto symbol = ctx_.string_table().QuerySymbol(expr.value());
-    ctx_.printer().PrintLn(" movq ${}, %rax", symbol);
+    ctx_.printer().PrintLn("  movq ${}, %rax", symbol);
 
     auto of =
         std::make_shared<hir::BuiltinType>(hir::BuiltinType::Char, expr.span());
@@ -294,14 +295,14 @@ void ExprCodeGen::Visit(const hir::StringExpression &expr) {
 }
 
 void ExprCodeGen::Visit(const hir::CharExpression &expr) {
-    ctx_.printer().PrintLn(" movq ${}, %rax", (int)expr.value());
+    ctx_.printer().PrintLn("  movq ${}, %rax", (int)expr.value());
     inferred_ =
         std::make_shared<hir::BuiltinType>(hir::BuiltinType::Char, expr.span());
     success_ = true;
 }
 
 void ExprCodeGen::Visit(const hir::BoolExpression &expr) {
-    ctx_.printer().PrintLn(" movq ${}, %rax", expr.value() ? 1 : 0);
+    ctx_.printer().PrintLn("  movq ${}, %rax", expr.value() ? 1 : 0);
     inferred_ =
         std::make_shared<hir::BuiltinType>(hir::BuiltinType::Bool, expr.span());
     success_ = true;
