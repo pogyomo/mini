@@ -30,7 +30,7 @@ public:
     class Entry {
     public:
         enum Kind {
-            // The entry is callee local variable
+            // The entry is callee allocated local variable
             CalleeLVar,
 
             // The entry is argument that callee should allocate memory for it.
@@ -444,6 +444,7 @@ private:
     std::ostream &os_;
 };
 
+// Unique id generator for label.
 class LabelIdGenerator {
 public:
     LabelIdGenerator() : curr_id_(0), next_id_(0) {}
