@@ -17,6 +17,13 @@
 namespace mini {
 
 // A class represents a stack layout and local variables for a function.
+//
+// This class holds CalleeSize and CallerSize, which is the stack size that the
+// function requires for caller and itself.
+//
+// For example, if CalleeSize == 12, the callee (that is the function) needs to
+// allocate more than 12 bytes, and if CallerSize == 12, the caller (that a
+// function which calling callee) needs to allocate more than 12 bytes.
 class LVarTable {
 public:
     // Infomations for a local variable.
@@ -97,32 +104,64 @@ public:
 
     LVarTable() : callee_size_(0), caller_size_(0) {}
 
+    // How many bytes the callee should allocate stack memory at the time.
     inline uint64_t CalleeSize() const { return callee_size_; }
+
+    // Increment `CalleeSize` so that it was aligned by `align`.
     inline void AlignCalleeSize(uint64_t align) {
         while (callee_size_ % align != 0) callee_size_++;
     }
-    inline void ChangeCalleeSize(uint64_t offset) { callee_size_ = offset; }
+
+    // Change `CalleeSize` so that it becomes `size`.
+    inline void ChangeCalleeSize(uint64_t size) { callee_size_ = size; }
+
+    // Add `diff` to `CalleeSize`.
     inline void AddCalleeSize(uint64_t diff) { callee_size_ += diff; }
+
+    // Substract `diff` from `CalleeSize`.
     inline void SubCalleeSize(uint64_t diff) { callee_size_ -= diff; }
 
+    // How many bytes the caller should allocate stack memory when the function
+    // associated with this `LVarTable` called.
     inline uint64_t CallerSize() const { return caller_size_; }
+
+    // Increment `CallerSize` so that it was aligned by `align`.
     inline void AlignCallerSize(uint64_t align) {
         while (caller_size_ % align != 0) caller_size_++;
     }
-    inline void ChangeCallerSize(uint64_t offset) { caller_size_ = offset; }
+
+    // Change `CallerSize` so that it becomes `size`.
+    inline void ChangeCallerSize(uint64_t size) { caller_size_ = size; }
+
+    // Add `diff` to `CallerSize`.
     inline void AddCallerSize(uint64_t diff) { caller_size_ += diff; }
+
+    // Substract `diff` from `CallerSize`.
     inline void SubCallerSize(uint64_t diff) { caller_size_ -= diff; }
 
+    // Clear this `LVarTable` and discard all entries.
     inline void Clear() { map_.clear(); }
+
+    // Returns true if an entry exists associated with `name`.
     inline bool Exists(const std::string &name) const {
         return map_.find(name) != map_.end();
     }
+
+    // Insert `name`-`entry` pair to this table.
+    // Calling this when `Exists` returns true cause error.
     inline void Insert(std::string &&name, Entry &&entry) {
-        map_.insert(std::make_pair(name, entry));
+        if (!Exists(name)) {
+            map_.insert(std::make_pair(name, entry));
+        } else {
+            FatalError("{} already exists in this LVarTable", name);
+        }
     }
+
+    // Try to get `Entry` associated with `name`.
+    // Must not be called when `Exists` returns false.
     const Entry &Query(const std::string &name) const {
         if (!Exists(name)) {
-            FatalError("");
+            FatalError("{} doesn't exists in this LVarTable", name);
         } else {
             return map_.at(name);
         }
@@ -222,7 +261,11 @@ public:
         return map_.find(name) != map_.end();
     }
     inline void Insert(std::string &&name, Entry &&entry) {
-        map_.insert(std::make_pair(name, entry));
+        if (!Exists(name)) {
+            map_.insert(std::make_pair(name, entry));
+        } else {
+            FatalError("{} already exists", name);
+        }
     }
     Entry &Query(const std::string &name) {
         if (!Exists(name)) {
@@ -246,7 +289,11 @@ public:
             return fields_.find(name) != fields_.end();
         }
         void Insert(std::string &&name, uint64_t value) {
-            fields_.insert(std::make_pair(name, value));
+            if (!Exists(name)) {
+                fields_.insert(std::make_pair(name, value));
+            } else {
+                FatalError("{} already exists", name);
+            }
         }
         uint64_t Query(const std::string &name) const {
             if (!Exists(name)) {
@@ -265,7 +312,11 @@ public:
         return map_.find(name) != map_.end();
     }
     inline void Insert(std::string &&name, Entry &&entry) {
-        map_.insert(std::make_pair(name, entry));
+        if (!Exists(name)) {
+            map_.insert(std::make_pair(name, entry));
+        } else {
+            FatalError("{} already exists", name);
+        }
     }
     const Entry &Query(const std::string &name) {
         if (!Exists(name)) {
@@ -357,7 +408,11 @@ public:
         return map_.find(name) != map_.end();
     }
     inline void Insert(std::string &&name, Entry &&entry) {
-        map_.insert(std::make_pair(name, entry));
+        if (!Exists(name)) {
+            map_.insert(std::make_pair(name, entry));
+        } else {
+            FatalError("{} already exists", name);
+        }
     }
     Entry &Query(const std::string &name) {
         if (!Exists(name)) {
