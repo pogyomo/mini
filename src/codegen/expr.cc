@@ -88,14 +88,12 @@ void ExprCodeGen::Visit(const hir::CallExpression &expr) {
         }
 
         auto &caller_table = ctx_.lvar_table();
-        auto prev_size = caller_table.CalleeSize();
 
-        // Change callee size if some arguments needs to store it to stack.
+        // Allocate stack for arguments.
+        auto prev_size = caller_table.CalleeSize();
         caller_table.AlignCalleeSize(8);
         caller_table.AddCalleeSize(callee_info.lvar_table().CallerSize());
         caller_table.AlignCalleeSize(16);
-
-        // Allocate stack for arguments.
         auto curr_size = caller_table.CalleeSize();
         if (curr_size != prev_size) {
             assert(curr_size > prev_size);
@@ -104,6 +102,8 @@ void ExprCodeGen::Visit(const hir::CallExpression &expr) {
         }
 
         for (size_t i = 0; i < expr.args().size(); i++) {
+            caller_table.SaveCalleeSize();
+
             auto &arg = expr.args().at(i);
             ExprCodeGen gen(ctx_);
             arg->Accept(gen);
@@ -125,17 +125,18 @@ void ExprCodeGen::Visit(const hir::CallExpression &expr) {
             } else {
                 FatalError("unknown parameter");
             }
+
+            // Free allocated memory.
+            auto diff = caller_table.RestoreCalleeSize();
+            if (diff != 0) {
+                ctx_.printer().PrintLn("  addq ${}, %rsp", diff);
+            }
         }
 
         ctx_.printer().PrintLn("  callq {}", var.value());
 
-        // Free allocated memory.
-        if (curr_size != prev_size) {
-            assert(curr_size > prev_size);
-            ctx_.printer().PrintLn("  addq ${}, %rsp", curr_size - prev_size);
-            caller_table.ChangeCallerSize(prev_size);
-        }
-
+        inferred_ =
+            ctx_.func_info_table().Query(ctx_.CurrFuncName()).ret_type();
         success_ = true;
     } else {
         ReportInfo info(expr.func()->span(), "not a callable", "");
@@ -144,10 +145,14 @@ void ExprCodeGen::Visit(const hir::CallExpression &expr) {
 }
 
 void ExprCodeGen::Visit(const hir::AccessExpression &expr) {
+    auto &table = ctx_.lvar_table();
+
+    table.SaveCalleeSize();
     ExprCodeGen gen(ctx_);
     expr.expr()->Accept(gen);
     if (!gen) return;
 
+    // If accessing to pointer, deref it.
     auto type = gen.inferred_;
     if (gen.inferred_->IsPointer()) {
         ctx_.printer().PrintLn("  movq (%rax), %rax");
@@ -197,9 +202,21 @@ void ExprCodeGen::Visit(const hir::AccessExpression &expr) {
     } else {
         FatalError("unreaclable");
     }
+
+    // Don't forget to free allocated memory by `gen`.
+    auto diff = table.RestoreCalleeSize();
+    if (diff != 0) {
+        ctx_.printer().PrintLn("  addq ${}, %rsp", diff);
+    }
+
+    inferred_ = field.type();
+    success_ = true;
 }
 
 void ExprCodeGen::Visit(const hir::CastExpression &expr) {
+    auto &table = ctx_.lvar_table();
+
+    table.SaveCalleeSize();
     ExprCodeGen gen(ctx_);
     expr.expr()->Accept(gen);
     if (!gen) return;
@@ -222,6 +239,15 @@ void ExprCodeGen::Visit(const hir::CastExpression &expr) {
         ReportInfo info(expr.span(), "cannot cast", "");
         Report(ctx_.ctx(), ReportLevel::Error, info);
     }
+
+    // Don't forget to free allocated memory by `gen`.
+    auto diff = table.RestoreCalleeSize();
+    if (diff != 0) {
+        ctx_.printer().PrintLn("  addq ${}, %rsp", diff);
+    }
+
+    inferred_ = expr.cast_type();
+    success_ = true;
 }
 
 void ExprCodeGen::Visit(const hir::ESizeofExpression &expr) {
@@ -330,25 +356,37 @@ void ExprCodeGen::Visit(const hir::ArrayExpression &expr) {
     Report(ctx_.ctx(), ReportLevel::Error, info);
 }
 
-void ExprRValGen::Visit(const hir::UnaryExpression &expr) {}
+void ExprLValGen::Visit(const hir::UnaryExpression &expr) {}
 
-void ExprRValGen::Visit(const hir::InfixExpression &expr) {}
+void ExprLValGen::Visit(const hir::InfixExpression &expr) {}
 
-void ExprRValGen::Visit(const hir::IndexExpression &expr) {}
+void ExprLValGen::Visit(const hir::IndexExpression &expr) {}
 
-void ExprRValGen::Visit(const hir::CallExpression &expr) {}
+void ExprLValGen::Visit(const hir::CallExpression &expr) {}
 
-void ExprRValGen::Visit(const hir::AccessExpression &expr) {}
+void ExprLValGen::Visit(const hir::AccessExpression &expr) {}
 
-void ExprRValGen::Visit(const hir::CastExpression &expr) {}
+void ExprLValGen::Visit(const hir::CastExpression &expr) {
+    ReportInfo info(expr.span(), "doesn't have address", "");
+    Report(ctx_.ctx(), ReportLevel::Error, info);
+}
 
-void ExprRValGen::Visit(const hir::ESizeofExpression &expr) {}
+void ExprLValGen::Visit(const hir::ESizeofExpression &expr) {
+    ReportInfo info(expr.span(), "doesn't have address", "");
+    Report(ctx_.ctx(), ReportLevel::Error, info);
+}
 
-void ExprRValGen::Visit(const hir::TSizeofExpression &expr) {}
+void ExprLValGen::Visit(const hir::TSizeofExpression &expr) {
+    ReportInfo info(expr.span(), "doesn't have address", "");
+    Report(ctx_.ctx(), ReportLevel::Error, info);
+}
 
-void ExprRValGen::Visit(const hir::EnumSelectExpression &expr) {}
+void ExprLValGen::Visit(const hir::EnumSelectExpression &expr) {
+    ReportInfo info(expr.span(), "doesn't have address", "");
+    Report(ctx_.ctx(), ReportLevel::Error, info);
+}
 
-void ExprRValGen::Visit(const hir::VariableExpression &expr) {
+void ExprLValGen::Visit(const hir::VariableExpression &expr) {
     if (!ctx_.lvar_table().Exists(expr.value())) {
         ReportInfo info(expr.span(), "no such variable exists", "");
         Report(ctx_.ctx(), ReportLevel::Error, info);
@@ -358,35 +396,38 @@ void ExprRValGen::Visit(const hir::VariableExpression &expr) {
     auto &entry = ctx_.lvar_table().Query(expr.value());
 
     ctx_.printer().PrintLn("  leaq -{}(%rbp), %rax", entry.Offset());
+
+    inferred_ = entry.type();
+    success_ = true;
 }
 
-void ExprRValGen::Visit(const hir::IntegerExpression &expr) {
-    ReportInfo info(expr.span(), "not a rvalue", "");
+void ExprLValGen::Visit(const hir::IntegerExpression &expr) {
+    ReportInfo info(expr.span(), "doesn't have address", "");
     Report(ctx_.ctx(), ReportLevel::Error, info);
 }
 
-void ExprRValGen::Visit(const hir::StringExpression &expr) {
-    ReportInfo info(expr.span(), "not a rvalue", "");
+void ExprLValGen::Visit(const hir::StringExpression &expr) {
+    ReportInfo info(expr.span(), "doesn't have address", "");
     Report(ctx_.ctx(), ReportLevel::Error, info);
 }
 
-void ExprRValGen::Visit(const hir::CharExpression &expr) {
-    ReportInfo info(expr.span(), "not a rvalue", "");
+void ExprLValGen::Visit(const hir::CharExpression &expr) {
+    ReportInfo info(expr.span(), "doesn't have address", "");
     Report(ctx_.ctx(), ReportLevel::Error, info);
 }
 
-void ExprRValGen::Visit(const hir::BoolExpression &expr) {
-    ReportInfo info(expr.span(), "not a rvalue", "");
+void ExprLValGen::Visit(const hir::BoolExpression &expr) {
+    ReportInfo info(expr.span(), "doesn't have address", "");
     Report(ctx_.ctx(), ReportLevel::Error, info);
 }
 
-void ExprRValGen::Visit(const hir::StructExpression &expr) {
-    ReportInfo info(expr.span(), "not a rvalue", "");
+void ExprLValGen::Visit(const hir::StructExpression &expr) {
+    ReportInfo info(expr.span(), "doesn't have address", "");
     Report(ctx_.ctx(), ReportLevel::Error, info);
 }
 
-void ExprRValGen::Visit(const hir::ArrayExpression &expr) {
-    ReportInfo info(expr.span(), "not a rvalue", "");
+void ExprLValGen::Visit(const hir::ArrayExpression &expr) {
+    ReportInfo info(expr.span(), "doesn't have address", "");
     Report(ctx_.ctx(), ReportLevel::Error, info);
 }
 

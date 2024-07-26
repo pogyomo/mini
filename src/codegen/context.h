@@ -2,9 +2,11 @@
 #define MINI_CODEGEN_CONTEXT_H_
 
 #include <cassert>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <ostream>
+#include <stack>
 #include <string>
 #include <utility>
 #include <vector>
@@ -107,6 +109,23 @@ public:
     // How many bytes the callee should allocate stack memory at the time.
     inline uint64_t CalleeSize() const { return callee_size_; }
 
+    // Save current CalleeSize so that it can be restored by
+    // `RestoreCalleeSize`.
+    inline void SaveCalleeSize() { callee_sizes_.push(callee_size_); }
+
+    // Restore most recent size saved by `SaveCalleeSize` and returns the
+    // difference between current size and restored size.
+    uint64_t RestoreCalleeSize() {
+        if (callee_sizes_.empty()) {
+            FatalError("no size to restore");
+        } else {
+            uint64_t diff = callee_size_ - callee_sizes_.top();
+            callee_size_ = callee_sizes_.top();
+            callee_sizes_.pop();
+            return diff;
+        }
+    }
+
     // Increment `CalleeSize` so that it was aligned by `align`.
     inline void AlignCalleeSize(uint64_t align) {
         while (callee_size_ % align != 0) callee_size_++;
@@ -124,6 +143,23 @@ public:
     // How many bytes the caller should allocate stack memory when the function
     // associated with this `LVarTable` called.
     inline uint64_t CallerSize() const { return caller_size_; }
+
+    // Save current CallerSize so that it can be restored by
+    // `RestoreCallerSize`.
+    inline void SaveCallerSize() { caller_sizes_.push(caller_size_); }
+
+    // Restore most recent size saved by `SaveCallerSize` and returns the
+    // difference between current size and restored size.
+    uint64_t RestoreCallerSize() {
+        if (caller_sizes_.empty()) {
+            FatalError("no size to restore");
+        } else {
+            uint64_t diff = caller_size_ - caller_sizes_.top();
+            caller_size_ = caller_sizes_.top();
+            caller_sizes_.pop();
+            return diff;
+        }
+    }
 
     // Increment `CallerSize` so that it was aligned by `align`.
     inline void AlignCallerSize(uint64_t align) {
@@ -169,8 +205,10 @@ public:
 
 private:
     std::map<std::string, Entry> map_;
-    uint64_t callee_size_;  // The size callee should reserve.
-    uint64_t caller_size_;  // The size caller should reserve.
+    std::stack<uint64_t> callee_sizes_;  // Sizes which should be restored.
+    std::stack<uint64_t> caller_sizes_;  // Sizes which should be restored.
+    uint64_t callee_size_;               // The size callee should reserve.
+    uint64_t caller_size_;               // The size caller should reserve.
 };
 
 // A table which holds the struct fields for each struct and can be accessed it

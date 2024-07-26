@@ -9,6 +9,8 @@
 namespace mini {
 
 // Evaluate expression, and store result to rax.
+// If stack allocation is required, it changes CalleeSize in LVarTable, so
+// caller should restore stack after calling this.
 class ExprCodeGen : public hir::ExpressionVisitor {
 public:
     ExprCodeGen(CodeGenContext &ctx) : success_(false), ctx_(ctx) {}
@@ -37,10 +39,10 @@ private:
     CodeGenContext &ctx_;
 };
 
-// Evaluate expression as rval, and store result to rax.
-class ExprRValGen : public hir::ExpressionVisitor {
+// Evaluate expression as lval, and store result to rax.
+class ExprLValGen : public hir::ExpressionVisitor {
 public:
-    ExprRValGen(CodeGenContext &ctx) : success_(false), ctx_(ctx) {}
+    ExprLValGen(CodeGenContext &ctx) : success_(false), ctx_(ctx) {}
     explicit operator bool() const { return success_; }
     const std::shared_ptr<hir::Type> &inferred() const { return inferred_; }
     void Visit(const hir::UnaryExpression &expr) override;

@@ -69,7 +69,8 @@ void DeclCodeGen::Visit(const hir::FunctionDeclaration &decl) {
     ctx_.printer().PrintLn("{}:", decl.name().value());
     ctx_.printer().PrintLn("  pushq %rbp");
     ctx_.printer().PrintLn("  movq %rsp, %rbp");
-    ctx_.printer().PrintLn("  subq ${}, %rsp", callee_size);
+    if (callee_size != 0)
+        ctx_.printer().PrintLn("  subq ${}, %rsp", callee_size);
 
     // Copy arguments passed by register to stack so that these can take its
     // address.
