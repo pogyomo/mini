@@ -18,7 +18,7 @@ void StmtCodeGen::Visit(const hir::ExpressionStatement &stmt) {
     auto changed_size = ctx_.lvar_table().CalleeSize();
     if (changed_size != size) {
         assert(changed_size > size);
-        ctx_.printer().PrintLn("  add ${}, %rsp", changed_size - size);
+        ctx_.printer().PrintLn("  addq ${}, %rsp", changed_size - size);
         ctx_.lvar_table().ChangeCalleeSize(size);
     }
 

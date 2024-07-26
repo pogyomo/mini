@@ -2,12 +2,12 @@
 
 #include <cassert>
 #include <cstdint>
-#include <iostream>
 #include <memory>
 #include <optional>
 #include <string>
 
 #include "../report.h"
+#include "asm.h"
 #include "context.h"
 #include "fmt/format.h"
 #include "type.h"
@@ -114,6 +114,16 @@ void ExprCodeGen::Visit(const hir::CallExpression &expr) {
             if (param_info.ShouldInitializeWithReg()) {
                 ctx_.printer().PrintLn("  movq %rax, {}",
                                        param_info.InitRegName());
+            } else if (param_info.IsCallerAlloc()) {
+                TypeSizeCalc calc(ctx_);
+                param_info.type()->Accept(calc);
+                if (!calc) return;
+
+                IndexableAsmRegPtr src(Register::AX, 0);
+                IndexableAsmRegPtr dst(Register::SP, param_info.Offset());
+                CopyBytes(ctx_, src, dst, calc.size());
+            } else {
+                FatalError("unknown parameter");
             }
         }
 
@@ -261,7 +271,7 @@ void ExprCodeGen::Visit(const hir::VariableExpression &expr) {
     }
 
     auto &entry = ctx_.lvar_table().Query(expr.value());
-    ctx_.printer().PrintLn("  movq {}, %rax", entry.AsmRepr());
+    ctx_.printer().PrintLn("  leaq {}, %rax", entry.AsmRepr());
 
     inferred_ = entry.type();
     success_ = true;

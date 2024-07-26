@@ -10,6 +10,7 @@ add_executable(${PROJECT_NAME})
 target_sources(${PROJECT_NAME} PRIVATE
     src/ast/stmt.cc
     src/ast/type.cc
+    src/codegen/asm.cc
     src/codegen/codegen.cc
     src/codegen/decl.cc
     src/codegen/expr.cc
