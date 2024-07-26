@@ -12,6 +12,7 @@ target_sources(${PROJECT_NAME} PRIVATE
     src/ast/type.cc
     src/codegen/asm.cc
     src/codegen/codegen.cc
+    src/codegen/context.cc
     src/codegen/decl.cc
     src/codegen/expr.cc
     src/codegen/stmt.cc

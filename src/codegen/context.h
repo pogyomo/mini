@@ -14,6 +14,7 @@
 #include "../context.h"
 #include "../hir/root.h"
 #include "../hir/type.h"
+#include "asm.h"
 #include "fmt/format.h"
 
 namespace mini {
@@ -40,6 +41,10 @@ public:
 
             // The entry is argument that caller should allocate memory for it.
             CallerAllocArg,
+
+            // The entry is return value that caller should allocate memory for
+            // it.
+            CallerAllocRet,
         };
 
         Entry(Kind kind, uint8_t init_reg, uint64_t offset,
@@ -76,7 +81,8 @@ public:
         // Otherwise the variable is allocated by callee and
         // accessable with rbp - offset.
         inline bool IsCallerAlloc() const {
-            return kind_ == Kind::CallerAllocArg;
+            return kind_ == Kind::CallerAllocArg ||
+                   kind_ == Kind::CallerAllocRet;
         }
 
         // Retruns offset where the value exists at
@@ -84,16 +90,21 @@ public:
         // - `rbp+16+offset` is_caller_alloc == true
         inline uint64_t Offset() const { return offset_; }
 
-        // Returns the representaion of this variable in assembly code.
-        //
-        // example:
-        // - when IsCallerAlloc == true and offset == 8, returns "24(%rbp)"
-        // - when IsCallerAlloc == false and offset == 8, returns "-8(%rbp)"
-        inline std::string AsmRepr() const {
+        // Returns the ptr constructed by callee.
+        inline IndexableAsmRegPtr CalleeAsmRepr() const {
             if (IsCallerAlloc()) {
-                return fmt::format("{}(%rbp)", offset_ + 16);
+                return IndexableAsmRegPtr(Register::BP, offset_ + 16);
             } else {
-                return fmt::format("-{}(%rbp)", offset_);
+                return IndexableAsmRegPtr(Register::BP, -offset_);
+            }
+        }
+
+        // Returns the ptr constructed by caller.
+        inline IndexableAsmRegPtr CallerAsmRepr() const {
+            if (IsCallerAlloc()) {
+                return IndexableAsmRegPtr(Register::SP, -offset_);
+            } else {
+                FatalError("no representation");
             }
         }
 
@@ -202,6 +213,9 @@ public:
             return map_.at(name);
         }
     };
+
+    // Special name for accessing entry of return value.
+    static const std::string ret_name;
 
 private:
     std::map<std::string, Entry> map_;

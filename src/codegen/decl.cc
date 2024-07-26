@@ -79,7 +79,7 @@ void DeclCodeGen::Visit(const hir::FunctionDeclaration &decl) {
         auto &lvar = ctx_.lvar_table().Query(name);
         if (lvar.ShouldInitializeWithReg()) {
             auto src = lvar.InitRegName();
-            auto dst = lvar.AsmRepr();
+            auto dst = lvar.CalleeAsmRepr().ToAsmRepr(0, 8);
             ctx_.printer().PrintLn("  movq {}, {}", src, dst);
         }
     }
@@ -103,8 +103,16 @@ bool ConstructLVarTable(CodeGenContext &ctx,
     table.ChangeCalleeSize(0);
     table.ChangeCallerSize(0);
 
+    TypeSizeCalc ret_size(ctx);
+    entry.ret_type()->Accept(ret_size);
+    if (!ret_size) return false;
+
+    TypeAlignCalc ret_align(ctx);
+    entry.ret_type()->Accept(ret_align);
+    if (!ret_align) return false;
+
     // Calculate stack memory of caller and callee for arguments.
-    uint8_t regnum = 0;
+    uint8_t regnum = ret_size.size() <= 8 ? 0 : 1;
     for (const auto &param : decl.params()) {
         TypeSizeCalc size(ctx);
         param.type()->Accept(size);
@@ -139,6 +147,17 @@ bool ConstructLVarTable(CodeGenContext &ctx,
 
             table.AddCallerSize(size.size());
         }
+    }
+
+    // Allocate memory for big return value.
+    if (ret_size.size() > 8) {
+        table.AlignCallerSize(ret_align.align());
+
+        LVarTable::Entry ret_entry(LVarTable::Entry::CallerAllocRet, 0,
+                                   table.CallerSize(), entry.ret_type());
+        table.Insert(std::string(LVarTable::ret_name), std::move(ret_entry));
+
+        table.AddCallerSize(ret_size.size());
     }
 
     // Then, calculate size of stack memory at callee for local variables.

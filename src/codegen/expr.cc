@@ -88,6 +88,7 @@ void ExprCodeGen::Visit(const hir::CallExpression &expr) {
         }
 
         auto &caller_table = ctx_.lvar_table();
+        auto &callee_table = callee_info.lvar_table();
 
         // Allocate stack for arguments.
         auto prev_size = caller_table.CalleeSize();
@@ -120,7 +121,7 @@ void ExprCodeGen::Visit(const hir::CallExpression &expr) {
                 if (!calc) return;
 
                 IndexableAsmRegPtr src(Register::AX, 0);
-                IndexableAsmRegPtr dst(Register::SP, param_info.Offset());
+                auto dst = param_info.CallerAsmRepr();
                 CopyBytes(ctx_, src, dst, calc.size());
             } else {
                 FatalError("unknown parameter");
@@ -131,6 +132,12 @@ void ExprCodeGen::Visit(const hir::CallExpression &expr) {
             if (diff != 0) {
                 ctx_.printer().PrintLn("  addq ${}, %rsp", diff);
             }
+        }
+
+        if (callee_table.Exists(callee_table.ret_name)) {
+            auto &entry = callee_table.Query(callee_table.ret_name);
+            ctx_.printer().PrintLn("  leaq {}, %rdi",
+                                   entry.CallerAsmRepr().ToAsmRepr(0, 8));
         }
 
         ctx_.printer().PrintLn("  callq {}", var.value());
@@ -297,7 +304,8 @@ void ExprCodeGen::Visit(const hir::VariableExpression &expr) {
     }
 
     auto &entry = ctx_.lvar_table().Query(expr.value());
-    ctx_.printer().PrintLn("  leaq {}, %rax", entry.AsmRepr());
+    ctx_.printer().PrintLn("  leaq {}, %rax",
+                           entry.CalleeAsmRepr().ToAsmRepr(0, 8));
 
     inferred_ = entry.type();
     success_ = true;

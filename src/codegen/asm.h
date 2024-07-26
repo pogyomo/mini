@@ -4,8 +4,6 @@
 #include <cstdint>
 #include <string>
 
-#include "context.h"
-
 namespace mini {
 
 // Abstract register in x86-64.
@@ -62,6 +60,8 @@ private:
     Register reg_;
     int64_t init_offset_;
 };
+
+class CodeGenContext;
 
 // Generate code which copy `size` bytes from `src` to `dst`.
 void CopyBytes(CodeGenContext& ctx, const IndexableAsmRegPtr& src,

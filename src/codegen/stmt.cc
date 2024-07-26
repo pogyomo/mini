@@ -3,23 +3,23 @@
 #include <cassert>
 
 #include "../report.h"
+#include "asm.h"
 #include "expr.h"
+#include "type.h"
 
 namespace mini {
 
 void StmtCodeGen::Visit(const hir::ExpressionStatement &stmt) {
-    auto size = ctx_.lvar_table().CalleeSize();
+    ctx_.lvar_table().SaveCalleeSize();
 
     ExprCodeGen gen(ctx_);
     stmt.expr()->Accept(gen);
     if (!gen) return;
 
     // Free allocated value if exists.
-    auto changed_size = ctx_.lvar_table().CalleeSize();
-    if (changed_size != size) {
-        assert(changed_size > size);
-        ctx_.printer().PrintLn("  addq ${}, %rsp", changed_size - size);
-        ctx_.lvar_table().ChangeCalleeSize(size);
+    auto diff = ctx_.lvar_table().RestoreCalleeSize();
+    if (diff != 0) {
+        ctx_.printer().PrintLn("  addq ${}, %rsp", diff);
     }
 
     success_ = true;
@@ -35,11 +35,30 @@ void StmtCodeGen::Visit(const hir::ReturnStatement &stmt) {
             return;
         }
     } else {
+        ctx_.lvar_table().SaveCalleeSize();
+
         ExprCodeGen gen(ctx_);
         stmt.ret_value().value()->Accept(gen);
         if (!gen) return;
 
         // TODO: Check types
+
+        TypeSizeCalc size(ctx_);
+        gen.inferred()->Accept(size);
+        if (!size) return;
+
+        if (size.size() > 8) {
+            IndexableAsmRegPtr src(Register::AX, 0);
+            IndexableAsmRegPtr dst(Register::DI, 0);
+            CopyBytes(ctx_, src, dst, size.size());
+            ctx_.printer().PrintLn("  movq %rdi, %rax");
+        }
+
+        // Free allocated value if exists.
+        auto diff = ctx_.lvar_table().RestoreCalleeSize();
+        if (diff != 0) {
+            ctx_.printer().PrintLn("  addq ${}, %rsp", diff);
+        }
     }
 
     success_ = true;
