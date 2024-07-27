@@ -102,7 +102,7 @@ public:
         // Returns the ptr constructed by caller.
         inline IndexableAsmRegPtr CallerAsmRepr() const {
             if (IsCallerAlloc()) {
-                return IndexableAsmRegPtr(Register::SP, -offset_);
+                return IndexableAsmRegPtr(Register::SP, offset_);
             } else {
                 FatalError("no representation");
             }
