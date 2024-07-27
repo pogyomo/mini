@@ -85,6 +85,7 @@ void ExprCodeGen::Visit(const hir::CallExpression &expr) {
             ReportInfo info(expr.func()->span(),
                             "incorrect number of arguments", std::move(spec));
             Report(ctx_.ctx(), ReportLevel::Error, info);
+            return;
         }
 
         auto &caller_table = ctx_.lvar_table();
