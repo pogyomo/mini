@@ -417,10 +417,17 @@ void ExprRValGen::Visit(const hir::VariableExpression &expr) {
 
     auto &entry = ctx_.lvar_table().Query(expr.value());
 
-    ctx_.lvar_table().AddCalleeSize(8);
-    ctx_.printer().PrintLn("    leaq {}, %rax",
-                           entry.CalleeAsmRepr().ToAsmRepr(0, 8));
-    ctx_.printer().PrintLn("    pushq %rax");
+    TypeSizeCalc size(ctx_);
+    entry.type()->Accept(size);
+    if (!size) return;
+
+    // Allocate memory for value.
+    AllocateAlignedStackMemory(ctx_, size.size(), 8);
+
+    // Push value the variable holds.
+    auto src = entry.CalleeAsmRepr();
+    IndexableAsmRegPtr dst(Register::SP, 0);
+    CopyBytes(ctx_, src, dst, size.size());
 
     inferred_ = entry.type();
     success_ = true;
