@@ -1,6 +1,7 @@
 #include "stmt.h"
 
 #include <cassert>
+#include <memory>
 
 #include "../report.h"
 #include "asm.h"
@@ -51,7 +52,7 @@ void StmtCodeGen::Visit(const hir::ReturnStatement &stmt) {
         if (!size) return;
 
         if (size.size() > 8) {
-            IndexableAsmRegPtr src(Register::AX, 0);
+            IndexableAsmRegPtr src(Register::SP, 0);
             IndexableAsmRegPtr dst(Register::DI, 0);
             CopyBytes(ctx_, src, dst, size.size());
             ctx_.printer().PrintLn("    movq %rdi, %rax");
