@@ -44,9 +44,21 @@ The type of integer literal is determined by its size. More precisly, if the int
 
 If the integer cannot be represented by 64-bit, this cause compile error.
 
-## Integer conversion
+## Implicit integer conversion
 
-Integers will be converted for infix operator when two integers has same sign, and the size rounded into bigger one.
+An integer will be converted to target integer type implicitly with following rule:
+
+- If the integer is unsigned:
+  - If target integer type is unsigned, then convertion always success if target size is larger than or equal to original one.
+  - If target integer type is signed, then convertion always success if target size is larger than original one.
+  - Otherwise the convertion always fail.
+- If the integer is signed.
+  - If target integer type is signed, then convertion always success if target size is larger than or equal to original one.
+  - Otherwise the convertion always fail.
+
+Here is the examples of implicit convertion at arthmetic operations:
+
+- Integers will be converted for infix operator when two integers has same sign, and the size rounded into bigger one.
 
 ```
 let a: uint8 = 10;
@@ -54,26 +66,19 @@ let b: uint16 = 20;
 let c: uint16 = a + b;
 ```
 
-If unsigned integer was negated, it implicitly converted into signed one with same size.
+- If unsigned integer was negated, it implicitly converted into signed one with bigger size.
 
 ```
 let a: uint8 = 10;
-let b: int8 = -a;
+let b: int16 = -a;
 ```
 
-The conversion for two integer with different sign changes the sign of result.
+- The conversion for two integer with different sign changes the sign of result.
 
 ```
 let a: uint8 = 10;
 let b: int8 = -10;
-let c: int8 = a + b;
-```
-
-Storing integer with bigger size compare to the variable will cause compile error, and user should cast it explicitly
-
-```
-let a: uint64 = 10;
-let b: uint32 = a as uint32;
+let c: int16 = a + b;
 ```
 
 ## Function
