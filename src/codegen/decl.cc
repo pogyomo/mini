@@ -175,6 +175,9 @@ bool ConstructLVarTable(CodeGenContext &ctx,
         table.Insert(std::string(decl.name().value()), std::move(entry));
     }
 
+    // Ensure the stack aligned 8 bytes
+    table.AlignCalleeSize(8);
+
     return true;
 }
 
