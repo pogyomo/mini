@@ -947,7 +947,11 @@ bool ImplicitlyConvertValueInStack(CodeGenContext &ctx,
             } else if (from_kind == hir::BuiltinType::Void ||
                        from_kind == hir::BuiltinType::Char ||
                        from_kind == hir::BuiltinType::Bool) {
-                return from_kind == to_kind;
+                if (from_kind == to_kind) {
+                    return true;
+                } else {
+                    goto failed;
+                }
             }
             ctx.printer().PrintLn("    movq %rax, (%rsp)");
             return true;
