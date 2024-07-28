@@ -58,10 +58,7 @@ void DeclCodeGen::Visit(const hir::FunctionDeclaration &decl) {
 
     ctx_.SetCurrFuncName(std::string(decl.name().value()));
 
-    auto callee_size = ctx_.func_info_table()
-                           .Query(decl.name().value())
-                           .lvar_table()
-                           .CalleeSize();
+    auto callee_size = ctx_.lvar_table().CalleeSize();
 
     ctx_.printer().PrintLn("    .text");
     ctx_.printer().PrintLn("    .type {}, @function", decl.name().value());
