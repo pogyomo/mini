@@ -1,6 +1,9 @@
 #ifndef MINI_CODEGEN_TYPE_H_
 #define MINI_CODEGEN_TYPE_H_
 
+#include <memory>
+#include <optional>
+
 #include "../hir/type.h"
 #include "context.h"
 
@@ -37,6 +40,10 @@ private:
     uint64_t size_;
     CodeGenContext &ctx_;
 };
+
+std::optional<std::shared_ptr<hir::Type>> ImplicitlyMergeTwoType(
+    CodeGenContext &ctx, const std::shared_ptr<hir::Type> &t1,
+    const std::shared_ptr<hir::Type> &t2);
 
 }  // namespace mini
 

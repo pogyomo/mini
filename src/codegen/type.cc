@@ -1,6 +1,7 @@
 #include "type.h"
 
 #include <algorithm>
+#include <memory>
 
 #include "../report.h"
 
@@ -176,6 +177,321 @@ void TypeSizeCalc::Visit(const hir::NameType &type) {
         ReportInfo info(type.span(), "no such type exists", "");
         Report(ctx_.ctx(), ReportLevel::Error, info);
     }
+}
+
+std::optional<std::shared_ptr<hir::Type>> ImplicitlyMergeTwoType(
+    CodeGenContext &ctx, const std::shared_ptr<hir::Type> &t1,
+    const std::shared_ptr<hir::Type> &t2) {
+    if (t1->IsPointer()) {
+        if (!t2->IsPointer()) goto failed;
+
+        auto t1_of = t1->ToPointer()->of();
+        auto t2_of = t2->ToPointer()->of();
+        if (t1_of->IsBuiltin() &&
+            t1_of->ToBuiltin()->kind() == hir::BuiltinType::Void) {
+            return std::make_shared<hir::PointerType>(t2_of,
+                                                      t1->span() + t2->span());
+        } else if (t2_of->IsBuiltin() &&
+                   t2_of->ToBuiltin()->kind() == hir::BuiltinType::Void) {
+            return std::make_shared<hir::PointerType>(t1_of,
+                                                      t1->span() + t2->span());
+        } else if (t1 == t2) {
+            return std::make_shared<hir::PointerType>(t1_of,
+                                                      t1->span() + t2->span());
+        } else {
+            goto failed;
+        }
+    } else if (t1->IsName()) {
+        if (!t2->IsName()) goto failed;
+
+        if (t1->ToName()->value() == t2->ToName()->value()) {
+            return std::make_shared<hir::NameType>(
+                std::string(t1->ToName()->value()), t1->span() + t2->span());
+        } else {
+            goto failed;
+        }
+    } else if (t1->IsArray()) {
+        auto t1_of = t1->ToArray()->of();
+        if (t2->IsArray()) {
+            if (t1 == t2) {
+                return std::make_shared<hir::ArrayType>(
+                    t1_of, t1->ToArray()->size(), t1->span() + t2->span());
+            } else {
+                goto failed;
+            }
+        } else if (t2->IsPointer()) {
+            auto t2_of = t2->ToPointer()->of();
+            if (t1_of == t2_of) {
+                return std::make_shared<hir::PointerType>(
+                    t2_of, t1->span() + t2->span());
+            } else {
+                return std::nullopt;
+            }
+        } else {
+            goto failed;
+        }
+    } else {
+        if (!t2->IsBuiltin()) goto failed;
+
+        auto t1_kind = t1->ToBuiltin()->kind();
+        auto t2_kind = t2->ToBuiltin()->kind();
+        auto span = t1->span() + t2->span();
+        if (t1_kind == hir::BuiltinType::UInt8) {
+            if (t2_kind == hir::BuiltinType::UInt8) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt16) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt32) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt64) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::USize) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int8) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int16) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int32) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int64) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::ISize) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            }
+        } else if (t1_kind == hir::BuiltinType::UInt16) {
+            if (t2_kind == hir::BuiltinType::UInt8) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt16) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt32) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt64) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::USize) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int8) {
+                return std::make_shared<hir::BuiltinType>(
+                    hir::BuiltinType::Int16, span);
+            } else if (t2_kind == hir::BuiltinType::Int16) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int32) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int64) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::ISize) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            }
+        } else if (t1_kind == hir::BuiltinType::UInt32) {
+            if (t2_kind == hir::BuiltinType::UInt8) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt16) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt32) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt64) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::USize) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int8) {
+                return std::make_shared<hir::BuiltinType>(
+                    hir::BuiltinType::Int32, span);
+            } else if (t2_kind == hir::BuiltinType::Int16) {
+                return std::make_shared<hir::BuiltinType>(
+                    hir::BuiltinType::Int32, span);
+            } else if (t2_kind == hir::BuiltinType::Int32) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int64) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::ISize) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            }
+        } else if (t1_kind == hir::BuiltinType::UInt64) {
+            if (t2_kind == hir::BuiltinType::UInt8) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt16) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt32) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt64) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::USize) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int8) {
+                return std::make_shared<hir::BuiltinType>(
+                    hir::BuiltinType::Int64, span);
+            } else if (t2_kind == hir::BuiltinType::Int16) {
+                return std::make_shared<hir::BuiltinType>(
+                    hir::BuiltinType::Int64, span);
+            } else if (t2_kind == hir::BuiltinType::Int32) {
+                return std::make_shared<hir::BuiltinType>(
+                    hir::BuiltinType::Int64, span);
+            } else if (t2_kind == hir::BuiltinType::Int64) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::ISize) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            }
+        } else if (t1_kind == hir::BuiltinType::USize) {
+            if (t2_kind == hir::BuiltinType::UInt8) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt16) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt32) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt64) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::USize) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int8) {
+                return std::make_shared<hir::BuiltinType>(
+                    hir::BuiltinType::Int64, span);
+            } else if (t2_kind == hir::BuiltinType::Int16) {
+                return std::make_shared<hir::BuiltinType>(
+                    hir::BuiltinType::Int64, span);
+            } else if (t2_kind == hir::BuiltinType::Int32) {
+                return std::make_shared<hir::BuiltinType>(
+                    hir::BuiltinType::Int64, span);
+            } else if (t2_kind == hir::BuiltinType::Int64) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::ISize) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            }
+        } else if (t1_kind == hir::BuiltinType::Int8) {
+            if (t2_kind == hir::BuiltinType::UInt8) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt16) {
+                return std::make_shared<hir::BuiltinType>(
+                    hir::BuiltinType::Int16, span);
+            } else if (t2_kind == hir::BuiltinType::UInt32) {
+                return std::make_shared<hir::BuiltinType>(
+                    hir::BuiltinType::Int32, span);
+            } else if (t2_kind == hir::BuiltinType::UInt64) {
+                return std::make_shared<hir::BuiltinType>(
+                    hir::BuiltinType::Int64, span);
+            } else if (t2_kind == hir::BuiltinType::USize) {
+                return std::make_shared<hir::BuiltinType>(
+                    hir::BuiltinType::ISize, span);
+            } else if (t2_kind == hir::BuiltinType::Int8) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int16) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int32) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int64) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::ISize) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            }
+        } else if (t1_kind == hir::BuiltinType::Int16) {
+            if (t2_kind == hir::BuiltinType::UInt8) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt16) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt32) {
+                return std::make_shared<hir::BuiltinType>(
+                    hir::BuiltinType::Int32, span);
+            } else if (t2_kind == hir::BuiltinType::UInt64) {
+                return std::make_shared<hir::BuiltinType>(
+                    hir::BuiltinType::Int64, span);
+            } else if (t2_kind == hir::BuiltinType::USize) {
+                return std::make_shared<hir::BuiltinType>(
+                    hir::BuiltinType::ISize, span);
+            } else if (t2_kind == hir::BuiltinType::Int8) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int16) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int32) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int64) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::ISize) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            }
+        } else if (t1_kind == hir::BuiltinType::Int32) {
+            if (t2_kind == hir::BuiltinType::UInt8) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt16) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt32) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt64) {
+                return std::make_shared<hir::BuiltinType>(
+                    hir::BuiltinType::Int64, span);
+            } else if (t2_kind == hir::BuiltinType::USize) {
+                return std::make_shared<hir::BuiltinType>(
+                    hir::BuiltinType::ISize, span);
+            } else if (t2_kind == hir::BuiltinType::Int8) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int16) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int32) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int64) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            } else if (t2_kind == hir::BuiltinType::ISize) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            }
+        } else if (t1_kind == hir::BuiltinType::Int64) {
+            if (t2_kind == hir::BuiltinType::UInt8) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt16) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt32) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt64) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::USize) {
+                return std::make_shared<hir::BuiltinType>(
+                    hir::BuiltinType::ISize, span);
+            } else if (t2_kind == hir::BuiltinType::Int8) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int16) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int32) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int64) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::ISize) {
+                return std::make_shared<hir::BuiltinType>(t2_kind, span);
+            }
+        } else if (t1_kind == hir::BuiltinType::ISize) {
+            if (t2_kind == hir::BuiltinType::UInt8) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt16) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt32) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::UInt64) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::USize) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int8) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int16) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int32) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::Int64) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            } else if (t2_kind == hir::BuiltinType::ISize) {
+                return std::make_shared<hir::BuiltinType>(t1_kind, span);
+            }
+        } else if (t1_kind == hir::BuiltinType::Void ||
+                   t1_kind == hir::BuiltinType::Char ||
+                   t1_kind == hir::BuiltinType::Bool) {
+            if (t1_kind == t2_kind) {
+                return std::make_shared<hir::BuiltinType>(
+                    t1_kind, t1->span() + t2->span());
+            } else {
+                goto failed;
+            }
+        }
+    }
+
+failed:
+    ReportInfo info(t1->span() + t2->span(), "cannot merge two type implicitly",
+                    "");
+    Report(ctx.ctx(), ReportLevel::Error, info);
+    return std::nullopt;
 }
 
 }  // namespace mini

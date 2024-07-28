@@ -49,8 +49,7 @@ If the integer cannot be represented by 64-bit, this cause compile error.
 An integer will be converted to target integer type implicitly with following rule:
 
 - If the integer is unsigned:
-  - If target integer type is unsigned, then convertion always success if target size is larger than or equal to original one.
-  - If target integer type is signed, then convertion always success if target size is larger than original one.
+  - If target integer type is unsigned or signed, then convertion always success if target size is larger than or equal to original one.
   - Otherwise the convertion always fail.
 - If the integer is signed.
   - If target integer type is signed, then convertion always success if target size is larger than or equal to original one.
