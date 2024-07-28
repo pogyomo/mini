@@ -191,9 +191,9 @@ void CopyBytes(CodeGenContext& ctx, const IndexableAsmRegPtr& src,
     while (size != 0) {
         for (size_t i = 0; i < sizeof sizes / sizeof sizes[0]; i++) {
             if (size >= sizes[i]) {
-                ctx.printer().PrintLn("  movq {}, %rcx",
+                ctx.printer().PrintLn("    movq {}, %rcx",
                                       src.ToAsmRepr(offset, sizes[i]));
-                ctx.printer().PrintLn("  movq %rcx, {}",
+                ctx.printer().PrintLn("    movq %rcx, {}",
                                       dst.ToAsmRepr(offset, sizes[i]));
                 offset += sizes[i];
                 size -= sizes[i];

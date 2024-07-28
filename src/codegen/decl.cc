@@ -63,14 +63,14 @@ void DeclCodeGen::Visit(const hir::FunctionDeclaration &decl) {
                            .lvar_table()
                            .CalleeSize();
 
-    ctx_.printer().PrintLn("  .text");
-    ctx_.printer().PrintLn("  .type {}, @function", decl.name().value());
-    ctx_.printer().PrintLn("  .global {}", decl.name().value());
+    ctx_.printer().PrintLn("    .text");
+    ctx_.printer().PrintLn("    .type {}, @function", decl.name().value());
+    ctx_.printer().PrintLn("    .global {}", decl.name().value());
     ctx_.printer().PrintLn("{}:", decl.name().value());
-    ctx_.printer().PrintLn("  pushq %rbp");
-    ctx_.printer().PrintLn("  movq %rsp, %rbp");
+    ctx_.printer().PrintLn("    pushq %rbp");
+    ctx_.printer().PrintLn("    movq %rsp, %rbp");
     if (callee_size != 0)
-        ctx_.printer().PrintLn("  subq ${}, %rsp", callee_size);
+        ctx_.printer().PrintLn("    subq ${}, %rsp", callee_size);
 
     // Copy arguments passed by register to stack so that these can take its
     // address.
@@ -80,7 +80,7 @@ void DeclCodeGen::Visit(const hir::FunctionDeclaration &decl) {
         if (lvar.ShouldInitializeWithReg()) {
             auto src = lvar.InitRegName();
             auto dst = lvar.CalleeAsmRepr().ToAsmRepr(0, 8);
-            ctx_.printer().PrintLn("  movq {}, {}", src, dst);
+            ctx_.printer().PrintLn("    movq {}, {}", src, dst);
         }
     }
 
@@ -88,9 +88,9 @@ void DeclCodeGen::Visit(const hir::FunctionDeclaration &decl) {
     decl.body().Accept(gen);
     if (!gen) return;
 
-    ctx_.printer().PrintLn("  movq %rbp, %rsp");
-    ctx_.printer().PrintLn("  popq %rbp");
-    ctx_.printer().PrintLn("  retq");
+    ctx_.printer().PrintLn("    movq %rbp, %rsp");
+    ctx_.printer().PrintLn("    popq %rbp");
+    ctx_.printer().PrintLn("    retq");
 
     success_ = true;
 }

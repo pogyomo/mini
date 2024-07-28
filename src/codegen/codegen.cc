@@ -12,14 +12,16 @@ bool CodeGenFile(Context &ctx, std::ostream &os, const std::string &path) {
 
     CodeGenContext gen_ctx(ctx, root->string_table(), os);
 
-    gen_ctx.printer().PrintLn("  .data");
-    for (const auto &[s, symbol] : gen_ctx.string_table().InnerRepr()) {
-        gen_ctx.printer().PrintLn("{}:", symbol);
-        gen_ctx.printer().Print("  .byte ");
-        for (const char c : s) {
-            gen_ctx.printer().Print("0x{:02x}, ", c);
+    if (!gen_ctx.string_table().InnerRepr().empty()) {
+        gen_ctx.printer().PrintLn("    .data");
+        for (const auto &[s, symbol] : gen_ctx.string_table().InnerRepr()) {
+            gen_ctx.printer().PrintLn("{}:", symbol);
+            gen_ctx.printer().Print("    .byte ");
+            for (const char c : s) {
+                gen_ctx.printer().Print("0x{:02x}, ", c);
+            }
+            gen_ctx.printer().PrintLn("0x00");
         }
-        gen_ctx.printer().PrintLn("0x00");
     }
 
     for (const auto &decl : root->decls()) {
@@ -33,6 +35,14 @@ bool CodeGenFile(Context &ctx, std::ostream &os, const std::string &path) {
         decl->Accept(gen);
         if (!gen) return false;
     }
+
+    gen_ctx.printer().PrintLn("    .text");
+    gen_ctx.printer().PrintLn("    .global _start");
+    gen_ctx.printer().PrintLn("_start:");
+    gen_ctx.printer().PrintLn("    callq main_0");
+    gen_ctx.printer().PrintLn("    movq $60, %rax");
+    gen_ctx.printer().PrintLn("    movq $0, %rdi");
+    gen_ctx.printer().PrintLn("    syscall");
 
     return true;
 }

@@ -2,8 +2,10 @@
 
 #include <algorithm>
 #include <memory>
+#include <string>
 
 #include "../report.h"
+#include "../span.h"
 
 namespace mini {
 
@@ -177,6 +179,14 @@ void TypeSizeCalc::Visit(const hir::NameType &type) {
         ReportInfo info(type.span(), "no such type exists", "");
         Report(ctx_.ctx(), ReportLevel::Error, info);
     }
+}
+
+bool CalculateStructSizeAndOffset(CodeGenContext &ctx, const std::string &name,
+                                  Span span) {
+    // TypeSizeCalc internally cache the struct size and offset, so use it.
+    TypeSizeCalc calc(ctx);
+    hir::NameType(std::string(name), span).Accept(calc);
+    return (bool)calc;
 }
 
 std::optional<std::shared_ptr<hir::Type>> ImplicitlyMergeTwoType(

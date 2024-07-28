@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <optional>
+#include <string>
 
 #include "../hir/type.h"
 #include "context.h"
@@ -41,6 +42,12 @@ private:
     CodeGenContext &ctx_;
 };
 
+// Calculate struct size and offsets of the name `name` and save it to table
+// entry.
+bool CalculateStructSizeAndOffset(CodeGenContext &ctx, const std::string &name,
+                                  Span span);
+
+// Merge two types so each type can be implicitly converted into merged one.
 std::optional<std::shared_ptr<hir::Type>> ImplicitlyMergeTwoType(
     CodeGenContext &ctx, const std::shared_ptr<hir::Type> &t1,
     const std::shared_ptr<hir::Type> &t2);
