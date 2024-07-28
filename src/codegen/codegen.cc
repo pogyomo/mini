@@ -40,8 +40,8 @@ bool CodeGenFile(Context &ctx, std::ostream &os, const std::string &path) {
     gen_ctx.printer().PrintLn("    .global _start");
     gen_ctx.printer().PrintLn("_start:");
     gen_ctx.printer().PrintLn("    callq main_0");
+    gen_ctx.printer().PrintLn("    movq %rax, %rdi");
     gen_ctx.printer().PrintLn("    movq $60, %rax");
-    gen_ctx.printer().PrintLn("    movq $0, %rdi");
     gen_ctx.printer().PrintLn("    syscall");
 
     return true;
