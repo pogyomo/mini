@@ -453,7 +453,8 @@ void ExprRValGen::Visit(const hir::StringExpression &expr) {
 
     auto of =
         std::make_shared<hir::BuiltinType>(hir::BuiltinType::Char, expr.span());
-    inferred_ = std::make_shared<hir::PointerType>(of, expr.span());
+    inferred_ = std::make_shared<hir::ArrayType>(of, expr.value().size() + 1,
+                                                 expr.span());
     success_ = true;
 }
 
