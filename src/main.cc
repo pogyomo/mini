@@ -1,4 +1,8 @@
+#include <sys/wait.h>
+#include <unistd.h>
+
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <optional>
@@ -6,6 +10,7 @@
 
 #include "codegen/codegen.h"
 #include "context.h"
+#include "fmt/format.h"
 #include "hirgen/hirgen.h"
 #include "panic.h"
 
@@ -88,12 +93,42 @@ int main(int argc, char *argv[]) {
             }
 
             mini::Context ctx;
-            auto root = mini::CodeGenFile(ctx, ofs, args.input());
-            if (!root) std::exit(EXIT_FAILURE);
+            auto success = mini::CodeGenFile(ctx, ofs, args.input());
+            if (!success) std::exit(EXIT_FAILURE);
         } else {
             mini::Context ctx;
-            auto root = mini::CodeGenFile(ctx, std::cout, args.input());
-            if (!root) std::exit(EXIT_FAILURE);
+            auto success = mini::CodeGenFile(ctx, std::cout, args.input());
+            if (!success) std::exit(EXIT_FAILURE);
         }
+    } else {
+        char asm_file[] = "/tmp/mini-XXXXXX.s";
+        char obj_file[] = "/tmp/mini-XXXXXX.o";
+        std::string output = args.output() ? args.output().value() : "a.out";
+
+        int asm_fd = mkstemps(asm_file, 2);
+        if (asm_fd == -1) mini::FatalError("failed to create temporary file");
+
+        int obj_fd = mkstemps(obj_file, 2);
+        if (obj_fd == -1) mini::FatalError("failed to create temporary file");
+
+        std::ofstream asm_fs(asm_file);
+        if (asm_fs.bad()) {
+            mini::FatalError("failed to open output file");
+        }
+
+        mini::Context ctx;
+        auto success = mini::CodeGenFile(ctx, asm_fs, args.input());
+        if (!success) std::exit(EXIT_FAILURE);
+
+        int as_result =
+            system(fmt::format("as {} -o {}", asm_file, obj_file).c_str());
+        if (as_result) mini::FatalError("as failed");
+
+        int ld_result =
+            system(fmt::format("ld {} -o {}", obj_file, output).c_str());
+        if (ld_result) mini::FatalError("ld failed");
+
+        close(asm_fd);
+        close(obj_fd);
     }
 }
