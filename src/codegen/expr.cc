@@ -55,6 +55,15 @@ static std::optional<std::string> IsVariable(
     }
 }
 
+static void AllocateAlignedStackMemory(CodeGenContext &ctx, uint64_t size,
+                                       uint64_t align) {
+    auto prev_size = ctx.lvar_table().CalleeSize();
+    ctx.lvar_table().AddCalleeSize(size);
+    ctx.lvar_table().AlignCalleeSize(align);
+    auto diff = ctx.lvar_table().CalleeSize() - prev_size;
+    if (diff) ctx.printer().PrintLn("    subq ${}, %rsp", diff);
+}
+
 void ExprRValGen::Visit(const hir::UnaryExpression &expr) {
     if (expr.op().kind() == hir::UnaryExpression::Op::Ref) {
         ExprLValGen gen(ctx_);
@@ -167,8 +176,7 @@ void ExprRValGen::Visit(const hir::IndexExpression &expr) {
     const auto offset = ctx_.lvar_table().CalleeSize();
 
     // Allocate memory for element.
-    ctx_.lvar_table().AddCalleeSize(of_size.size());
-    ctx_.lvar_table().AlignCalleeSize(8);
+    AllocateAlignedStackMemory(ctx_, of_size.size(), 8);
 
     // Store element to top of stack.
     IndexableAsmRegPtr src(Register::BP, -offset);
@@ -198,15 +206,10 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
         auto &callee_table = callee_info.lvar_table();
 
         // Allocate stack for arguments.
-        auto prev_size = caller_table.CalleeSize();
-        caller_table.AddCalleeSize(callee_info.lvar_table().CallerSize());
-        caller_table.AlignCalleeSize(16);
-        auto curr_size = caller_table.CalleeSize();
-        if (curr_size != prev_size) {
-            assert(curr_size > prev_size);
-            ctx_.printer().PrintLn("    subq ${}, %rsp", curr_size - prev_size);
-            caller_table.ChangeCallerSize(prev_size);
-        }
+        auto size = callee_info.lvar_table().CallerSize();
+        AllocateAlignedStackMemory(ctx_, size, 16);
+
+        // Offset to the arguments block.
         const auto offset = caller_table.CalleeSize();
 
         // Prepare arguments.
@@ -322,8 +325,7 @@ void ExprRValGen::Visit(const hir::AccessExpression &expr) {
     TypeSizeCalc field_size(ctx_);
     field.type()->Accept(field_size);
     if (!field_size) return;
-    ctx_.lvar_table().AddCalleeSize(field_size.size());
-    ctx_.lvar_table().AlignCalleeSize(8);
+    AllocateAlignedStackMemory(ctx_, field_size.size(), 8);
 
     // Store field to top of stack.
     IndexableAsmRegPtr src(Register::BP, -offset);
@@ -486,8 +488,7 @@ void ExprRValGen::Visit(const hir::StructExpression &expr) {
     if (!size) return;
 
     // Allocate memory for struct object.
-    ctx_.lvar_table().AddCalleeSize(size.size());
-    ctx_.lvar_table().AlignCalleeSize(8);
+    AllocateAlignedStackMemory(ctx_, size.size(), 8);
 
     const auto offset = ctx_.lvar_table().CalleeSize();
     for (size_t i = 0; i < expr.inits().size(); i++) {
@@ -542,8 +543,7 @@ void ExprRValGen::Visit(const hir::ArrayExpression &expr) {
     if (!base_size) return;
 
     // Allocate memory for array object.
-    ctx_.lvar_table().AddCalleeSize(base_size.size() * expr.inits().size());
-    ctx_.lvar_table().AlignCalleeSize(8);
+    AllocateAlignedStackMemory(ctx_, base_size.size() * expr.inits().size(), 8);
 
     const auto offset = ctx_.lvar_table().CalleeSize();
     for (size_t i = 0; i < expr.inits().size(); i++) {
