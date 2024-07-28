@@ -26,8 +26,8 @@ void StmtCodeGen::Visit(const hir::ExpressionStatement &stmt) {
 }
 
 void StmtCodeGen::Visit(const hir::ReturnStatement &stmt) {
+    auto &func = ctx_.func_info_table().Query(ctx_.CurrFuncName());
     if (!stmt.ret_value()) {
-        auto &func = ctx_.func_info_table().Query(ctx_.CurrFuncName());
         if (!func.ret_type()->IsBuiltin() ||
             func.ret_type()->ToBuiltin()->kind() != hir::BuiltinType::Void) {
             ReportInfo info(stmt.span(), "incorrect return type", "");
@@ -41,7 +41,10 @@ void StmtCodeGen::Visit(const hir::ReturnStatement &stmt) {
         stmt.ret_value().value()->Accept(gen);
         if (!gen) return;
 
-        // TODO: Check types
+        if (!ImplicitlyConvertValueInStack(ctx_, gen.inferred(),
+                                           func.ret_type())) {
+            return;
+        }
 
         TypeSizeCalc size(ctx_);
         gen.inferred()->Accept(size);
@@ -52,6 +55,9 @@ void StmtCodeGen::Visit(const hir::ReturnStatement &stmt) {
             IndexableAsmRegPtr dst(Register::DI, 0);
             CopyBytes(ctx_, src, dst, size.size());
             ctx_.printer().PrintLn("    movq %rdi, %rax");
+        } else {
+            ctx_.lvar_table().SubCalleeSize(8);
+            ctx_.printer().PrintLn("    popq %rax");
         }
 
         // Free allocated value if exists.
