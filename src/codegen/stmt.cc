@@ -90,6 +90,13 @@ void StmtCodeGen::Visit(const hir::WhileStatement &stmt) {
     ExprRValGen cond_gen(ctx_);
     stmt.cond()->Accept(cond_gen);
     if (!cond_gen) return;
+
+    auto to = std::make_shared<hir::BuiltinType>(hir::BuiltinType::Bool,
+                                                 stmt.cond()->span());
+    if (!ImplicitlyConvertValueInStack(ctx_, cond_gen.inferred(), to)) return;
+
+    ctx_.lvar_table().SubCalleeSize(8);
+    ctx_.printer().PrintLn("    popq %rax");
     ctx_.printer().PrintLn("    test %ax, %ax");
     ctx_.printer().PrintLn("    je L.END.{}", id);
 
@@ -110,6 +117,12 @@ void StmtCodeGen::Visit(const hir::IfStatement &stmt) {
     stmt.cond()->Accept(cond_gen);
     if (!cond_gen) return;
 
+    auto to = std::make_shared<hir::BuiltinType>(hir::BuiltinType::Bool,
+                                                 stmt.cond()->span());
+    if (!ImplicitlyConvertValueInStack(ctx_, cond_gen.inferred(), to)) return;
+
+    ctx_.lvar_table().SubCalleeSize(8);
+    ctx_.printer().PrintLn("    popq %rax");
     ctx_.printer().PrintLn("    test %ax, %ax");
     ctx_.printer().PrintLn("    je L.ELSE.{}", id);
 
