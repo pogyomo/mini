@@ -526,6 +526,7 @@ void ExprRValGen::Visit(const hir::StructExpression &expr) {
 
     // As array is manipulated by using its pointer, push pointer to array
     // object.
+    ctx_.lvar_table().AddCalleeSize(8);
     ctx_.printer().PrintLn("    pushq %rsp");
 
     success_ = true;
@@ -564,6 +565,7 @@ void ExprRValGen::Visit(const hir::ArrayExpression &expr) {
 
     // As struct is manipulated by using its pointer, push pointer to struct
     // object.
+    ctx_.lvar_table().AddCalleeSize(8);
     ctx_.printer().PrintLn("    pushq %rsp");
 
     success_ = true;
@@ -757,6 +759,7 @@ void ExprLValGen::Visit(const hir::VariableExpression &expr) {
 
     auto &entry = ctx_.lvar_table().Query(expr.value());
 
+    ctx_.lvar_table().AddCalleeSize(8);
     ctx_.printer().PrintLn("    leaq -{}(%rbp), %rax", entry.Offset());
     ctx_.printer().PrintLn("    pushq %rax");
 
