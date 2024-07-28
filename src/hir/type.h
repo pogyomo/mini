@@ -134,7 +134,11 @@ public:
     inline const ArrayType *ToArray() const override { return this; }
     void Print(PrintableContext &ctx) const override;
     bool operator==(const Type &rhs) const override {
-        return rhs.IsArray() ? rhs.ToArray()->of_ == of_ : false;
+        if (rhs.IsArray()) {
+            return rhs.ToArray()->of_ == of_ && rhs.ToArray()->size_ == size_;
+        } else {
+            return false;
+        }
     }
     const std::shared_ptr<Type> &of() const { return of_; }
     inline std::optional<uint64_t> size() const { return size_; }
