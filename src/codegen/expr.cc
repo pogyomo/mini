@@ -280,6 +280,9 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
 
         ctx_.printer().PrintLn("    callq {}", var.value());
 
+        // Ensure push returned value.
+        ctx_.printer().PrintLn("    pushq %rax");
+
         inferred_ =
             ctx_.func_info_table().Query(ctx_.CurrFuncName()).ret_type();
         success_ = true;
