@@ -184,6 +184,202 @@ std::string IndexableAsmRegPtr::ToAsmRepr(int64_t offset, uint8_t size) const {
                        reg_.ToNameBySize(size));
 }
 
+std::string AsmAdd(uint8_t size) {
+    if (size == 1) {
+        return "addb";
+    } else if (size == 2) {
+        return "addw";
+    } else if (size == 4) {
+        return "addl";
+    } else if (size == 8) {
+        return "addq";
+    } else {
+        FatalError("invalid size");
+    }
+}
+
+std::string AsmSub(uint8_t size) {
+    if (size == 1) {
+        return "subb";
+    } else if (size == 2) {
+        return "subw";
+    } else if (size == 4) {
+        return "subl";
+    } else if (size == 8) {
+        return "subq";
+    } else {
+        FatalError("invalid size");
+    }
+}
+
+std::string AsmMul(bool is_signed, uint8_t size) {
+    if (is_signed) {
+        if (size == 1) {
+            return "imulb";
+        } else if (size == 2) {
+            return "imulw";
+        } else if (size == 4) {
+            return "imull";
+        } else if (size == 8) {
+            return "imulq";
+        } else {
+            FatalError("invalid size");
+        }
+    } else {
+        if (size == 1) {
+            return "mulb";
+        } else if (size == 2) {
+            return "mulw";
+        } else if (size == 4) {
+            return "mull";
+        } else if (size == 8) {
+            return "mulq";
+        } else {
+            FatalError("invalid size");
+        }
+    }
+}
+
+std::string AsmDiv(bool is_signed, uint8_t size) {
+    if (is_signed) {
+        if (size == 1) {
+            return "idivb";
+        } else if (size == 2) {
+            return "idivw";
+        } else if (size == 4) {
+            return "idivl";
+        } else if (size == 8) {
+            return "idivq";
+        } else {
+            FatalError("invalid size");
+        }
+    } else {
+        if (size == 1) {
+            return "divb";
+        } else if (size == 2) {
+            return "divw";
+        } else if (size == 4) {
+            return "divl";
+        } else if (size == 8) {
+            return "divq";
+        } else {
+            FatalError("invalid size");
+        }
+    }
+}
+
+std::string AsmAnd(uint8_t size) {
+    if (size == 1) {
+        return "andb";
+    } else if (size == 2) {
+        return "andw";
+    } else if (size == 4) {
+        return "andl";
+    } else if (size == 8) {
+        return "andq";
+    } else {
+        FatalError("invalid size");
+    }
+}
+
+std::string AsmOr(uint8_t size) {
+    if (size == 1) {
+        return "orb";
+    } else if (size == 2) {
+        return "orw";
+    } else if (size == 4) {
+        return "orl";
+    } else if (size == 8) {
+        return "orq";
+    } else {
+        FatalError("invalid size");
+    }
+}
+
+std::string AsmXor(uint8_t size) {
+    if (size == 1) {
+        return "xorb";
+    } else if (size == 2) {
+        return "xorw";
+    } else if (size == 4) {
+        return "xorl";
+    } else if (size == 8) {
+        return "xorq";
+    } else {
+        FatalError("invalid size");
+    }
+}
+
+std::string AsmCmp(uint8_t size) {
+    if (size == 1) {
+        return "cmpb";
+    } else if (size == 2) {
+        return "cmpw";
+    } else if (size == 4) {
+        return "cmpl";
+    } else if (size == 8) {
+        return "cmpq";
+    } else {
+        FatalError("invalid size");
+    }
+}
+
+std::string AsmLShift(bool is_signed, uint8_t size) {
+    if (is_signed) {
+        if (size == 1) {
+            return "salb";
+        } else if (size == 2) {
+            return "salw";
+        } else if (size == 4) {
+            return "sall";
+        } else if (size == 8) {
+            return "salq";
+        } else {
+            FatalError("invalid size");
+        }
+    } else {
+        if (size == 1) {
+            return "shlb";
+        } else if (size == 2) {
+            return "shlw";
+        } else if (size == 4) {
+            return "shll";
+        } else if (size == 8) {
+            return "shlq";
+        } else {
+            FatalError("invalid size");
+        }
+    }
+}
+
+std::string AsmRShift(bool is_signed, uint8_t size) {
+    if (is_signed) {
+        if (size == 1) {
+            return "sarb";
+        } else if (size == 2) {
+            return "sarw";
+        } else if (size == 4) {
+            return "sarl";
+        } else if (size == 8) {
+            return "sarq";
+        } else {
+            FatalError("invalid size");
+        }
+    } else {
+        if (size == 1) {
+            return "shrb";
+        } else if (size == 2) {
+            return "shrw";
+        } else if (size == 4) {
+            return "shrl";
+        } else if (size == 8) {
+            return "shrq";
+        } else {
+            FatalError("invalid size");
+        }
+    }
+}
+
 void CopyBytes(CodeGenContext& ctx, const IndexableAsmRegPtr& src,
                const IndexableAsmRegPtr& dst, uint64_t size) {
     static uint8_t sizes[4] = {8, 4, 2, 1};

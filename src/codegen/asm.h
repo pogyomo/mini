@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <string>
 
+#include "../panic.h"
+
 namespace mini {
 
 // Abstract register in x86-64.
@@ -60,6 +62,17 @@ private:
     Register reg_;
     int64_t init_offset_;
 };
+
+std::string AsmAdd(uint8_t size);
+std::string AsmSub(uint8_t size);
+std::string AsmMul(bool is_signed, uint8_t size);
+std::string AsmDiv(bool is_signed, uint8_t size);
+std::string AsmAnd(uint8_t size);
+std::string AsmOr(uint8_t size);
+std::string AsmXor(uint8_t size);
+std::string AsmCmp(uint8_t size);
+std::string AsmLShift(bool is_signed, uint8_t size);
+std::string AsmRShift(bool is_signed, uint8_t size);
 
 class CodeGenContext;
 

@@ -2,7 +2,6 @@
 #define MINI_HIR_TYPE_H_
 
 #include <cstdint>
-#include <iostream>
 #include <memory>
 #include <optional>
 #include <sstream>
@@ -88,6 +87,28 @@ public:
                kind_ == Int32 || kind_ == Int64 || kind_ == USize ||
                kind_ == UInt8 || kind_ == UInt16 || kind_ == UInt32 ||
                kind_ == UInt64;
+    }
+    inline bool IsSigned() const {
+        return kind_ == ISize || kind_ == Int8 || kind_ == Int16 ||
+               kind_ == Int32 || kind_ == Int64;
+    }
+    inline bool IsUnsigned() const {
+        return kind_ == USize || kind_ == UInt8 || kind_ == UInt16 ||
+               kind_ == UInt32 || kind_ == UInt64;
+    }
+    inline uint8_t Bytes() const {
+        if (kind_ == Int8 || kind_ == UInt8) {
+            return 1;
+        } else if (kind_ == Int16 || kind_ == UInt16) {
+            return 2;
+        } else if (kind_ == Int32 || kind_ == UInt32) {
+            return 4;
+        } else if (kind_ == Int64 || kind_ == UInt64 || kind_ == ISize ||
+                   kind_ == USize) {
+            return 8;
+        } else {
+            FatalError("unreachable");
+        }
     }
     void Print(PrintableContext &ctx) const override;
     bool operator==(const Type &rhs) const override {

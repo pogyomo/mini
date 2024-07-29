@@ -14,6 +14,23 @@
 
 namespace mini {
 
+// TODO:
+//
+// The code
+// ```
+// struct a{
+//     a: uint64,
+//     b: uint8,
+// }
+//
+// function main() -> usize {
+//     return 1 + a { a: 10, b: 20 }.a;
+// }
+// ```
+// doesn't works correctly, as `+` requires that 1 and 10 is continueously
+// placed to memory, but `a { a: 10, b: 20 }` allocate memory after `1`, so `1`
+// and `10` is not to be continueous.
+
 static std::optional<std::string> IsVariable(
     const std::unique_ptr<hir::Expression> &expr) {
     class IsVariable : public hir::ExpressionVisitor {
@@ -76,7 +93,7 @@ static bool IsFatObject(CodeGenContext &ctx,
 
 void ExprRValGen::Visit(const hir::UnaryExpression &expr) {
     if (expr.op().kind() == hir::UnaryExpression::Op::Ref) {
-        ExprLValGen gen(ctx_);
+        ExprRValGen gen(ctx_);
         expr.Accept(gen);
         if (!gen) return;
 
@@ -100,60 +117,519 @@ void ExprRValGen::Visit(const hir::UnaryExpression &expr) {
     }
 }
 
+static void ReportErrorForInfixExpression(
+    CodeGenContext &ctx, const std::shared_ptr<hir::Type> &lhs_type,
+    const std::shared_ptr<hir::Type> &rhs_type, Span op_span) {
+    auto spec = fmt::format("cannot use it with {} and {}",
+                            lhs_type->ToString(), rhs_type->ToString());
+    ReportInfo info(op_span, "incorrect use of operator", std::move(spec));
+    Report(ctx.ctx(), ReportLevel::Error, info);
+}
+
+static bool GenAssignExpr(CodeGenContext &ctx,
+                          std::shared_ptr<hir::Type> &inferred,
+                          const std::unique_ptr<hir::Expression> &lhs,
+                          const std::unique_ptr<hir::Expression> &rhs) {
+    ExprLValGen gen_addr(ctx);
+    lhs->Accept(gen_addr);
+    if (!gen_addr) return false;
+
+    // Offset to the address of lhs.
+    const auto offset = ctx.lvar_table().CalleeSize();
+
+    std::optional<std::shared_ptr<hir::Type>> of;
+    if (gen_addr.inferred()->IsPointer()) {
+        of = gen_addr.inferred()->ToPointer()->of();
+    } else if (gen_addr.inferred()->IsArray()) {
+        of = gen_addr.inferred()->ToArray()->of();
+    }
+
+    ExprRValGen gen_rhs(ctx, of);
+    rhs->Accept(gen_rhs);
+    if (!gen_rhs) return false;
+
+    // Convert rhs to type of lhs.
+    if (!ImplicitlyConvertValueInStack(ctx, rhs->span(), gen_rhs.inferred(),
+                                       gen_addr.inferred())) {
+        return false;
+    }
+
+    TypeSizeCalc size(ctx);
+    gen_addr.inferred()->Accept(size);
+    if (!size) return false;
+
+    // -offset(%rbp) contains address to the variable, so copy the address.
+    ctx.printer().PrintLn("    movq -{}(%rbp), %rax", offset);
+
+    // If the object is fat, then copy the address in stack.
+    // Otherwise copy address to the value.
+    if (IsFatObject(ctx, gen_addr.inferred())) {
+        ctx.printer().PrintLn("    movq -{}(%rbp), %rbx",
+                              ctx.lvar_table().CalleeSize());
+    } else {
+        ctx.printer().PrintLn("    leaq -{}(%rbp), %rbx",
+                              ctx.lvar_table().CalleeSize());
+    }
+
+    // Copy rhs to lhs.
+    IndexableAsmRegPtr src(Register::BX, 0);
+    IndexableAsmRegPtr dst(Register::AX, 0);
+    CopyBytes(ctx, src, dst, size.size());
+
+    inferred = gen_addr.inferred();
+    return true;
+}
+
+static bool GenAdditiveExpr(CodeGenContext &ctx,
+                            std::shared_ptr<hir::Type> &inferred,
+                            const hir::InfixExpression &expr) {
+    auto is_add = expr.op().kind() == hir::InfixExpression::Op::Add;
+    auto &lhs = expr.lhs();
+    auto &rhs = expr.rhs();
+
+    ExprRValGen gen_lhs(ctx);
+    lhs->Accept(gen_lhs);
+    if (!gen_lhs) return false;
+
+    ExprRValGen gen_rhs(ctx);
+    rhs->Accept(gen_rhs);
+    if (!gen_rhs) return false;
+
+    if (gen_lhs.inferred()->IsPointer()) {
+        auto to = std::make_shared<hir::BuiltinType>(hir::BuiltinType::USize,
+                                                     lhs->span());
+        if (!ImplicitlyConvertValueInStack(ctx, rhs->span(), gen_rhs.inferred(),
+                                           to)) {
+            return false;
+        }
+
+        TypeSizeCalc size(ctx);
+        gen_lhs.inferred()->ToPointer()->of()->Accept(size);
+        if (!size) return false;
+
+        // Calculate how much to add/sub to pointer.
+        ctx.lvar_table().SubCalleeSize(8);
+        ctx.printer().PrintLn("    popq %rax");
+        ctx.printer().PrintLn("    movq ${}, %rbx", size.size());
+        ctx.printer().PrintLn("    mulq %rbx");
+
+        // Increment/decrement pointer
+        if (is_add) {
+            ctx.printer().PrintLn("   addq %rax, (%rsp)");
+        } else {
+            ctx.printer().PrintLn("   subq %rax, (%rsp)");
+        }
+
+        inferred = gen_lhs.inferred();
+        return true;
+    } else if (gen_lhs.inferred()->IsBuiltin() &&
+               gen_rhs.inferred()->IsBuiltin()) {
+        auto merged =
+            ImplicitlyMergeTwoType(ctx, gen_lhs.inferred(), gen_rhs.inferred());
+        if (!merged || !merged.value()->IsBuiltin() ||
+            !merged.value()->ToBuiltin()->IsInteger()) {
+            ReportErrorForInfixExpression(ctx, gen_lhs.inferred(),
+                                          gen_rhs.inferred(), expr.op().span());
+            return false;
+        }
+        auto builtin = merged.value()->ToBuiltin();
+
+        // Convert rhs to proper type, then pop rhs from stack
+        if (!ImplicitlyConvertValueInStack(ctx, rhs->span(), gen_rhs.inferred(),
+                                           merged.value())) {
+            return false;
+        }
+        ctx.lvar_table().SubCalleeSize(8);
+        ctx.printer().PrintLn("    popq %rbx");
+
+        // Convert lhs to proper type.
+        if (!ImplicitlyConvertValueInStack(ctx, lhs->span(), gen_lhs.inferred(),
+                                           merged.value())) {
+            return false;
+        }
+
+        if (is_add) {
+            ctx.printer().PrintLn(
+                "    {} {}, (%rsp)", AsmAdd(builtin->Bytes()),
+                Register(Register::BX).ToNameBySize(builtin->Bytes()));
+        } else {
+            ctx.printer().PrintLn(
+                "    {} {}, (%rsp)", AsmSub(builtin->Bytes()),
+                Register(Register::BX).ToNameBySize(builtin->Bytes()));
+        }
+        inferred = merged.value();
+        return true;
+    } else {
+        ReportErrorForInfixExpression(ctx, gen_lhs.inferred(),
+                                      gen_rhs.inferred(), expr.op().span());
+        return false;
+    }
+}
+
+static bool GenMultiplicativeExpr(CodeGenContext &ctx,
+                                  std::shared_ptr<hir::Type> &inferred,
+                                  const hir::InfixExpression &expr) {
+    auto &lhs = expr.lhs();
+    auto &rhs = expr.rhs();
+
+    ExprRValGen gen_lhs(ctx);
+    lhs->Accept(gen_lhs);
+    if (!gen_lhs) return false;
+
+    ExprRValGen gen_rhs(ctx);
+    rhs->Accept(gen_rhs);
+    if (!gen_rhs) return false;
+
+    if (gen_lhs.inferred()->IsBuiltin() && gen_rhs.inferred()->IsBuiltin()) {
+        auto merged =
+            ImplicitlyMergeTwoType(ctx, gen_lhs.inferred(), gen_rhs.inferred());
+        if (!merged || !merged.value()->IsBuiltin() ||
+            !merged.value()->ToBuiltin()->IsInteger()) {
+            ReportErrorForInfixExpression(ctx, gen_lhs.inferred(),
+                                          gen_rhs.inferred(), expr.op().span());
+            return false;
+        }
+        auto builtin = merged.value()->ToBuiltin();
+
+        // Convert rhs to proper type, then pop it from stack
+        if (!ImplicitlyConvertValueInStack(ctx, rhs->span(), gen_rhs.inferred(),
+                                           merged.value())) {
+            return false;
+        }
+        ctx.lvar_table().SubCalleeSize(8);
+        ctx.printer().PrintLn("    popq %rbx");
+
+        // Convert lhs to proper type, then pop it from stack.
+        if (!ImplicitlyConvertValueInStack(ctx, lhs->span(), gen_lhs.inferred(),
+                                           merged.value())) {
+            return false;
+        }
+        ctx.lvar_table().SubCalleeSize(8);
+        ctx.printer().PrintLn("    popq %rax");
+
+        if (expr.op().kind() == hir::InfixExpression::Op::Mul) {
+            // rax = rax * rbx
+            ctx.printer().PrintLn(
+                "    {} {}", AsmMul(builtin->IsSigned(), builtin->Bytes()),
+                Register(Register::BX).ToNameBySize(builtin->Bytes()));
+
+            // Push result.
+            ctx.lvar_table().AddCalleeSize(8);
+            ctx.printer().PrintLn("    pushq %rax");
+        } else {
+            // Extend rax to rdx, as div uses rax and rdx
+            if (builtin->Bytes() == 2) {
+                ctx.printer().PrintLn("    cwd");
+            } else if (builtin->Bytes() == 4) {
+                ctx.printer().PrintLn("    cdq");
+            } else if (builtin->Bytes() == 8) {
+                ctx.printer().PrintLn("    cqo");
+            }
+
+            // rax, rdx (al, ah) = rax / rbx
+            ctx.printer().PrintLn(
+                "    {} {}", AsmDiv(builtin->IsSigned(), builtin->Bytes()),
+                Register(Register::BX).ToNameBySize(builtin->Bytes()));
+
+            // Push result.
+            ctx.lvar_table().AddCalleeSize(8);
+            if (builtin->Bytes() == 1) {
+                if (expr.op().kind() == hir::InfixExpression::Op::Div) {
+                    ctx.printer().PrintLn("    pushq %rax");
+                } else {
+                    // 1-byte division store modulus to ah, so move it to al so
+                    // that the value can be accessed by normal way.
+                    ctx.printer().PrintLn("    movb %ah, %al");
+                    ctx.printer().PrintLn("    pushq %rax");
+                }
+            } else {
+                if (expr.op().kind() == hir::InfixExpression::Op::Div) {
+                    ctx.printer().PrintLn("    pushq %rax");
+                } else {
+                    ctx.printer().PrintLn("    pushq %rdx");
+                }
+            }
+        }
+
+        inferred = merged.value();
+        return true;
+    } else {
+        ReportErrorForInfixExpression(ctx, gen_lhs.inferred(),
+                                      gen_rhs.inferred(), expr.op().span());
+        return false;
+    }
+}
+
+static bool GenBooleanExpr(CodeGenContext &ctx,
+                           std::shared_ptr<hir::Type> &inferred,
+                           const hir::InfixExpression &expr) {
+    auto &lhs = expr.lhs();
+    auto &rhs = expr.rhs();
+
+    ExprRValGen gen_lhs(ctx);
+    lhs->Accept(gen_lhs);
+    if (!gen_lhs) return false;
+
+    ExprRValGen gen_rhs(ctx);
+    rhs->Accept(gen_rhs);
+    if (!gen_rhs) return false;
+
+    if (gen_lhs.inferred()->IsBuiltin() && gen_rhs.inferred()->IsBuiltin()) {
+        auto to = std::make_shared<hir::BuiltinType>(hir::BuiltinType::Bool,
+                                                     expr.span());
+
+        // Convert rhs to proper type, then pop it from stack
+        if (!ImplicitlyConvertValueInStack(ctx, rhs->span(), gen_rhs.inferred(),
+                                           to)) {
+            return false;
+        }
+        ctx.lvar_table().SubCalleeSize(8);
+        ctx.printer().PrintLn("    popq %rbx");
+
+        // Convert lhs to proper type, then pop it from stack.
+        if (!ImplicitlyConvertValueInStack(ctx, lhs->span(), gen_lhs.inferred(),
+                                           to)) {
+            return false;
+        }
+
+        if (expr.op().kind() == hir::InfixExpression::Op::Or) {
+            ctx.printer().PrintLn("    orb %bl, (%rsp)");
+        } else {
+            ctx.printer().PrintLn("    andb %bl, (%rsp)");
+        }
+
+        inferred = to;
+        return true;
+    } else {
+        ReportErrorForInfixExpression(ctx, gen_lhs.inferred(),
+                                      gen_rhs.inferred(), expr.op().span());
+        return false;
+    }
+}
+
+static bool GenBitExpr(CodeGenContext &ctx,
+                       std::shared_ptr<hir::Type> &inferred,
+                       const hir::InfixExpression &expr) {
+    auto &lhs = expr.lhs();
+    auto &rhs = expr.rhs();
+
+    ExprRValGen gen_lhs(ctx);
+    lhs->Accept(gen_lhs);
+    if (!gen_lhs) return false;
+
+    ExprRValGen gen_rhs(ctx);
+    rhs->Accept(gen_rhs);
+    if (!gen_rhs) return false;
+
+    if (gen_lhs.inferred()->IsBuiltin() && gen_rhs.inferred()->IsBuiltin()) {
+        auto merged =
+            ImplicitlyMergeTwoType(ctx, gen_lhs.inferred(), gen_rhs.inferred());
+        if (!merged || !merged.value()->IsBuiltin() ||
+            !merged.value()->ToBuiltin()->IsInteger()) {
+            ReportErrorForInfixExpression(ctx, gen_lhs.inferred(),
+                                          gen_rhs.inferred(), expr.op().span());
+            return false;
+        }
+        auto builtin = merged.value()->ToBuiltin();
+
+        // Convert rhs to proper type, then pop it from stack
+        if (!ImplicitlyConvertValueInStack(ctx, rhs->span(), gen_rhs.inferred(),
+                                           merged.value())) {
+            return false;
+        }
+        ctx.lvar_table().SubCalleeSize(8);
+        ctx.printer().PrintLn("    popq %rbx");
+
+        // Convert lhs to proper type, then pop it from stack.
+        if (!ImplicitlyConvertValueInStack(ctx, lhs->span(), gen_lhs.inferred(),
+                                           merged.value())) {
+            return false;
+        }
+
+        if (expr.op().kind() == hir::InfixExpression::Op::BitAnd) {
+            ctx.printer().PrintLn(
+                "    {} {}, (%rsp)", AsmAnd(builtin->Bytes()),
+                Register(Register::BX).ToNameBySize(builtin->Bytes()));
+        } else if (expr.op().kind() == hir::InfixExpression::Op::BitOr) {
+            ctx.printer().PrintLn(
+                "    {} {}, (%rsp)", AsmOr(builtin->Bytes()),
+                Register(Register::BX).ToNameBySize(builtin->Bytes()));
+        } else {
+            ctx.printer().PrintLn(
+                "    {} {}, (%rsp)", AsmXor(builtin->Bytes()),
+                Register(Register::BX).ToNameBySize(builtin->Bytes()));
+        }
+
+        inferred = merged.value();
+        return true;
+    } else {
+        ReportErrorForInfixExpression(ctx, gen_lhs.inferred(),
+                                      gen_rhs.inferred(), expr.op().span());
+        return false;
+    }
+}
+
+static bool GenComparsonExpr(CodeGenContext &ctx,
+                             std::shared_ptr<hir::Type> &inferred,
+                             const hir::InfixExpression &expr) {
+    auto &lhs = expr.lhs();
+    auto &rhs = expr.rhs();
+
+    ExprRValGen gen_lhs(ctx);
+    lhs->Accept(gen_lhs);
+    if (!gen_lhs) return false;
+
+    ExprRValGen gen_rhs(ctx);
+    rhs->Accept(gen_rhs);
+    if (!gen_rhs) return false;
+
+    if (gen_lhs.inferred()->IsBuiltin() && gen_rhs.inferred()->IsBuiltin()) {
+        auto merged =
+            ImplicitlyMergeTwoType(ctx, gen_lhs.inferred(), gen_rhs.inferred());
+        if (!merged || !merged.value()->IsBuiltin() ||
+            !merged.value()->ToBuiltin()->IsInteger()) {
+            ReportErrorForInfixExpression(ctx, gen_lhs.inferred(),
+                                          gen_rhs.inferred(), expr.op().span());
+            return false;
+        }
+        auto builtin = merged.value()->ToBuiltin();
+
+        // Convert rhs to proper type, then pop it from stack adn store to rbx.
+        if (!ImplicitlyConvertValueInStack(ctx, rhs->span(), gen_rhs.inferred(),
+                                           merged.value())) {
+            return false;
+        }
+        ctx.lvar_table().SubCalleeSize(8);
+        ctx.printer().PrintLn("    popq %rbx");
+
+        // Convert lhs to proper type.
+        if (!ImplicitlyConvertValueInStack(ctx, lhs->span(), gen_lhs.inferred(),
+                                           merged.value())) {
+            return false;
+        }
+
+        // Compare rax and rbx
+        if (expr.op().kind() == hir::InfixExpression::Op::GT ||
+            expr.op().kind() == hir::InfixExpression::Op::GE) {
+            ctx.printer().PrintLn(
+                "    {} (%rsp), {}", AsmCmp(builtin->Bytes()),
+                Register(Register::BX).ToNameBySize(builtin->Bytes()));
+        } else {
+            ctx.printer().PrintLn(
+                "    {} {}, (%rsp)", AsmCmp(builtin->Bytes()),
+                Register(Register::BX).ToNameBySize(builtin->Bytes()));
+        }
+
+        if (expr.op().kind() == hir::InfixExpression::Op::EQ) {
+            ctx.printer().PrintLn("    sete %al");
+        } else if (expr.op().kind() == hir::InfixExpression::Op::NE) {
+            ctx.printer().PrintLn("    setne %al");
+        } else if (expr.op().kind() == hir::InfixExpression::Op::LT ||
+                   expr.op().kind() == hir::InfixExpression::Op::GT) {
+            ctx.printer().PrintLn("    setl %al");
+        } else {
+            ctx.printer().PrintLn("    setle %al");
+        }
+        ctx.printer().PrintLn("    movzbq %al, %rax");
+        ctx.printer().PrintLn("    movq %rax, (%rsp)");
+
+        inferred = std::make_shared<hir::BuiltinType>(hir::BuiltinType::Bool,
+                                                      expr.span());
+        return true;
+    } else {
+        ReportErrorForInfixExpression(ctx, gen_lhs.inferred(),
+                                      gen_rhs.inferred(), expr.op().span());
+        return false;
+    }
+}
+
+static bool GenShiftExpr(CodeGenContext &ctx,
+                         std::shared_ptr<hir::Type> &inferred,
+                         const hir::InfixExpression &expr) {
+    auto &lhs = expr.lhs();
+    auto &rhs = expr.rhs();
+
+    ExprRValGen gen_lhs(ctx);
+    lhs->Accept(gen_lhs);
+    if (!gen_lhs) return false;
+
+    ExprRValGen gen_rhs(ctx);
+    rhs->Accept(gen_rhs);
+    if (!gen_rhs) return false;
+
+    if (gen_lhs.inferred()->IsBuiltin() && gen_rhs.inferred()->IsBuiltin()) {
+        auto merged =
+            ImplicitlyMergeTwoType(ctx, gen_lhs.inferred(), gen_rhs.inferred());
+        if (!merged || !merged.value()->IsBuiltin() ||
+            !merged.value()->ToBuiltin()->IsInteger()) {
+            ReportErrorForInfixExpression(ctx, gen_lhs.inferred(),
+                                          gen_rhs.inferred(), expr.op().span());
+            return false;
+        }
+        auto builtin = merged.value()->ToBuiltin();
+
+        // Convert rhs to proper type, then pop it from stack
+        if (!ImplicitlyConvertValueInStack(ctx, rhs->span(), gen_rhs.inferred(),
+                                           merged.value())) {
+            return false;
+        }
+        ctx.lvar_table().SubCalleeSize(8);
+        ctx.printer().PrintLn("    popq %rcx");
+
+        // Convert lhs to proper type.
+        if (!ImplicitlyConvertValueInStack(ctx, lhs->span(), gen_lhs.inferred(),
+                                           merged.value())) {
+            return false;
+        }
+
+        if (expr.op().kind() == hir::InfixExpression::Op::LShift) {
+            ctx.printer().PrintLn(
+                "    {} %cl, (%rsp)",
+                AsmLShift(builtin->IsSigned(), builtin->Bytes()));
+        } else {
+            ctx.printer().PrintLn(
+                "    {} %cl, (%rsp)",
+                AsmRShift(builtin->IsSigned(), builtin->Bytes()));
+        }
+
+        inferred = merged.value();
+        return true;
+    } else {
+        ReportErrorForInfixExpression(ctx, gen_lhs.inferred(),
+                                      gen_rhs.inferred(), expr.op().span());
+        return false;
+    }
+}
+
 void ExprRValGen::Visit(const hir::InfixExpression &expr) {
     if (expr.op().kind() == hir::InfixExpression::Op::Assign) {
-        ExprLValGen gen_addr(ctx_);
-        expr.lhs()->Accept(gen_addr);
-        if (!gen_addr) return;
-
-        // Offset to the address of lhs.
-        const auto offset = ctx_.lvar_table().CalleeSize();
-
-        std::optional<std::shared_ptr<hir::Type>> of;
-        if (gen_addr.inferred()->IsPointer()) {
-            of = gen_addr.inferred()->ToPointer()->of();
-        } else if (gen_addr.inferred()->IsArray()) {
-            of = gen_addr.inferred()->ToArray()->of();
-        }
-
-        ExprRValGen gen_rhs(ctx_, of);
-        expr.rhs()->Accept(gen_rhs);
-        if (!gen_rhs) return;
-
-        // Convert rhs to type of lhs.
-        if (!ImplicitlyConvertValueInStack(ctx_, expr.rhs()->span(),
-                                           gen_rhs.inferred_,
-                                           gen_addr.inferred())) {
-            return;
-        }
-
-        TypeSizeCalc size(ctx_);
-        gen_addr.inferred()->Accept(size);
-        if (!size) return;
-
-        // -offset(%rbp) contains address to the variable, so copy the address.
-        ctx_.printer().PrintLn("    movq -{}(%rbp), %rax", offset);
-
-        // If the object is fat, then copy the address in stack.
-        // Otherwise copy address to the value.
-        if (IsFatObject(ctx_, gen_addr.inferred())) {
-            ctx_.printer().PrintLn("    movq -{}(%rbp), %rbx",
-                                   ctx_.lvar_table().CalleeSize());
-        } else {
-            ctx_.printer().PrintLn("    leaq -{}(%rbp), %rbx",
-                                   ctx_.lvar_table().CalleeSize());
-        }
-
-        // Copy rhs to lhs.
-        IndexableAsmRegPtr src(Register::BX, 0);
-        IndexableAsmRegPtr dst(Register::AX, 0);
-        CopyBytes(ctx_, src, dst, size.size());
-
-        inferred_ = gen_addr.inferred();
-        success_ = true;
+        success_ = GenAssignExpr(ctx_, inferred_, expr.lhs(), expr.rhs());
+    } else if (expr.op().kind() == hir::InfixExpression::Op::Add ||
+               expr.op().kind() == hir::InfixExpression::Op::Sub) {
+        success_ = GenAdditiveExpr(ctx_, inferred_, expr);
+    } else if (expr.op().kind() == hir::InfixExpression::Op::Mul ||
+               expr.op().kind() == hir::InfixExpression::Op::Div ||
+               expr.op().kind() == hir::InfixExpression::Op::Mod) {
+        success_ = GenMultiplicativeExpr(ctx_, inferred_, expr);
+    } else if (expr.op().kind() == hir::InfixExpression::Op::Or ||
+               expr.op().kind() == hir::InfixExpression::Op::And) {
+        success_ = GenBooleanExpr(ctx_, inferred_, expr);
+    } else if (expr.op().kind() == hir::InfixExpression::Op::BitOr ||
+               expr.op().kind() == hir::InfixExpression::Op::BitAnd ||
+               expr.op().kind() == hir::InfixExpression::Op::BitXor) {
+        success_ = GenBitExpr(ctx_, inferred_, expr);
+    } else if (expr.op().kind() == hir::InfixExpression::Op::EQ ||
+               expr.op().kind() == hir::InfixExpression::Op::NE ||
+               expr.op().kind() == hir::InfixExpression::Op::LT ||
+               expr.op().kind() == hir::InfixExpression::Op::LE ||
+               expr.op().kind() == hir::InfixExpression::Op::GT ||
+               expr.op().kind() == hir::InfixExpression::Op::GE) {
+        success_ = GenComparsonExpr(ctx_, inferred_, expr);
+    } else if (expr.op().kind() == hir::InfixExpression::Op::LShift ||
+               expr.op().kind() == hir::InfixExpression::Op::RShift) {
+        success_ = GenShiftExpr(ctx_, inferred_, expr);
     } else {
-        ReportInfo info(expr.span(), "not yet implemented", "");
-        Report(ctx_.ctx(), ReportLevel::Error, info);
+        FatalError("unreachable");
     }
 }
 
@@ -162,7 +638,7 @@ void ExprRValGen::Visit(const hir::IndexExpression &expr) {
     expr.expr()->Accept(gen);
     if (!gen) return;
 
-    if (!gen.inferred_->IsArray() || gen.inferred_->IsPointer()) {
+    if (!gen.inferred_->IsArray() && !gen.inferred_->IsPointer()) {
         ReportInfo info(expr.expr()->span(), "invalid indexing",
                         "not a array or pointer");
         Report(ctx_.ctx(), ReportLevel::Error, info);
@@ -205,19 +681,12 @@ void ExprRValGen::Visit(const hir::IndexExpression &expr) {
     // No operation required if the field is fat object, as it required to store
     // its address to stack, and is already done.
     if (!IsFatObject(ctx_, of)) {
-        // Offset to the address of element
-        const auto offset = ctx_.lvar_table().CalleeSize();
+        // We expect non-fat object can be stored to register.
+        assert(of_size.size() <= 8);
 
-        // Allocate memory for copying element.
-        AllocateAlignedStackMemory(ctx_, of_size.size(), 8);
-
-        // Copy address of element to rax.
-        ctx_.printer().PrintLn("    movq -{}(%rbp), %rax", offset);
-
-        // Store element to top of stack.
-        IndexableAsmRegPtr src(Register::AX, 0);
-        IndexableAsmRegPtr dst(Register::BP, -ctx_.lvar_table().CalleeSize());
-        CopyBytes(ctx_, src, dst, of_size.size());
+        // Just copy value that the calculated address pointing.
+        ctx_.printer().PrintLn("    popq %rax");
+        ctx_.printer().PrintLn("    pushq (%rax)");
     }
 
     inferred_ = of;
@@ -361,22 +830,15 @@ void ExprRValGen::Visit(const hir::AccessExpression &expr) {
     // No operation required if the element is fat object, as it required to
     // store its address to stack, and is already done.
     if (!IsFatObject(ctx_, field.type())) {
-        // Offset to the pointer of the field.
-        const auto offset = ctx_.lvar_table().CalleeSize();
-
-        // Allocate memory for accessed field value.
+        // We expect non-fat object can be stored to register.
         TypeSizeCalc field_size(ctx_);
         field.type()->Accept(field_size);
         if (!field_size) return;
-        AllocateAlignedStackMemory(ctx_, field_size.size(), 8);
+        assert(field_size.size() <= 8);
 
-        // -offset(%rbp) contains address of the field, so copy it.
-        ctx_.printer().PrintLn("    movq -{}(%rbp), %rax", offset);
-
-        // Store field to top of stack.
-        IndexableAsmRegPtr src(Register::AX, 0);
-        IndexableAsmRegPtr dst(Register::BP, -ctx_.lvar_table().CalleeSize());
-        CopyBytes(ctx_, src, dst, field_size.size());
+        // Just copy value that the calculated address pointing.
+        ctx_.printer().PrintLn("    popq %rax");
+        ctx_.printer().PrintLn("    pushq (%rax)");
     }
 
     inferred_ = field.type();
@@ -478,7 +940,7 @@ void ExprRValGen::Visit(const hir::VariableExpression &expr) {
 
         // Push value the variable holds.
         auto src = entry.CalleeAsmRepr();
-        IndexableAsmRegPtr dst(Register::SP, 0);
+        IndexableAsmRegPtr dst(Register::BP, -ctx_.lvar_table().CalleeSize());
         CopyBytes(ctx_, src, dst, size.size());
     }
 
@@ -720,7 +1182,7 @@ void ExprLValGen::Visit(const hir::IndexExpression &expr) {
     expr.expr()->Accept(gen_addr);
     if (!gen_addr) return;
 
-    if (!gen_addr.inferred_->IsArray() || gen_addr.inferred_->IsPointer()) {
+    if (!gen_addr.inferred_->IsArray() && !gen_addr.inferred_->IsPointer()) {
         ReportInfo info(expr.expr()->span(), "invalid indexing",
                         "not a array or pointer");
         Report(ctx_.ctx(), ReportLevel::Error, info);
