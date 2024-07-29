@@ -205,7 +205,7 @@ std::optional<std::shared_ptr<hir::Type>> ImplicitlyMergeTwoType(
                    t2_of->ToBuiltin()->kind() == hir::BuiltinType::Void) {
             return std::make_shared<hir::PointerType>(t1_of,
                                                       t1->span() + t2->span());
-        } else if (t1 == t2) {
+        } else if (*t1 == *t2) {
             return std::make_shared<hir::PointerType>(t1_of,
                                                       t1->span() + t2->span());
         } else {
@@ -223,7 +223,7 @@ std::optional<std::shared_ptr<hir::Type>> ImplicitlyMergeTwoType(
     } else if (t1->IsArray()) {
         auto t1_of = t1->ToArray()->of();
         if (t2->IsArray()) {
-            if (t1 == t2) {
+            if (*t1 == *t2) {
                 return std::make_shared<hir::ArrayType>(
                     t1_of, t1->ToArray()->size(), t1->span() + t2->span());
             } else {
@@ -231,7 +231,7 @@ std::optional<std::shared_ptr<hir::Type>> ImplicitlyMergeTwoType(
             }
         } else if (t2->IsPointer()) {
             auto t2_of = t2->ToPointer()->of();
-            if (t1_of == t2_of) {
+            if (*t1_of == *t2_of) {
                 return std::make_shared<hir::PointerType>(
                     t2_of, t1->span() + t2->span());
             } else {
