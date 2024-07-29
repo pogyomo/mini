@@ -111,9 +111,13 @@ static bool GenMinusExpr(CodeGenContext &ctx,
         ReportErrorForUnaryExpression(ctx, gen.inferred(), expr.op().span());
         return false;
     }
-    auto builtin = gen.inferred()->ToBuiltin();
 
-    ctx.printer().PrintLn("    {} (%rsp)", AsmNeg(builtin->Bytes()));
+    auto builtin = gen.inferred()->ToBuiltin();
+    TypeSizeCalc size(ctx);
+    builtin->Accept(size);
+    if (!size) return false;
+
+    ctx.printer().PrintLn("    {} (%rsp)", AsmNeg(size.size()));
 
     // Change type to signed one.
     hir::BuiltinType::Kind kind;
@@ -154,9 +158,13 @@ static bool GenInvExpr(CodeGenContext &ctx,
         ReportErrorForUnaryExpression(ctx, gen.inferred(), expr.op().span());
         return false;
     }
-    auto builtin = gen.inferred()->ToBuiltin();
 
-    ctx.printer().PrintLn("    {} (%rsp)", AsmNot(builtin->Bytes()));
+    auto builtin = gen.inferred()->ToBuiltin();
+    TypeSizeCalc size(ctx);
+    builtin->Accept(size);
+    if (!size) return false;
+
+    ctx.printer().PrintLn("    {} (%rsp)", AsmNot(size.size()));
 
     inferred = std::make_shared<hir::BuiltinType>(builtin->kind(), expr.span());
     return true;
@@ -345,7 +353,11 @@ static bool GenAdditiveExpr(CodeGenContext &ctx,
                                           gen_rhs.inferred(), expr.op().span());
             return false;
         }
+
         auto builtin = merged.value()->ToBuiltin();
+        TypeSizeCalc size(ctx);
+        builtin->Accept(size);
+        if (!size) return false;
 
         // Convert rhs to proper type, then pop rhs from stack
         if (!ImplicitlyConvertValueInStack(ctx, rhs->span(), gen_rhs.inferred(),
@@ -363,12 +375,12 @@ static bool GenAdditiveExpr(CodeGenContext &ctx,
 
         if (is_add) {
             ctx.printer().PrintLn(
-                "    {} {}, (%rsp)", AsmAdd(builtin->Bytes()),
-                Register(Register::BX).ToNameBySize(builtin->Bytes()));
+                "    {} {}, (%rsp)", AsmAdd(size.size()),
+                Register(Register::BX).ToNameBySize(size.size()));
         } else {
             ctx.printer().PrintLn(
-                "    {} {}, (%rsp)", AsmSub(builtin->Bytes()),
-                Register(Register::BX).ToNameBySize(builtin->Bytes()));
+                "    {} {}, (%rsp)", AsmSub(size.size()),
+                Register(Register::BX).ToNameBySize(size.size()));
         }
         inferred = merged.value();
         return true;
@@ -402,7 +414,11 @@ static bool GenMultiplicativeExpr(CodeGenContext &ctx,
                                           gen_rhs.inferred(), expr.op().span());
             return false;
         }
+
         auto builtin = merged.value()->ToBuiltin();
+        TypeSizeCalc size(ctx);
+        builtin->Accept(size);
+        if (!size) return false;
 
         // Convert rhs to proper type, then pop it from stack
         if (!ImplicitlyConvertValueInStack(ctx, rhs->span(), gen_rhs.inferred(),
@@ -423,30 +439,30 @@ static bool GenMultiplicativeExpr(CodeGenContext &ctx,
         if (expr.op().kind() == hir::InfixExpression::Op::Mul) {
             // rax = rax * rbx
             ctx.printer().PrintLn(
-                "    {} {}", AsmMul(builtin->IsSigned(), builtin->Bytes()),
-                Register(Register::BX).ToNameBySize(builtin->Bytes()));
+                "    {} {}", AsmMul(builtin->IsSigned(), size.size()),
+                Register(Register::BX).ToNameBySize(size.size()));
 
             // Push result.
             ctx.lvar_table().AddCalleeSize(8);
             ctx.printer().PrintLn("    pushq %rax");
         } else {
             // Extend rax to rdx, as div uses rax and rdx
-            if (builtin->Bytes() == 2) {
+            if (size.size() == 2) {
                 ctx.printer().PrintLn("    cwd");
-            } else if (builtin->Bytes() == 4) {
+            } else if (size.size() == 4) {
                 ctx.printer().PrintLn("    cdq");
-            } else if (builtin->Bytes() == 8) {
+            } else if (size.size() == 8) {
                 ctx.printer().PrintLn("    cqo");
             }
 
             // rax, rdx (al, ah) = rax / rbx
             ctx.printer().PrintLn(
-                "    {} {}", AsmDiv(builtin->IsSigned(), builtin->Bytes()),
-                Register(Register::BX).ToNameBySize(builtin->Bytes()));
+                "    {} {}", AsmDiv(builtin->IsSigned(), size.size()),
+                Register(Register::BX).ToNameBySize(size.size()));
 
             // Push result.
             ctx.lvar_table().AddCalleeSize(8);
-            if (builtin->Bytes() == 1) {
+            if (size.size() == 1) {
                 if (expr.op().kind() == hir::InfixExpression::Op::Div) {
                     ctx.printer().PrintLn("    pushq %rax");
                 } else {
@@ -543,7 +559,11 @@ static bool GenBitExpr(CodeGenContext &ctx,
                                           gen_rhs.inferred(), expr.op().span());
             return false;
         }
+
         auto builtin = merged.value()->ToBuiltin();
+        TypeSizeCalc size(ctx);
+        builtin->Accept(size);
+        if (!size) return false;
 
         // Convert rhs to proper type, then pop it from stack
         if (!ImplicitlyConvertValueInStack(ctx, rhs->span(), gen_rhs.inferred(),
@@ -561,16 +581,16 @@ static bool GenBitExpr(CodeGenContext &ctx,
 
         if (expr.op().kind() == hir::InfixExpression::Op::BitAnd) {
             ctx.printer().PrintLn(
-                "    {} {}, (%rsp)", AsmAnd(builtin->Bytes()),
-                Register(Register::BX).ToNameBySize(builtin->Bytes()));
+                "    {} {}, (%rsp)", AsmAnd(size.size()),
+                Register(Register::BX).ToNameBySize(size.size()));
         } else if (expr.op().kind() == hir::InfixExpression::Op::BitOr) {
             ctx.printer().PrintLn(
-                "    {} {}, (%rsp)", AsmOr(builtin->Bytes()),
-                Register(Register::BX).ToNameBySize(builtin->Bytes()));
+                "    {} {}, (%rsp)", AsmOr(size.size()),
+                Register(Register::BX).ToNameBySize(size.size()));
         } else {
             ctx.printer().PrintLn(
-                "    {} {}, (%rsp)", AsmXor(builtin->Bytes()),
-                Register(Register::BX).ToNameBySize(builtin->Bytes()));
+                "    {} {}, (%rsp)", AsmXor(size.size()),
+                Register(Register::BX).ToNameBySize(size.size()));
         }
 
         inferred = merged.value();
@@ -600,12 +620,15 @@ static bool GenComparsonExpr(CodeGenContext &ctx,
         auto merged =
             ImplicitlyMergeTwoType(ctx, gen_lhs.inferred(), gen_rhs.inferred());
         if (!merged || !merged.value()->IsBuiltin() ||
-            !merged.value()->ToBuiltin()->IsInteger()) {
+            merged.value()->ToBuiltin()->kind() == hir::BuiltinType::Void) {
             ReportErrorForInfixExpression(ctx, gen_lhs.inferred(),
                                           gen_rhs.inferred(), expr.op().span());
             return false;
         }
-        auto builtin = merged.value()->ToBuiltin();
+
+        TypeSizeCalc size(ctx);
+        merged.value()->Accept(size);
+        if (!size) return false;
 
         // Convert rhs to proper type, then pop it from stack adn store to rbx.
         if (!ImplicitlyConvertValueInStack(ctx, rhs->span(), gen_rhs.inferred(),
@@ -625,12 +648,12 @@ static bool GenComparsonExpr(CodeGenContext &ctx,
         if (expr.op().kind() == hir::InfixExpression::Op::GT ||
             expr.op().kind() == hir::InfixExpression::Op::GE) {
             ctx.printer().PrintLn(
-                "    {} (%rsp), {}", AsmCmp(builtin->Bytes()),
-                Register(Register::BX).ToNameBySize(builtin->Bytes()));
+                "    {} (%rsp), {}", AsmCmp(size.size()),
+                Register(Register::BX).ToNameBySize(size.size()));
         } else {
             ctx.printer().PrintLn(
-                "    {} {}, (%rsp)", AsmCmp(builtin->Bytes()),
-                Register(Register::BX).ToNameBySize(builtin->Bytes()));
+                "    {} {}, (%rsp)", AsmCmp(size.size()),
+                Register(Register::BX).ToNameBySize(size.size()));
         }
 
         if (expr.op().kind() == hir::InfixExpression::Op::EQ) {
@@ -679,7 +702,11 @@ static bool GenShiftExpr(CodeGenContext &ctx,
                                           gen_rhs.inferred(), expr.op().span());
             return false;
         }
+
         auto builtin = merged.value()->ToBuiltin();
+        TypeSizeCalc size(ctx);
+        builtin->Accept(size);
+        if (!size) return false;
 
         // Convert rhs to proper type, then pop it from stack
         if (!ImplicitlyConvertValueInStack(ctx, rhs->span(), gen_rhs.inferred(),
@@ -696,13 +723,11 @@ static bool GenShiftExpr(CodeGenContext &ctx,
         }
 
         if (expr.op().kind() == hir::InfixExpression::Op::LShift) {
-            ctx.printer().PrintLn(
-                "    {} %cl, (%rsp)",
-                AsmLShift(builtin->IsSigned(), builtin->Bytes()));
+            ctx.printer().PrintLn("    {} %cl, (%rsp)",
+                                  AsmLShift(builtin->IsSigned(), size.size()));
         } else {
-            ctx.printer().PrintLn(
-                "    {} %cl, (%rsp)",
-                AsmRShift(builtin->IsSigned(), builtin->Bytes()));
+            ctx.printer().PrintLn("    {} %cl, (%rsp)",
+                                  AsmRShift(builtin->IsSigned(), size.size()));
         }
 
         inferred = merged.value();
@@ -899,8 +924,7 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
         caller_table.AddCalleeSize(8);
         ctx_.printer().PrintLn("    pushq %rax");
 
-        inferred_ =
-            ctx_.func_info_table().Query(ctx_.CurrFuncName()).ret_type();
+        inferred_ = ctx_.func_info_table().Query(var.value()).ret_type();
         success_ = true;
     } else {
         ReportInfo info(expr.func()->span(), "not a callable", "");

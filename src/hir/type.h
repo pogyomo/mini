@@ -96,20 +96,6 @@ public:
         return kind_ == USize || kind_ == UInt8 || kind_ == UInt16 ||
                kind_ == UInt32 || kind_ == UInt64;
     }
-    inline uint8_t Bytes() const {
-        if (kind_ == Int8 || kind_ == UInt8) {
-            return 1;
-        } else if (kind_ == Int16 || kind_ == UInt16) {
-            return 2;
-        } else if (kind_ == Int32 || kind_ == UInt32) {
-            return 4;
-        } else if (kind_ == Int64 || kind_ == UInt64 || kind_ == ISize ||
-                   kind_ == USize) {
-            return 8;
-        } else {
-            FatalError("unreachable");
-        }
-    }
     void Print(PrintableContext &ctx) const override;
     bool operator==(const Type &rhs) const override {
         return rhs.IsBuiltin() ? rhs.ToBuiltin()->kind_ == kind_ : false;
