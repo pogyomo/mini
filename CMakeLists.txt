@@ -3,10 +3,6 @@ project(mini CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-target_compile_options(${PROJECT_NAME} PUBLIC -O3 -Wall -Wextra)
-# Uncomment below when use gdb
-# target_compile_options(${PROJECT_NAME} PUBLIC -O0 -g)
-
 add_executable(${PROJECT_NAME})
 target_sources(${PROJECT_NAME} PRIVATE
     src/ast/stmt.cc
@@ -41,6 +37,10 @@ target_sources(${PROJECT_NAME} PRIVATE
     src/report.cc
     src/token.cc
 )
+
+target_compile_options(${PROJECT_NAME} PUBLIC -O3 -Wall -Wextra)
+# Uncomment below when use gdb
+# target_compile_options(${PROJECT_NAME} PUBLIC -O0 -g)
 
 add_subdirectory(fmt)
 target_link_libraries(${PROJECT_NAME} fmt::fmt)
