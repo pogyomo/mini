@@ -64,6 +64,16 @@ static void AllocateAlignedStackMemory(CodeGenContext &ctx, uint64_t size,
     if (diff) ctx.printer().PrintLn("    subq ${}, %rsp", diff);
 }
 
+// Returns true if the object which type is `type` should be passed by pointer
+// when it was generated as rvalue.
+static bool IsFatObject(CodeGenContext &ctx,
+                        const std::shared_ptr<hir::Type> &type) {
+    auto is_array = type->IsArray();
+    auto is_struct =
+        type->IsName() && ctx.struct_table().Exists(type->ToName()->value());
+    return is_array || is_struct;
+}
+
 void ExprRValGen::Visit(const hir::UnaryExpression &expr) {
     if (expr.op().kind() == hir::UnaryExpression::Op::Ref) {
         ExprLValGen gen(ctx_);
@@ -121,11 +131,21 @@ void ExprRValGen::Visit(const hir::InfixExpression &expr) {
         gen_addr.inferred()->Accept(size);
         if (!size) return;
 
-        // -offset(%rbp) contains address to the object, so copy the address.
+        // -offset(%rbp) contains address to the variable, so copy the address.
         ctx_.printer().PrintLn("    movq -{}(%rbp), %rax", offset);
 
+        // If the object is fat, then copy the address in stack.
+        // Otherwise copy address to the value.
+        if (IsFatObject(ctx_, gen_addr.inferred())) {
+            ctx_.printer().PrintLn("    movq -{}(%rbp), %rbx",
+                                   ctx_.lvar_table().CalleeSize());
+        } else {
+            ctx_.printer().PrintLn("    leaq -{}(%rbp), %rbx",
+                                   ctx_.lvar_table().CalleeSize());
+        }
+
         // Copy rhs to lhs.
-        IndexableAsmRegPtr src(Register::BP, -ctx_.lvar_table().CalleeSize());
+        IndexableAsmRegPtr src(Register::BX, 0);
         IndexableAsmRegPtr dst(Register::AX, 0);
         CopyBytes(ctx_, src, dst, size.size());
 
@@ -177,19 +197,28 @@ void ExprRValGen::Visit(const hir::IndexExpression &expr) {
     ctx_.printer().PrintLn("    popq %rax");
 
     // Calculate address to element.
-    ctx_.printer().PrintLn("    mulq ${}", of_size.size());
+    // At this point, (%rsp) is address to the array or pointer.
+    ctx_.printer().PrintLn("    movq ${}, %rbx", of_size.size());
+    ctx_.printer().PrintLn("    mulq %rbx");
     ctx_.printer().PrintLn("    addq %rax, (%rsp)");
 
-    // Offset to the address of element
-    const auto offset = ctx_.lvar_table().CalleeSize();
+    // No operation required if the field is fat object, as it required to store
+    // its address to stack, and is already done.
+    if (!IsFatObject(ctx_, of)) {
+        // Offset to the address of element
+        const auto offset = ctx_.lvar_table().CalleeSize();
 
-    // Allocate memory for element.
-    AllocateAlignedStackMemory(ctx_, of_size.size(), 8);
+        // Allocate memory for copying element.
+        AllocateAlignedStackMemory(ctx_, of_size.size(), 8);
 
-    // Store element to top of stack.
-    IndexableAsmRegPtr src(Register::BP, -offset);
-    IndexableAsmRegPtr dst(Register::BP, -ctx_.lvar_table().CalleeSize());
-    CopyBytes(ctx_, src, dst, of_size.size());
+        // Copy address of element to rax.
+        ctx_.printer().PrintLn("    movq -{}(%rbp), %rax", offset);
+
+        // Store element to top of stack.
+        IndexableAsmRegPtr src(Register::AX, 0);
+        IndexableAsmRegPtr dst(Register::BP, -ctx_.lvar_table().CalleeSize());
+        CopyBytes(ctx_, src, dst, of_size.size());
+    }
 
     inferred_ = of;
     success_ = true;
@@ -329,22 +358,26 @@ void ExprRValGen::Visit(const hir::AccessExpression &expr) {
     if (field.Offset())
         ctx_.printer().PrintLn("    addq ${}, (%rsp)", field.Offset());
 
-    // Offset to the pointer of the field.
-    const auto offset = ctx_.lvar_table().CalleeSize();
+    // No operation required if the element is fat object, as it required to
+    // store its address to stack, and is already done.
+    if (!IsFatObject(ctx_, field.type())) {
+        // Offset to the pointer of the field.
+        const auto offset = ctx_.lvar_table().CalleeSize();
 
-    // Allocate memory for accessed field value.
-    TypeSizeCalc field_size(ctx_);
-    field.type()->Accept(field_size);
-    if (!field_size) return;
-    AllocateAlignedStackMemory(ctx_, field_size.size(), 8);
+        // Allocate memory for accessed field value.
+        TypeSizeCalc field_size(ctx_);
+        field.type()->Accept(field_size);
+        if (!field_size) return;
+        AllocateAlignedStackMemory(ctx_, field_size.size(), 8);
 
-    // -offset(%rbp) contains pointer to field, so copy it.
-    ctx_.printer().PrintLn("    movq -{}(%rbp), %rax", offset);
+        // -offset(%rbp) contains address of the field, so copy it.
+        ctx_.printer().PrintLn("    movq -{}(%rbp), %rax", offset);
 
-    // Store field to top of stack.
-    IndexableAsmRegPtr src(Register::AX, 0);
-    IndexableAsmRegPtr dst(Register::BP, -ctx_.lvar_table().CalleeSize());
-    CopyBytes(ctx_, src, dst, field_size.size());
+        // Store field to top of stack.
+        IndexableAsmRegPtr src(Register::AX, 0);
+        IndexableAsmRegPtr dst(Register::BP, -ctx_.lvar_table().CalleeSize());
+        CopyBytes(ctx_, src, dst, field_size.size());
+    }
 
     inferred_ = field.type();
     success_ = true;
@@ -431,17 +464,23 @@ void ExprRValGen::Visit(const hir::VariableExpression &expr) {
 
     auto &entry = ctx_.lvar_table().Query(expr.value());
 
-    TypeSizeCalc size(ctx_);
-    entry.type()->Accept(size);
-    if (!size) return;
+    if (IsFatObject(ctx_, entry.type())) {
+        // If the variable holds fat object, just returns its address.
+        ExprLValGen gen_addr(ctx_);
+        expr.Accept(gen_addr);
+        if (!gen_addr) return;
+    } else {
+        // Allocate memory for value.
+        TypeSizeCalc size(ctx_);
+        entry.type()->Accept(size);
+        if (!size) return;
+        AllocateAlignedStackMemory(ctx_, size.size(), 8);
 
-    // Allocate memory for value.
-    AllocateAlignedStackMemory(ctx_, size.size(), 8);
-
-    // Push value the variable holds.
-    auto src = entry.CalleeAsmRepr();
-    IndexableAsmRegPtr dst(Register::SP, 0);
-    CopyBytes(ctx_, src, dst, size.size());
+        // Push value the variable holds.
+        auto src = entry.CalleeAsmRepr();
+        IndexableAsmRegPtr dst(Register::SP, 0);
+        CopyBytes(ctx_, src, dst, size.size());
+    }
 
     inferred_ = entry.type();
     success_ = true;
@@ -577,7 +616,18 @@ void ExprRValGen::Visit(const hir::ArrayExpression &expr) {
         expr.inits().at(i)->Accept(gen);
         if (!gen) return;
 
-        IndexableAsmRegPtr src(Register::BP, -ctx_.lvar_table().CalleeSize());
+        // If the object is fat, then copy the address in stack.
+        // Otherwise copy address to the value.
+        if (IsFatObject(ctx_, array_base_type_.value())) {
+            ctx_.printer().PrintLn("    movq -{}(%rbp), %rax",
+                                   ctx_.lvar_table().CalleeSize());
+        } else {
+            ctx_.printer().PrintLn("    leaq -{}(%rbp), %rax",
+                                   ctx_.lvar_table().CalleeSize());
+        }
+
+        // Copy generated value.
+        IndexableAsmRegPtr src(Register::AX, 0);
         IndexableAsmRegPtr dst(Register::BP, -offset + i * base_size.size());
         CopyBytes(ctx_, src, dst, base_size.size());
 
@@ -705,7 +755,8 @@ void ExprLValGen::Visit(const hir::IndexExpression &expr) {
     ctx_.printer().PrintLn("    popq %rax");
 
     // Calculate address to element.
-    ctx_.printer().PrintLn("    mulq ${}", of_size.size());
+    ctx_.printer().PrintLn("    movq ${}, %rbx", of_size.size());
+    ctx_.printer().PrintLn("    mulq %rbx");
     ctx_.printer().PrintLn("    addq %rax, (%rsp)");
 
     inferred_ = of;
