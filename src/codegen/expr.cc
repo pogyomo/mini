@@ -121,8 +121,10 @@ void ExprRValGen::Visit(const hir::InfixExpression &expr) {
         gen_addr.inferred()->Accept(size);
         if (!size) return;
 
+        // -offset(%rbp) contains address to the object, so copy the address.
         ctx_.printer().PrintLn("    movq -{}(%rbp), %rax", offset);
 
+        // Copy rhs to lhs.
         IndexableAsmRegPtr src(Register::BP, -ctx_.lvar_table().CalleeSize());
         IndexableAsmRegPtr dst(Register::AX, 0);
         CopyBytes(ctx_, src, dst, size.size());
@@ -324,9 +326,10 @@ void ExprRValGen::Visit(const hir::AccessExpression &expr) {
     auto field = entry.Query(expr.field().value());
 
     // Change pointer in top of stack to point its field.
-    ctx_.printer().PrintLn("    addq ${}, (%rsp)", field.Offset());
+    if (field.Offset())
+        ctx_.printer().PrintLn("    addq ${}, (%rsp)", field.Offset());
 
-    // Offset to the pointer
+    // Offset to the pointer of the field.
     const auto offset = ctx_.lvar_table().CalleeSize();
 
     // Allocate memory for accessed field value.
@@ -335,8 +338,11 @@ void ExprRValGen::Visit(const hir::AccessExpression &expr) {
     if (!field_size) return;
     AllocateAlignedStackMemory(ctx_, field_size.size(), 8);
 
+    // -offset(%rbp) contains pointer to field, so copy it.
+    ctx_.printer().PrintLn("    movq -{}(%rbp), %rax", offset);
+
     // Store field to top of stack.
-    IndexableAsmRegPtr src(Register::BP, -offset);
+    IndexableAsmRegPtr src(Register::AX, 0);
     IndexableAsmRegPtr dst(Register::BP, -ctx_.lvar_table().CalleeSize());
     CopyBytes(ctx_, src, dst, field_size.size());
 
@@ -533,7 +539,7 @@ void ExprRValGen::Visit(const hir::StructExpression &expr) {
         if (!field_size) return;
 
         IndexableAsmRegPtr src(Register::BP, -ctx_.lvar_table().CalleeSize());
-        IndexableAsmRegPtr dst(Register::BP, -offset);
+        IndexableAsmRegPtr dst(Register::BP, -offset + field.Offset());
         CopyBytes(ctx_, src, dst, field_size.size());
 
         // Free temporary generate value.
