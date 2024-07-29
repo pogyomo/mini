@@ -120,8 +120,10 @@ void ExprRValGen::Visit(const hir::InfixExpression &expr) {
         gen_addr.inferred()->Accept(size);
         if (!size) return;
 
+        ctx_.printer().PrintLn("    movq -{}(%rbp), %rax", offset);
+
         IndexableAsmRegPtr src(Register::BP, -ctx_.lvar_table().CalleeSize());
-        IndexableAsmRegPtr dst(Register::BP, -offset);
+        IndexableAsmRegPtr dst(Register::AX, 0);
         CopyBytes(ctx_, src, dst, size.size());
 
         success_ = true;
