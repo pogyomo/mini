@@ -265,9 +265,7 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
 
             // Free allocated memory.
             auto diff = caller_table.RestoreCalleeSize();
-            if (diff != 0) {
-                ctx_.printer().PrintLn("    addq ${}, %rsp", diff);
-            }
+            if (diff) ctx_.printer().PrintLn("    addq ${}, %rsp", diff);
         }
 
         // If return value needs caller-allocated memory, move the address to
@@ -281,7 +279,7 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
         ctx_.printer().PrintLn("    callq {}", var.value());
 
         // Ensure push returned value.
-        ctx_.lvar_table().AddCalleeSize(8);
+        caller_table.AddCalleeSize(8);
         ctx_.printer().PrintLn("    pushq %rax");
 
         inferred_ =

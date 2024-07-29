@@ -6,6 +6,7 @@
 #include "../report.h"
 #include "asm.h"
 #include "expr.h"
+#include "fmt/base.h"
 #include "type.h"
 
 namespace mini {
@@ -63,9 +64,7 @@ void StmtCodeGen::Visit(const hir::ReturnStatement &stmt) {
 
         // Free allocated value if exists.
         auto diff = ctx_.lvar_table().RestoreCalleeSize();
-        if (diff != 0) {
-            ctx_.printer().PrintLn("    addq ${}, %rsp", diff);
-        }
+        if (diff) ctx_.printer().PrintLn("    addq ${}, %rsp", diff);
     }
 
     success_ = true;

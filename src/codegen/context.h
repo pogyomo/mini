@@ -15,6 +15,7 @@
 #include "../hir/root.h"
 #include "../hir/type.h"
 #include "asm.h"
+#include "fmt/base.h"
 #include "fmt/format.h"
 
 namespace mini {
@@ -133,6 +134,7 @@ public:
         if (callee_sizes_.empty()) {
             FatalError("no size to restore");
         } else {
+            assert(callee_size_ >= callee_sizes_.top());
             uint64_t diff = callee_size_ - callee_sizes_.top();
             callee_size_ = callee_sizes_.top();
             callee_sizes_.pop();
