@@ -30,6 +30,19 @@ namespace mini {
 // doesn't works correctly, as `+` requires that 1 and 10 is continueously
 // placed to memory, but `a { a: 10, b: 20 }` allocate memory after `1`, so `1`
 // and `10` is not to be continueous.
+//
+// Also the code
+// ```
+// function fib(n: usize): usize {
+//     if (n == 0 || n == 1) {
+//         return n;
+//     } else {
+//         return fib(n - 1) + fib(n - 2);
+//     }
+// }
+// ```
+// doesn't works because when call `fib(n - 1)` and `fib(n - 2)`, it align stack
+// by 16 bytes, so return value is not to be continueous, so the addition fail.
 
 static std::optional<std::string> IsVariable(
     const std::unique_ptr<hir::Expression> &expr) {
