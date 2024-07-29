@@ -130,6 +130,8 @@ std::string ToString(KeywordTokenKind kind) {
             return "uint32";
         case KeywordTokenKind::UInt64:
             return "uint64";
+        case KeywordTokenKind::NullPtr:
+            return "nullptr";
         default:
             return "";
     }

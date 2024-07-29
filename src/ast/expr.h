@@ -24,6 +24,7 @@ class IntegerExpression;
 class StringExpression;
 class CharExpression;
 class BoolExpression;
+class NullPtrExpression;
 class StructExpression;
 class ArrayExpression;
 
@@ -44,6 +45,7 @@ public:
     virtual void Visit(const StringExpression& expr) = 0;
     virtual void Visit(const CharExpression& expr) = 0;
     virtual void Visit(const BoolExpression& expr) = 0;
+    virtual void Visit(const NullPtrExpression& expr) = 0;
     virtual void Visit(const StructExpression& expr) = 0;
     virtual void Visit(const ArrayExpression& expr) = 0;
 };
@@ -390,6 +392,18 @@ public:
 
 private:
     bool value_;
+    Span span_;
+};
+
+class NullPtrExpression : public Expression {
+public:
+    NullPtrExpression(Span span) : span_(span) {}
+    inline void Accept(ExpressionVisitor& visitor) const override {
+        return visitor.Visit(*this);
+    }
+    inline Span span() const override { return span_; }
+
+private:
     Span span_;
 };
 

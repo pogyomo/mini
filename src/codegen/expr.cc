@@ -55,6 +55,7 @@ static std::optional<std::string> IsVariable(
         void Visit(const hir::StringExpression &) override {}
         void Visit(const hir::CharExpression &) override {}
         void Visit(const hir::BoolExpression &) override {}
+        void Visit(const hir::NullPtrExpression &) override {}
         void Visit(const hir::StructExpression &) override {}
         void Visit(const hir::ArrayExpression &) override {}
 
@@ -1149,6 +1150,16 @@ void ExprRValGen::Visit(const hir::BoolExpression &expr) {
     success_ = true;
 }
 
+void ExprRValGen::Visit(const hir::NullPtrExpression &expr) {
+    ctx_.lvar_table().AddCalleeSize(8);
+    ctx_.printer().PrintLn("    pushq ${}", 0);
+
+    auto of =
+        std::make_shared<hir::BuiltinType>(hir::BuiltinType::Void, expr.span());
+    inferred_ = std::make_shared<hir::PointerType>(of, expr.span());
+    success_ = true;
+}
+
 void ExprRValGen::Visit(const hir::StructExpression &expr) {
     hir::NameType type(std::string(expr.name().value()), expr.span());
 
@@ -1481,6 +1492,11 @@ void ExprLValGen::Visit(const hir::CharExpression &expr) {
 }
 
 void ExprLValGen::Visit(const hir::BoolExpression &expr) {
+    ReportInfo info(expr.span(), "doesn't have address", "");
+    Report(ctx_.ctx(), ReportLevel::Error, info);
+}
+
+void ExprLValGen::Visit(const hir::NullPtrExpression &expr) {
     ReportInfo info(expr.span(), "doesn't have address", "");
     Report(ctx_.ctx(), ReportLevel::Error, info);
 }

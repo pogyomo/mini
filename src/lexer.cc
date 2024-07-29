@@ -84,6 +84,7 @@ static const std::map<std::string, KeywordTokenKind> keywords = {
     {"uint16", KeywordTokenKind::UInt16},
     {"uint32", KeywordTokenKind::UInt32},
     {"uint64", KeywordTokenKind::UInt64},
+    {"nullptr", KeywordTokenKind::NullPtr},
 };
 
 LexResult lex_line(Context &ctx, size_t id, size_t row,

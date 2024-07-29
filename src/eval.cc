@@ -110,6 +110,10 @@ void ConstEval::Visit(const ast::BoolExpression &expr) {
     report_error(expr.span(), "bool");
 }
 
+void ConstEval::Visit(const ast::NullPtrExpression &expr) {
+    report_error(expr.span(), "nullptr");
+}
+
 void ConstEval::Visit(const ast::StructExpression &expr) {
     report_error(expr.span(), "struct initializer");
 }

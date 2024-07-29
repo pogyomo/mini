@@ -39,6 +39,7 @@ public:
     void Visit(const hir::StringExpression &expr) override;
     void Visit(const hir::CharExpression &expr) override;
     void Visit(const hir::BoolExpression &expr) override;
+    void Visit(const hir::NullPtrExpression &expr) override;
     void Visit(const hir::StructExpression &expr) override;
     void Visit(const hir::ArrayExpression &expr) override;
 
@@ -75,6 +76,7 @@ public:
     void Visit(const hir::StringExpression &expr) override;
     void Visit(const hir::CharExpression &expr) override;
     void Visit(const hir::BoolExpression &expr) override;
+    void Visit(const hir::NullPtrExpression &expr) override;
     void Visit(const hir::StructExpression &expr) override;
     void Visit(const hir::ArrayExpression &expr) override;
 

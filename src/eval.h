@@ -25,6 +25,7 @@ public:
     void Visit(const ast::StringExpression &expr) override;
     void Visit(const ast::CharExpression &expr) override;
     void Visit(const ast::BoolExpression &expr) override;
+    void Visit(const ast::NullPtrExpression &expr) override;
     void Visit(const ast::StructExpression &expr) override;
     void Visit(const ast::ArrayExpression &expr) override;
 

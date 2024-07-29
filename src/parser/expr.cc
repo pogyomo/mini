@@ -606,6 +606,11 @@ std::optional<std::unique_ptr<ast::Expression>> ParsePrimaryExpr(
         ts.Advance();
 
         return std::make_unique<ast::BoolExpression>(false, span);
+    } else if (ts.CurrToken()->IsKeywordOf(KeywordTokenKind::NullPtr)) {
+        auto span = ts.CurrToken()->span();
+        ts.Advance();
+
+        return std::make_unique<ast::NullPtrExpression>(span);
     } else {
         ReportInfo info(ts.CurrToken()->span(), "unexpected token found",
                         "expected identifier, integer or `(`");

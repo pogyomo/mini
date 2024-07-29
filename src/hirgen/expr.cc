@@ -209,6 +209,11 @@ void ExprHirGen::Visit(const ast::BoolExpression &expr) {
     success_ = true;
 }
 
+void ExprHirGen::Visit(const ast::NullPtrExpression &expr) {
+    expr_ = std::make_unique<hir::NullPtrExpression>(expr.span());
+    success_ = true;
+}
+
 void ExprHirGen::Visit(const ast::StructExpression &expr) {
     std::vector<hir::StructExpressionInit> inits;
     for (const auto &init : expr.inits()) {

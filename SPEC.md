@@ -186,6 +186,7 @@ The syntax of mini programming language is as follow:
                        | <array-init>
                        | "true"
                        | "false"
+                       | "nullptr"
                        | "(" <expression> ")"
 <enum-select> ::= <identifier> "::" <identifier>
 <integer> ::= ...
