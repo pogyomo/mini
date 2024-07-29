@@ -134,7 +134,7 @@ void StmtCodeGen::Visit(const hir::IfStatement &stmt) {
     StmtCodeGen then_gen(ctx_);
     stmt.then_body()->Accept(then_gen);
     if (!then_gen) return;
-    ctx_.printer().PrintLn("    jmp L.END.{}:", id);
+    ctx_.printer().PrintLn("    jmp L.END.{}", id);
 
     ctx_.printer().PrintLn("L.ELSE.{}:", id);
 
