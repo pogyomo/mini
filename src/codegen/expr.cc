@@ -70,9 +70,9 @@ void ExprRValGen::Visit(const hir::UnaryExpression &expr) {
         expr.Accept(gen);
         if (!gen) return;
 
-        success_ = true;
         inferred_ =
             std::make_shared<hir::PointerType>(gen.inferred(), expr.span());
+        success_ = true;
     } else if (expr.op().kind() == hir::UnaryExpression::Op::Deref) {
         ReportInfo info(expr.span(), "not yet implemented", "");
         Report(ctx_.ctx(), ReportLevel::Error, info);
@@ -127,8 +127,8 @@ void ExprRValGen::Visit(const hir::InfixExpression &expr) {
         IndexableAsmRegPtr dst(Register::AX, 0);
         CopyBytes(ctx_, src, dst, size.size());
 
-        success_ = true;
         inferred_ = gen_addr.inferred();
+        success_ = true;
     } else {
         ReportInfo info(expr.span(), "not yet implemented", "");
         Report(ctx_.ctx(), ReportLevel::Error, info);
@@ -189,8 +189,8 @@ void ExprRValGen::Visit(const hir::IndexExpression &expr) {
     IndexableAsmRegPtr dst(Register::BP, -ctx_.lvar_table().CalleeSize());
     CopyBytes(ctx_, src, dst, of_size.size());
 
-    success_ = true;
     inferred_ = of;
+    success_ = true;
 }
 
 void ExprRValGen::Visit(const hir::CallExpression &expr) {
@@ -546,8 +546,8 @@ void ExprRValGen::Visit(const hir::StructExpression &expr) {
     ctx_.lvar_table().AddCalleeSize(8);
     ctx_.printer().PrintLn("    pushq %rsp");
 
-    success_ = true;
     inferred_ = std::make_shared<hir::NameType>(type);
+    success_ = true;
 }
 
 void ExprRValGen::Visit(const hir::ArrayExpression &expr) {
@@ -585,9 +585,9 @@ void ExprRValGen::Visit(const hir::ArrayExpression &expr) {
     ctx_.lvar_table().AddCalleeSize(8);
     ctx_.printer().PrintLn("    pushq %rsp");
 
-    success_ = true;
     inferred_ = std::make_shared<hir::ArrayType>(
         array_base_type_.value(), expr.inits().size(), expr.span());
+    success_ = true;
 }
 
 void ExprLValGen::Visit(const hir::UnaryExpression &expr) {
@@ -605,8 +605,8 @@ void ExprLValGen::Visit(const hir::UnaryExpression &expr) {
         ctx_.printer().PrintLn("    leaq (%rsp), %rax");
         ctx_.printer().PrintLn("    movq %rax, (%rsp)");
 
-        success_ = true;
         inferred_ = addr_gen.inferred_->ToPointer()->of();
+        success_ = true;
     } else {
         ReportInfo info(expr.span(), "invalid unary operator for lvalue", "");
         Report(ctx_.ctx(), ReportLevel::Error, info);
@@ -651,8 +651,8 @@ void ExprLValGen::Visit(const hir::InfixExpression &expr) {
             ctx_.printer().PrintLn("    subq %rax, (%rsp)");
         }
 
-        success_ = true;
         inferred_ = lhs_addr_gen.inferred_;
+        success_ = true;
     } else {
         ReportInfo info(expr.span(), "not a lvalue", "");
         Report(ctx_.ctx(), ReportLevel::Error, info);
@@ -701,6 +701,9 @@ void ExprLValGen::Visit(const hir::IndexExpression &expr) {
     // Calculate address to element.
     ctx_.printer().PrintLn("    mulq ${}", of_size.size());
     ctx_.printer().PrintLn("    addq %rax, (%rsp)");
+
+    inferred_ = of;
+    success_ = true;
 }
 
 void ExprLValGen::Visit(const hir::CallExpression &expr) {
@@ -748,8 +751,8 @@ void ExprLValGen::Visit(const hir::AccessExpression &expr) {
 
     ctx_.printer().PrintLn("    addq ${}, (%rsp)", field.Offset());
 
-    success_ = true;
     inferred_ = field.type();
+    success_ = true;
 }
 
 void ExprLValGen::Visit(const hir::CastExpression &expr) {
