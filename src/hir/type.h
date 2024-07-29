@@ -135,7 +135,7 @@ public:
         of_->Print(ctx);
     }
     bool operator==(const Type &rhs) const override {
-        return rhs.IsPointer() ? rhs.ToPointer()->of_ == of_ : false;
+        return rhs.IsPointer() ? *rhs.ToPointer()->of_ == *of_ : false;
     }
     const std::shared_ptr<Type> &of() const { return of_; }
 
@@ -156,9 +156,9 @@ public:
     inline const ArrayType *ToArray() const override { return this; }
     void Print(PrintableContext &ctx) const override;
     bool operator==(const Type &rhs) const override {
-        return rhs.IsArray()
-                   ? rhs.ToArray()->of_ == of_ && rhs.ToArray()->size_ == size_
-                   : false;
+        return rhs.IsArray() ? *rhs.ToArray()->of_ == *of_ &&
+                                   rhs.ToArray()->size_ == size_
+                             : false;
     }
     const std::shared_ptr<Type> &of() const { return of_; }
     inline std::optional<uint64_t> size() const { return size_; }
