@@ -88,7 +88,7 @@ void StmtHirGen::Visit(const ast::BlockStatement &stmt) {
 
     ctx_.translator().EnterScope();
     for (const auto &item : stmt.items()) {
-        if (!hirgen_block_item(ctx_, item, stmts, decls)) return;
+        if (!HirGenBlockItem(ctx_, item, stmts, decls)) return;
     }
     ctx_.translator().LeaveScope();
 

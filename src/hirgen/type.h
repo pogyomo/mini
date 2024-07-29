@@ -12,7 +12,7 @@ public:
     TypeHirGen(HirGenContext &ctx)
         : success_(false), type_(nullptr), ctx_(ctx) {}
     explicit operator bool() const { return success_; }
-    const std::shared_ptr<hir::Type> &type() const { return type_; }
+    std::shared_ptr<hir::Type> &type() { return type_; }
     void Visit(const ast::BuiltinType &type) override;
     void Visit(const ast::PointerType &type) override;
     void Visit(const ast::ArrayType &type) override;

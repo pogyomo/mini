@@ -51,7 +51,7 @@ void DeclHirGen::Visit(const ast::FunctionDeclaration &decl) {
     std::vector<std::unique_ptr<hir::Statement>> stmts;
     std::vector<hir::VariableDeclaration> decls;
     for (const auto &item : decl.body()->items()) {
-        if (!hirgen_block_item(ctx_, item, stmts, decls)) return;
+        if (!HirGenBlockItem(ctx_, item, stmts, decls)) return;
     }
 
     ctx_.translator().LeaveScope();

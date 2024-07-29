@@ -148,6 +148,7 @@ public:
     }
     const std::shared_ptr<Type> &of() const { return of_; }
     inline std::optional<uint64_t> size() const { return size_; }
+    inline void set_size(uint64_t size) { size_ = size; }
 
 private:
     std::shared_ptr<Type> of_;

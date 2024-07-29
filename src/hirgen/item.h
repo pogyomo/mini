@@ -11,9 +11,9 @@
 
 namespace mini {
 
-bool hirgen_block_item(HirGenContext &ctx, const ast::BlockStatementItem &item,
-                       std::vector<std::unique_ptr<hir::Statement>> &stmts,
-                       std::vector<hir::VariableDeclaration> &decls);
+bool HirGenBlockItem(HirGenContext &ctx, const ast::BlockStatementItem &item,
+                     std::vector<std::unique_ptr<hir::Statement>> &stmts,
+                     std::vector<hir::VariableDeclaration> &decls);
 
 }  // namespace mini
 

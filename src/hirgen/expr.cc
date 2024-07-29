@@ -6,7 +6,7 @@
 namespace mini {
 
 void ExprHirGen::Visit(const ast::UnaryExpression &expr) {
-    ExprHirGen expr_gen(ctx_);
+    ExprHirGen expr_gen(ctx_, false);
     expr.expr()->Accept(expr_gen);
     if (!expr_gen) return;
 
@@ -31,8 +31,8 @@ void ExprHirGen::Visit(const ast::UnaryExpression &expr) {
 }
 
 void ExprHirGen::Visit(const ast::InfixExpression &expr) {
-    ExprHirGen lhs_gen(ctx_);
-    ExprHirGen rhs_gen(ctx_);
+    ExprHirGen lhs_gen(ctx_, false);
+    ExprHirGen rhs_gen(ctx_, false);
     expr.lhs()->Accept(lhs_gen);
     expr.rhs()->Accept(rhs_gen);
     if (!lhs_gen || !rhs_gen) return;
@@ -86,11 +86,11 @@ void ExprHirGen::Visit(const ast::InfixExpression &expr) {
 }
 
 void ExprHirGen::Visit(const ast::IndexExpression &expr) {
-    ExprHirGen expr_gen(ctx_);
+    ExprHirGen expr_gen(ctx_, false);
     expr.expr()->Accept(expr_gen);
     if (!expr_gen) return;
 
-    ExprHirGen index_gen(ctx_);
+    ExprHirGen index_gen(ctx_, false);
     expr.index()->Accept(index_gen);
     if (!index_gen) return;
 
@@ -99,13 +99,13 @@ void ExprHirGen::Visit(const ast::IndexExpression &expr) {
     success_ = true;
 }
 void ExprHirGen::Visit(const ast::CallExpression &expr) {
-    ExprHirGen func_gen(ctx_);
+    ExprHirGen func_gen(ctx_, false);
     expr.func()->Accept(func_gen);
     if (!func_gen) return;
 
     std::vector<std::unique_ptr<hir::Expression>> args;
     for (const auto &arg : expr.args()) {
-        ExprHirGen gen(ctx_);
+        ExprHirGen gen(ctx_, false);
         arg->Accept(gen);
         if (!gen) return;
 
@@ -118,7 +118,7 @@ void ExprHirGen::Visit(const ast::CallExpression &expr) {
 }
 
 void ExprHirGen::Visit(const ast::AccessExpression &expr) {
-    ExprHirGen gen(ctx_);
+    ExprHirGen gen(ctx_, false);
     expr.expr()->Accept(gen);
     if (!gen) return;
 
@@ -130,7 +130,7 @@ void ExprHirGen::Visit(const ast::AccessExpression &expr) {
 }
 
 void ExprHirGen::Visit(const ast::CastExpression &expr) {
-    ExprHirGen expr_gen(ctx_);
+    ExprHirGen expr_gen(ctx_, false);
     expr.expr()->Accept(expr_gen);
     if (!expr_gen) return;
 
@@ -144,7 +144,7 @@ void ExprHirGen::Visit(const ast::CastExpression &expr) {
 }
 
 void ExprHirGen::Visit(const ast::ESizeofExpression &expr) {
-    ExprHirGen gen(ctx_);
+    ExprHirGen gen(ctx_, false);
     expr.expr()->Accept(gen);
     if (!gen) return;
 
@@ -193,6 +193,7 @@ void ExprHirGen::Visit(const ast::IntegerExpression &expr) {
 }
 
 void ExprHirGen::Visit(const ast::StringExpression &expr) {
+    if (is_root_) array_size_ = expr.value().size() + 1;
     expr_ = std::make_unique<hir::StringExpression>(std::string(expr.value()),
                                                     expr.span());
     ctx_.string_table().AddString(std::string(expr.value()));
@@ -217,7 +218,7 @@ void ExprHirGen::Visit(const ast::NullPtrExpression &expr) {
 void ExprHirGen::Visit(const ast::StructExpression &expr) {
     std::vector<hir::StructExpressionInit> inits;
     for (const auto &init : expr.inits()) {
-        ExprHirGen gen(ctx_);
+        ExprHirGen gen(ctx_, false);
         init.value()->Accept(gen);
         if (!gen) return;
 
@@ -242,12 +243,14 @@ void ExprHirGen::Visit(const ast::StructExpression &expr) {
 void ExprHirGen::Visit(const ast::ArrayExpression &expr) {
     std::vector<std::unique_ptr<hir::Expression>> inits;
     for (const auto &init : expr.inits()) {
-        ExprHirGen gen(ctx_);
+        ExprHirGen gen(ctx_, false);
         init->Accept(gen);
         if (!gen) return;
 
         inits.emplace_back(std::move(gen.expr_));
     }
+
+    if (is_root_) array_size_ = expr.inits().size();
     expr_ =
         std::make_unique<hir::ArrayExpression>(std::move(inits), expr.span());
     success_ = true;
