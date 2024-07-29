@@ -242,7 +242,7 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
             }
 
             if (param_info.ShouldInitializeWithReg()) {
-                ctx_.printer().PrintLn("  movq (%rsp), {}",
+                ctx_.printer().PrintLn("    movq (%rsp), {}",
                                        param_info.InitRegName());
             } else if (param_info.IsCallerAlloc()) {
                 TypeSizeCalc calc(ctx_);
