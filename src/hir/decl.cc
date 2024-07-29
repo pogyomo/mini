@@ -59,7 +59,7 @@ void FunctionDeclaration::Print(PrintableContext &ctx) const {
     }
     if (!decls_.empty()) {
         ctx.printer().ShiftR();
-        ctx.printer().PrintLn(") {{");
+        ctx.printer().PrintLn("): {} {{", ret_->ToString());
         for (size_t i = 0; i < decls_.size(); i++) {
             auto &decl = decls_.at(i);
             if (i == decls_.size() - 1) {
@@ -71,7 +71,7 @@ void FunctionDeclaration::Print(PrintableContext &ctx) const {
         }
         ctx.printer().Print("}} ");
     } else {
-        ctx.printer().Print(") {{}} ");
+        ctx.printer().Print("): {} {{}}", ret_->ToString());
     }
     body_.Print(ctx);
 }
