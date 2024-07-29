@@ -266,7 +266,7 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
             // Free allocated memory.
             auto diff = caller_table.RestoreCalleeSize();
             if (diff != 0) {
-                ctx_.printer().PrintLn("  addq ${}, %rsp", diff);
+                ctx_.printer().PrintLn("    addq ${}, %rsp", diff);
             }
         }
 
@@ -274,11 +274,11 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
         // rdi.
         if (callee_table.Exists(callee_table.ret_name)) {
             auto &entry = callee_table.Query(callee_table.ret_name);
-            ctx_.printer().PrintLn("  leaq {}, %rdi",
+            ctx_.printer().PrintLn("    leaq {}, %rdi",
                                    entry.CallerAsmRepr(0).ToAsmRepr(0, 8));
         }
 
-        ctx_.printer().PrintLn("  callq {}", var.value());
+        ctx_.printer().PrintLn("    callq {}", var.value());
 
         inferred_ =
             ctx_.func_info_table().Query(ctx_.CurrFuncName()).ret_type();
