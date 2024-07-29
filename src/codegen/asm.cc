@@ -187,14 +187,18 @@ std::string IndexableAsmRegPtr::ToAsmRepr(int64_t offset, uint8_t size) const {
 void CopyBytes(CodeGenContext& ctx, const IndexableAsmRegPtr& src,
                const IndexableAsmRegPtr& dst, uint64_t size) {
     static uint8_t sizes[4] = {8, 4, 2, 1};
+    static std::string moves[4] = {"movq", "movl", "movw", "movb"};
     int64_t offset = 0;
     while (size != 0) {
+        Register tmp_reg(Register::CX);
         for (size_t i = 0; i < sizeof sizes / sizeof sizes[0]; i++) {
             if (size >= sizes[i]) {
-                ctx.printer().PrintLn("    movq {}, %rcx",
-                                      src.ToAsmRepr(offset, sizes[i]));
-                ctx.printer().PrintLn("    movq %rcx, {}",
-                                      dst.ToAsmRepr(offset, sizes[i]));
+                ctx.printer().PrintLn("    {} {}, {}", moves[i],
+                                      src.ToAsmRepr(offset, 8),
+                                      tmp_reg.ToNameBySize(sizes[i]));
+                ctx.printer().PrintLn("    {} {}, {}", moves[i],
+                                      tmp_reg.ToNameBySize(sizes[i]),
+                                      dst.ToAsmRepr(offset, 8));
                 offset += sizes[i];
                 size -= sizes[i];
                 break;
