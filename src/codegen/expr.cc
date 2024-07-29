@@ -91,27 +91,140 @@ static bool IsFatObject(CodeGenContext &ctx,
     return is_array || is_struct;
 }
 
+static void ReportErrorForUnaryExpression(
+    CodeGenContext &ctx, const std::shared_ptr<hir::Type> &expr_type,
+    Span op_span) {
+    auto spec = fmt::format("cannot use it with {}", expr_type->ToString());
+    ReportInfo info(op_span, "incorrect use of operator", std::move(spec));
+    Report(ctx.ctx(), ReportLevel::Error, info);
+}
+
+static bool GenMinusExpr(CodeGenContext &ctx,
+                         std::shared_ptr<hir::Type> &inferred,
+                         const hir::UnaryExpression &expr) {
+    ExprRValGen gen(ctx);
+    expr.expr()->Accept(gen);
+    if (!gen) return false;
+
+    if (!gen.inferred()->IsBuiltin() ||
+        !gen.inferred()->ToBuiltin()->IsInteger()) {
+        ReportErrorForUnaryExpression(ctx, gen.inferred(), expr.op().span());
+        return false;
+    }
+    auto builtin = gen.inferred()->ToBuiltin();
+
+    ctx.printer().PrintLn("    {} (%rsp)", AsmNeg(builtin->Bytes()));
+
+    // Change type to signed one.
+    hir::BuiltinType::Kind kind;
+    switch (builtin->kind()) {
+        case hir::BuiltinType::UInt8:
+            kind = hir::BuiltinType::Int8;
+            break;
+        case hir::BuiltinType::UInt16:
+            kind = hir::BuiltinType::Int16;
+            break;
+        case hir::BuiltinType::UInt32:
+            kind = hir::BuiltinType::Int32;
+            break;
+        case hir::BuiltinType::UInt64:
+            kind = hir::BuiltinType::Int64;
+            break;
+        case hir::BuiltinType::USize:
+            kind = hir::BuiltinType::ISize;
+            break;
+        default:
+            kind = builtin->kind();
+            break;
+    }
+
+    inferred = std::make_shared<hir::BuiltinType>(kind, expr.span());
+    return true;
+}
+
+static bool GenInvExpr(CodeGenContext &ctx,
+                       std::shared_ptr<hir::Type> &inferred,
+                       const hir::UnaryExpression &expr) {
+    ExprRValGen gen(ctx);
+    expr.expr()->Accept(gen);
+    if (!gen) return false;
+
+    if (!gen.inferred()->IsBuiltin() ||
+        !gen.inferred()->ToBuiltin()->IsInteger()) {
+        ReportErrorForUnaryExpression(ctx, gen.inferred(), expr.op().span());
+        return false;
+    }
+    auto builtin = gen.inferred()->ToBuiltin();
+
+    ctx.printer().PrintLn("    {} (%rsp)", AsmNot(builtin->Bytes()));
+
+    inferred = std::make_shared<hir::BuiltinType>(builtin->kind(), expr.span());
+    return true;
+}
+
+static bool GenNegExpr(CodeGenContext &ctx,
+                       std::shared_ptr<hir::Type> &inferred,
+                       const hir::UnaryExpression &expr) {
+    ExprRValGen gen(ctx);
+    expr.expr()->Accept(gen);
+    if (!gen) return false;
+
+    if (!gen.inferred()->IsBuiltin() ||
+        gen.inferred()->ToBuiltin()->kind() != hir::BuiltinType::Bool) {
+        ReportErrorForUnaryExpression(ctx, gen.inferred(), expr.op().span());
+        return false;
+    }
+
+    ctx.printer().PrintLn("    xorb $1, (%rsp)");
+
+    inferred =
+        std::make_shared<hir::BuiltinType>(hir::BuiltinType::Bool, expr.span());
+    return true;
+}
+
 void ExprRValGen::Visit(const hir::UnaryExpression &expr) {
     if (expr.op().kind() == hir::UnaryExpression::Op::Ref) {
-        ExprRValGen gen(ctx_);
-        expr.Accept(gen);
+        ExprLValGen gen(ctx_);
+        expr.expr()->Accept(gen);
         if (!gen) return;
 
         inferred_ =
             std::make_shared<hir::PointerType>(gen.inferred(), expr.span());
         success_ = true;
     } else if (expr.op().kind() == hir::UnaryExpression::Op::Deref) {
-        ReportInfo info(expr.span(), "not yet implemented", "");
-        Report(ctx_.ctx(), ReportLevel::Error, info);
+        ExprRValGen gen(ctx_);
+        expr.expr()->Accept(gen);
+        if (!gen) return;
+
+        if (!gen.inferred_->IsPointer()) {
+            ReportErrorForUnaryExpression(ctx_, gen.inferred_,
+                                          expr.op().span());
+            return;
+        }
+        auto &of = gen.inferred_->ToPointer()->of();
+
+        // As we operate fat object through its address, we don't deref it.
+        if (!IsFatObject(ctx_, of)) {
+            // non-fat object can be stored to register.
+            TypeSizeCalc size(ctx_);
+            of->Accept(size);
+            if (!size) return;
+            assert(size.size() <= 8);
+
+            // Copy address-pointing value.
+            ctx_.printer().PrintLn("    movq (%rsp), %rax");
+            ctx_.printer().PrintLn("    movq (%rax), %rax");
+            ctx_.printer().PrintLn("    movq %rax, (%rsp)");
+        }
+
+        inferred_ = of;
+        success_ = true;
     } else if (expr.op().kind() == hir::UnaryExpression::Op::Minus) {
-        ReportInfo info(expr.span(), "not yet implemented", "");
-        Report(ctx_.ctx(), ReportLevel::Error, info);
+        success_ = GenMinusExpr(ctx_, inferred_, expr);
     } else if (expr.op().kind() == hir::UnaryExpression::Op::Inv) {
-        ReportInfo info(expr.span(), "not yet implemented", "");
-        Report(ctx_.ctx(), ReportLevel::Error, info);
+        success_ = GenInvExpr(ctx_, inferred_, expr);
     } else if (expr.op().kind() == hir::UnaryExpression::Op::Neg) {
-        ReportInfo info(expr.span(), "not yet implemented", "");
-        Report(ctx_.ctx(), ReportLevel::Error, info);
+        success_ = GenNegExpr(ctx_, inferred_, expr);
     } else {
         FatalError("unreachable");
     }
@@ -800,11 +913,10 @@ void ExprRValGen::Visit(const hir::AccessExpression &expr) {
     expr.expr()->Accept(gen);
     if (!gen) return;
 
-    // If accessing to pointer, deref it.
+    // As struct and pointer to struct is same in code generation, just take
+    // inner value for check.
     auto type = gen.inferred_;
     if (gen.inferred_->IsPointer()) {
-        ctx_.printer().PrintLn("  leaq (%rsp), %rax");
-        ctx_.printer().PrintLn("  movq %rax, (%rsp)");
         type = gen.inferred_->ToPointer()->of();
     }
 
@@ -1235,7 +1347,8 @@ void ExprLValGen::Visit(const hir::AccessExpression &expr) {
     expr.expr()->Accept(gen_addr);
     if (!gen_addr) return;
 
-    // Deref pointer.
+    // As struct and pointer to struct is same in code generation, just take
+    // inner value for check.
     auto type = gen_addr.inferred_;
     if (type->IsPointer()) {
         type = type->ToPointer()->of();

@@ -71,6 +71,8 @@ std::string AsmAnd(uint8_t size);
 std::string AsmOr(uint8_t size);
 std::string AsmXor(uint8_t size);
 std::string AsmCmp(uint8_t size);
+std::string AsmNot(uint8_t size);
+std::string AsmNeg(uint8_t size);
 std::string AsmLShift(bool is_signed, uint8_t size);
 std::string AsmRShift(bool is_signed, uint8_t size);
 

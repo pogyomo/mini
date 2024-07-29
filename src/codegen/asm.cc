@@ -324,6 +324,34 @@ std::string AsmCmp(uint8_t size) {
     }
 }
 
+std::string AsmNot(uint8_t size) {
+    if (size == 1) {
+        return "notb";
+    } else if (size == 2) {
+        return "notw";
+    } else if (size == 4) {
+        return "notl";
+    } else if (size == 8) {
+        return "notq";
+    } else {
+        FatalError("invalid size");
+    }
+}
+
+std::string AsmNeg(uint8_t size) {
+    if (size == 1) {
+        return "negb";
+    } else if (size == 2) {
+        return "negw";
+    } else if (size == 4) {
+        return "negl";
+    } else if (size == 8) {
+        return "negq";
+    } else {
+        FatalError("invalid size");
+    }
+}
+
 std::string AsmLShift(bool is_signed, uint8_t size) {
     if (is_signed) {
         if (size == 1) {
