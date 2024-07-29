@@ -281,6 +281,7 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
         ctx_.printer().PrintLn("    callq {}", var.value());
 
         // Ensure push returned value.
+        ctx_.lvar_table().AddCalleeSize(8);
         ctx_.printer().PrintLn("    pushq %rax");
 
         inferred_ =
