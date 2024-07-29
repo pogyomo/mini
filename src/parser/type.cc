@@ -125,7 +125,7 @@ std::optional<std::unique_ptr<ast::ArrayType>> ParseArrayType(Context &ctx,
     ts.Advance();
 
     return std::make_unique<ast::ArrayType>(lparen, std::move(*of), rparen,
-                                            lsquare, std::move(*size), rsquare);
+                                            lsquare, std::move(size), rsquare);
 }
 
 }  // namespace mini
