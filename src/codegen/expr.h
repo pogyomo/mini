@@ -85,7 +85,7 @@ private:
 };
 
 // Implicitly convert value of type `from` to type `to` which in top of stack
-bool ImplicitlyConvertValueInStack(CodeGenContext &ctx,
+bool ImplicitlyConvertValueInStack(CodeGenContext &ctx, Span value_span,
                                    const std::shared_ptr<hir::Type> &from,
                                    const std::shared_ptr<hir::Type> &to);
 

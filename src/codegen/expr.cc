@@ -111,7 +111,8 @@ void ExprRValGen::Visit(const hir::InfixExpression &expr) {
         if (!gen_rhs) return;
 
         // Convert rhs to type of lhs.
-        if (!ImplicitlyConvertValueInStack(ctx_, gen_rhs.inferred_,
+        if (!ImplicitlyConvertValueInStack(ctx_, expr.rhs()->span(),
+                                           gen_rhs.inferred_,
                                            gen_addr.inferred())) {
             return;
         }
@@ -164,7 +165,10 @@ void ExprRValGen::Visit(const hir::IndexExpression &expr) {
     // Convert index to usize.
     auto to = std::make_shared<hir::BuiltinType>(hir::BuiltinType::USize,
                                                  expr.index()->span());
-    if (!ImplicitlyConvertValueInStack(ctx_, gen_index.inferred(), to)) return;
+    if (!ImplicitlyConvertValueInStack(ctx_, expr.index()->span(),
+                                       gen_index.inferred(), to)) {
+        return;
+    }
 
     // Pop index.
     ctx_.lvar_table().SubCalleeSize(8);
@@ -236,7 +240,7 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
             const auto alloc_size = caller_table.CalleeSize() - offset;
 
             // Convert generated value to expected type.
-            if (!ImplicitlyConvertValueInStack(ctx_, gen.inferred_,
+            if (!ImplicitlyConvertValueInStack(ctx_, arg->span(), gen.inferred_,
                                                param_info.type())) {
                 return;
             }
@@ -515,12 +519,14 @@ void ExprRValGen::Visit(const hir::StructExpression &expr) {
 
         ctx_.lvar_table().SaveCalleeSize();
         ExprRValGen gen(ctx_);
-        expr.inits().at(i).value()->Accept(gen);
+        init.value()->Accept(gen);
         if (!gen) return;
 
         // Convert generated value in stack so can be used to initialize field.
-        if (!ImplicitlyConvertValueInStack(ctx_, gen.inferred_, field.type()))
+        if (!ImplicitlyConvertValueInStack(ctx_, init.span(), gen.inferred_,
+                                           field.type())) {
             return;
+        }
 
         TypeSizeCalc field_size(ctx_);
         field.type()->Accept(field_size);
@@ -629,8 +635,10 @@ void ExprLValGen::Visit(const hir::InfixExpression &expr) {
         // Convert rhs to usize
         auto to = std::make_shared<hir::BuiltinType>(hir::BuiltinType::USize,
                                                      expr.rhs()->span());
-        if (!ImplicitlyConvertValueInStack(ctx_, rhs_gen.inferred(), to))
+        if (!ImplicitlyConvertValueInStack(ctx_, expr.rhs()->span(),
+                                           rhs_gen.inferred(), to)) {
             return;
+        }
 
         // Pop rhs
         ctx_.lvar_table().SubCalleeSize(8);
@@ -681,7 +689,10 @@ void ExprLValGen::Visit(const hir::IndexExpression &expr) {
     // Convert index to usize.
     auto to = std::make_shared<hir::BuiltinType>(hir::BuiltinType::USize,
                                                  expr.index()->span());
-    if (!ImplicitlyConvertValueInStack(ctx_, gen_index.inferred(), to)) return;
+    if (!ImplicitlyConvertValueInStack(ctx_, expr.index()->span(),
+                                       gen_index.inferred(), to)) {
+        return;
+    }
 
     // Pop index.
     ctx_.lvar_table().SubCalleeSize(8);
@@ -808,7 +819,7 @@ void ExprLValGen::Visit(const hir::ArrayExpression &expr) {
     Report(ctx_.ctx(), ReportLevel::Error, info);
 }
 
-bool ImplicitlyConvertValueInStack(CodeGenContext &ctx,
+bool ImplicitlyConvertValueInStack(CodeGenContext &ctx, Span value_span,
                                    const std::shared_ptr<hir::Type> &from,
                                    const std::shared_ptr<hir::Type> &to) {
     if (from->IsPointer()) {
@@ -1011,8 +1022,7 @@ bool ImplicitlyConvertValueInStack(CodeGenContext &ctx,
 failed:
     auto spec = fmt::format("cannot convert this {} to {} implicitly",
                             from->ToString(), to->ToString());
-    ReportInfo info(from->span(), "implicit convertion failed",
-                    std::move(spec));
+    ReportInfo info(value_span, "implicit convertion failed", std::move(spec));
     Report(ctx.ctx(), ReportLevel::Error, info);
     return false;
 }

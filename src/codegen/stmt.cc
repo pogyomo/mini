@@ -43,8 +43,9 @@ void StmtCodeGen::Visit(const hir::ReturnStatement &stmt) {
         stmt.ret_value().value()->Accept(gen);
         if (!gen) return;
 
-        if (!ImplicitlyConvertValueInStack(ctx_, gen.inferred(),
-                                           func.ret_type())) {
+        if (!ImplicitlyConvertValueInStack(ctx_,
+                                           stmt.ret_value().value()->span(),
+                                           gen.inferred(), func.ret_type())) {
             return;
         }
 
@@ -93,7 +94,10 @@ void StmtCodeGen::Visit(const hir::WhileStatement &stmt) {
 
     auto to = std::make_shared<hir::BuiltinType>(hir::BuiltinType::Bool,
                                                  stmt.cond()->span());
-    if (!ImplicitlyConvertValueInStack(ctx_, cond_gen.inferred(), to)) return;
+    if (!ImplicitlyConvertValueInStack(ctx_, stmt.cond()->span(),
+                                       cond_gen.inferred(), to)) {
+        return;
+    }
 
     ctx_.lvar_table().SubCalleeSize(8);
     ctx_.printer().PrintLn("    popq %rax");
@@ -119,7 +123,10 @@ void StmtCodeGen::Visit(const hir::IfStatement &stmt) {
 
     auto to = std::make_shared<hir::BuiltinType>(hir::BuiltinType::Bool,
                                                  stmt.cond()->span());
-    if (!ImplicitlyConvertValueInStack(ctx_, cond_gen.inferred(), to)) return;
+    if (!ImplicitlyConvertValueInStack(ctx_, stmt.cond()->span(),
+                                       cond_gen.inferred(), to)) {
+        return;
+    }
 
     ctx_.lvar_table().SubCalleeSize(8);
     ctx_.printer().PrintLn("    popq %rax");
