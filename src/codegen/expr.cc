@@ -825,22 +825,7 @@ void ExprLValGen::Visit(const hir::ArrayExpression &expr) {
 bool ImplicitlyConvertValueInStack(CodeGenContext &ctx, Span value_span,
                                    const std::shared_ptr<hir::Type> &from,
                                    const std::shared_ptr<hir::Type> &to) {
-    if (from->IsPointer()) {
-        if (to->ToPointer()) {
-            auto from_of = from->ToPointer()->of();
-            auto to_of = to->ToPointer()->of();
-            if (from_of->IsBuiltin() &&
-                from_of->ToBuiltin()->kind() == hir::BuiltinType::Void) {
-                return true;
-            } else if (from_of == to_of) {
-                return true;
-            } else {
-                goto failed;
-            }
-        } else {
-            goto failed;
-        }
-    } else if (from->IsBuiltin()) {
+    if (from->IsBuiltin()) {
         if (to->IsBuiltin()) {
             bool convertion_happen = false;
             auto from_kind = from->ToBuiltin()->kind();
@@ -1007,19 +992,40 @@ bool ImplicitlyConvertValueInStack(CodeGenContext &ctx, Span value_span,
         } else {
             goto failed;
         }
+    } else if (from->IsPointer()) {
+        if (to->ToPointer()) {
+            auto from_of = from->ToPointer()->of();
+            auto to_of = to->ToPointer()->of();
+            if (from_of->IsBuiltin() &&
+                from_of->ToBuiltin()->kind() == hir::BuiltinType::Void) {
+                return true;
+            } else if (*from_of == *to_of) {
+                return true;
+            } else {
+                goto failed;
+            }
+        } else {
+            goto failed;
+        }
     } else if (from->IsArray()) {
         auto from_of = from->ToArray()->of();
         if (to->IsArray()) {
             auto to_of = to->ToArray()->of();
-            return from_of == to_of;
+            return *from_of == *to_of;
         } else if (to->IsPointer()) {
             auto to_of = to->ToPointer()->of();
-            return from_of == to_of;
+            return *from_of == *to_of;
+        } else {
+            goto failed;
+        }
+    } else if (from->IsName()) {
+        if (*from == *to) {
+            return true;
         } else {
             goto failed;
         }
     } else {
-        return from == to;
+        FatalError("unreachable");
     }
 
 failed:
