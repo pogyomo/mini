@@ -229,6 +229,8 @@ LexResult lex_line(Context &ctx, size_t id, size_t row,
                         value.push_back('\"');
                     } else if (stream.Accept('\\', end)) {
                         value.push_back('\\');
+                    } else if (stream.Accept('0', end)) {
+                        value.push_back('\0');
                     } else {
                         ReportInfo info(Span(id, end, end),
                                         "unexpected escape sequence", "");
@@ -265,6 +267,8 @@ LexResult lex_line(Context &ctx, size_t id, size_t row,
                     value = '\"';
                 } else if (stream.Accept('\\', end)) {
                     value = '\\';
+                } else if (stream.Accept('0', end)) {
+                    value = '\0';
                 } else {
                     ReportInfo info(Span(id, end, end),
                                     "unexpected escape sequence", "");
