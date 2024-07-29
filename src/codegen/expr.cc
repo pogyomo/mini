@@ -1697,13 +1697,20 @@ bool ImplicitlyConvertValueInStack(CodeGenContext &ctx, Span value_span,
             goto failed;
         }
     } else if (from->IsArray()) {
-        auto from_of = from->ToArray()->of();
         if (to->IsArray()) {
-            auto to_of = to->ToArray()->of();
-            return *from_of == *to_of;
+            if (*from == *to) {
+                return true;
+            } else {
+                goto failed;
+            }
         } else if (to->IsPointer()) {
+            auto from_of = from->ToArray()->of();
             auto to_of = to->ToPointer()->of();
-            return *from_of == *to_of;
+            if (*from_of == *to_of) {
+                return true;
+            } else {
+                goto failed;
+            }
         } else {
             goto failed;
         }
