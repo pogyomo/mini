@@ -3,6 +3,7 @@
 #include "../ast/stmt.h"
 #include "../hir/decl.h"
 #include "../hir/stmt.h"
+#include "../report.h"
 #include "context.h"
 #include "expr.h"
 #include "stmt.h"
@@ -25,6 +26,13 @@ bool HirGenBlockItem(HirGenContext &ctx, const ast::BlockStatementItem &item,
             TypeHirGen gen_type(ctx);
             body.type()->Accept(gen_type);
             if (!gen_type) return false;
+
+            if (ctx.translator().Translatable(body.name().name())) {
+                ReportInfo info(body.name().span(), "variable already declared",
+                                "");
+                Report(ctx.ctx(), ReportLevel::Error, info);
+                return false;
+            }
 
             hir::VariableDeclarationName name(
                 std::string(ctx.translator().RegVar(body.name().name())),
