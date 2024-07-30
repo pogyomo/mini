@@ -26,6 +26,17 @@ let a: usize = 10;
 // let b: usize = 20;
 ```
 
+- Multiline comment that start with `/*` and valid until most far `*/`.
+
+```
+/*
+multiline
+comment
+here
+*/
+/* /* /* nested one */ */ */
+```
+
 ## Types
 
 The mini programming language support a few types described below:

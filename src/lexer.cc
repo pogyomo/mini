@@ -1,10 +1,13 @@
 #include "lexer.h"
 
 #include <cctype>
+#include <cstdint>
 #include <iterator>
 #include <map>
 #include <string>
 
+#include "context.h"
+#include "panic.h"
 #include "report.h"
 #include "span.h"
 #include "token.h"
@@ -87,12 +90,42 @@ static const std::map<std::string, KeywordTokenKind> keywords = {
     {"nullptr", KeywordTokenKind::NullPtr},
 };
 
-LexResult lex_line(Context &ctx, size_t id, size_t row,
-                   const std::string &line) {
+class LexContext {
+public:
+    LexContext(Context &ctx) : ctx_(ctx), multiline_comment_depth_(0) {}
+    Context &ctx() { return ctx_; }
+    bool InsideOfMultilineComment() { return multiline_comment_depth_ != 0; }
+    void EnterMultilineComment() { multiline_comment_depth_++; }
+    void LeaveMultilineComment() {
+        if (multiline_comment_depth_) {
+            multiline_comment_depth_--;
+        } else {
+            FatalError("leave from outside of multiline comment");
+        }
+    }
+
+private:
+    Context &ctx_;
+    uint64_t multiline_comment_depth_;
+};
+
+static LexResult lex_line(LexContext &ctx, size_t id, size_t row,
+                          const std::string &line) {
     LineStream stream(row, line);
     bool success = true;
     std::vector<std::unique_ptr<Token>> res;
     while (true) {
+        Position tmp(0, 0);
+        while (stream && ctx.InsideOfMultilineComment()) {
+            if (stream.Accept("*/", tmp)) {
+                ctx.LeaveMultilineComment();
+            } else if (stream.Accept("/*", tmp)) {
+                ctx.EnterMultilineComment();
+            } else {
+                stream.Advance();
+            }
+        }
+
         stream.SkipSpaces();
         if (!stream) {
             break;
@@ -102,6 +135,9 @@ LexResult lex_line(Context &ctx, size_t id, size_t row,
         Position end = start;
         if (stream.Accept("//", end)) {
             break;
+        } else if (stream.Accept("/*", end)) {
+            ctx.EnterMultilineComment();
+            continue;
         } else if (stream.Accept("+", end)) {
             res.push_back(std::make_unique<PunctToken>(PunctTokenKind::Plus,
                                                        Span(id, start, end)));
@@ -207,7 +243,7 @@ LexResult lex_line(Context &ctx, size_t id, size_t row,
                 if (!stream) {
                     ReportInfo info(Span(id, start, end),
                                     "unclosing string literal", "");
-                    Report(ctx, ReportLevel::Error, info);
+                    Report(ctx.ctx(), ReportLevel::Error, info);
                     return std::nullopt;
                 } else if (stream.Accept('"', end)) {
                     break;
@@ -237,7 +273,7 @@ LexResult lex_line(Context &ctx, size_t id, size_t row,
                     } else {
                         ReportInfo info(Span(id, end, end),
                                         "unexpected escape sequence", "");
-                        Report(ctx, ReportLevel::Error, info);
+                        Report(ctx.ctx(), ReportLevel::Error, info);
                         return std::nullopt;
                     }
                 } else {
@@ -275,7 +311,7 @@ LexResult lex_line(Context &ctx, size_t id, size_t row,
                 } else {
                     ReportInfo info(Span(id, end, end),
                                     "unexpected escape sequence", "");
-                    Report(ctx, ReportLevel::Error, info);
+                    Report(ctx.ctx(), ReportLevel::Error, info);
                     return std::nullopt;
                 }
             } else if (stream) {
@@ -285,14 +321,14 @@ LexResult lex_line(Context &ctx, size_t id, size_t row,
             } else {
                 ReportInfo info(Span(id, end, end),
                                 "unclosing character literal", "");
-                Report(ctx, ReportLevel::Error, info);
+                Report(ctx.ctx(), ReportLevel::Error, info);
                 return std::nullopt;
             }
 
             if (!stream.Accept('\'', end)) {
                 ReportInfo info(Span(id, end, end),
                                 "unclosing character literal", "");
-                Report(ctx, ReportLevel::Error, info);
+                Report(ctx.ctx(), ReportLevel::Error, info);
                 return std::nullopt;
             }
 
@@ -334,12 +370,12 @@ LexResult lex_line(Context &ctx, size_t id, size_t row,
                 success = false;
                 ReportInfo info(Span(id, start, end),
                                 "integer convertion failed", "");
-                Report(ctx, ReportLevel::Error, info);
+                Report(ctx.ctx(), ReportLevel::Error, info);
             }
         } else {
             success = false;
             ReportInfo info(Span(id, start, end), "unexpected character", "");
-            Report(ctx, ReportLevel::Error, info);
+            Report(ctx.ctx(), ReportLevel::Error, info);
             stream.Advance();
         }
     }
@@ -355,8 +391,9 @@ LexResult LexFile(Context &ctx, const std::string &path) {
 
     bool success = true;
     std::vector<std::unique_ptr<Token>> res;
+    LexContext lex_ctx(ctx);
     for (size_t row = 0; row < lines.size(); row++) {
-        auto line = lex_line(ctx, id, row, lines.at(row));
+        auto line = lex_line(lex_ctx, id, row, lines.at(row));
         if (!line) {
             success = false;
             continue;
