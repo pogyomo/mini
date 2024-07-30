@@ -52,7 +52,11 @@ void StmtCodeGen::Visit(const hir::ReturnStatement &stmt) {
         if (!size) return;
 
         if (size.size() > 8) {
-            IndexableAsmRegPtr src(Register::SP, 0);
+            // Move address to rax.
+            ctx_.printer().PrintLn("    movq (%rsp), %rax");
+
+            // Copy fat object.
+            IndexableAsmRegPtr src(Register::AX, 0);
             IndexableAsmRegPtr dst(Register::DI, 0);
             CopyBytes(ctx_, src, dst, size.size());
             ctx_.printer().PrintLn("    movq %rdi, %rax");
