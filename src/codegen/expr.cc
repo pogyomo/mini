@@ -1268,8 +1268,13 @@ void ExprRValGen::Visit(const hir::ArrayExpression &expr) {
 
     const auto offset = ctx_.lvar_table().CalleeSize();
     for (size_t i = 0; i < expr.inits().size(); i++) {
+        std::optional<std::shared_ptr<hir::Type>> of;
+        if (array_base_type_.value()->IsArray()) {
+            of = array_base_type_.value()->ToArray()->of();
+        }
+
         ctx_.lvar_table().SaveCalleeSize();
-        ExprRValGen gen(ctx_);
+        ExprRValGen gen(ctx_, of);
         expr.inits().at(i)->Accept(gen);
         if (!gen) return;
 
