@@ -1323,8 +1323,9 @@ void ExprLValGen::Visit(const hir::UnaryExpression &expr) {
             return;
         }
 
-        ctx_.printer().PrintLn("    leaq (%rsp), %rax");
-        ctx_.printer().PrintLn("    movq %rax, (%rsp)");
+        ctx_.printer().PrintLn("    popq %rax");
+        ctx_.printer().PrintLn("    movq (%rax), %rax");
+        ctx_.printer().PrintLn("    pushq %rax");
 
         inferred_ = addr_gen.inferred_->ToPointer()->of();
         success_ = true;
