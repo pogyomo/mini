@@ -23,6 +23,16 @@ Finally, run `make` to build executable binary.
 make
 ```
 
+## Test compiler
+
+The `test` directory contains test codes to test the compiler behavior.
+
+You can run test with following command.
+
+```
+cd test && ./run.sh
+```
+
 ## Usage
 
 Run below command to obtain executable.
