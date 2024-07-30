@@ -3,9 +3,12 @@
 
 #include <fstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "panic.h"
+
+namespace mini {
 
 class InputCacheEntry {
 public:
@@ -21,24 +24,23 @@ private:
 
 class InputCache {
 public:
-    InputCache() : entries_() {}
-    size_t cache(std::string &&name, std::vector<std::string> &&lines) {
+    size_t Cache(std::string &&name, std::vector<std::string> &&lines) {
         size_t id = entries_.size();
         entries_.emplace_back(std::move(name), std::move(lines));
         return id;
     }
-    size_t cache(const std::string &path) {
+    size_t Cache(const std::string &path) {
         std::string line;
         std::vector<std::string> lines;
         std::ifstream ifs(path);
-        if (!ifs.is_open()) fatal_error("failed to open `%s`", path.c_str());
+        if (!ifs.is_open()) FatalError("failed to open `{}`", path);
         while (std::getline(ifs, line)) {
             lines.emplace_back(line);
         }
         std::string name = path;
-        return cache(std::move(name), std::move(lines));
+        return Cache(std::move(name), std::move(lines));
     }
-    const InputCacheEntry &fetch(size_t id) const { return entries_.at(id); }
+    const InputCacheEntry &Fetch(size_t id) const { return entries_.at(id); }
 
 private:
     std::vector<InputCacheEntry> entries_;
@@ -46,14 +48,17 @@ private:
 
 class Context {
 public:
+    Context() : should_report_(true) {}
     InputCache &input_cache() { return input_cache_; }
-    bool suppress_report() const { return suppress_report_; }
-    void enable_suppress_report() { suppress_report_ = true; }
-    void disable_suppress_report() { suppress_report_ = false; }
+    bool should_report() const { return should_report_; }
+    void SuppressReport() { should_report_ = false; }
+    void ActivateReport() { should_report_ = true; }
 
 private:
     InputCache input_cache_;
-    bool suppress_report_;
+    bool should_report_;
 };
+
+};  // namespace mini
 
 #endif  // MINI_CONTEXT_H_

@@ -1,14 +1,21 @@
 #ifndef MINI_PANIC_H_
 #define MINI_PANIC_H_
 
-#include <string>
+#include <cstdlib>
+#include <utility>
 
-template <typename... Args>
-void fatal_error(const std::string &fmt, Args... args) {
-    std::fprintf(stderr, "\e[31mfatal error: \e[0m");
-    std::fprintf(stderr, fmt.c_str(), args...);
-    std::fprintf(stderr, "\n");
+#include "fmt/base.h"
+
+namespace mini {
+
+template <typename... T>
+[[noreturn]] void FatalError(fmt::format_string<T...> fmt, T&&... args) {
+    fmt::print(stderr, "\e[31mfatal error: \e[0m");
+    fmt::print(stderr, fmt, std::forward<T>(args)...);
+    fmt::println(stderr, "");
     std::exit(EXIT_FAILURE);
 }
+
+};  // namespace mini
 
 #endif  // MINI_PANIC_H_

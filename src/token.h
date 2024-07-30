@@ -7,6 +7,8 @@
 
 #include "span.h"
 
+namespace mini {
+
 enum class PunctTokenKind {
     Plus,         // "+"
     Arrow,        // "->"
@@ -45,46 +47,65 @@ enum class PunctTokenKind {
 
 enum class KeywordTokenKind {
     As,        // "as"
+    Bool,      // "bool"
     Break,     // "break"
+    Char,      // "char"
     Continue,  // "continue"
     ESizeof,   // "esizeof"
     Else,      // "else"
     Enum,      // "enum"
+    False,     // "false"
     Function,  // "function"
     If,        // "if"
-    Int,       // "int"
     Let,       // "let"
     Return,    // "return"
     Struct,    // "struct"
     TSizeof,   // "tsizeof"
-    UInt,      // "uint"
+    True,      // "true"
     While,     // "while"
+    Void,      // "void"
+    ISize,     // "isize"
+    Int8,      // "int8"
+    Int16,     // "int16"
+    Int32,     // "int32"
+    Int64,     // "int64"
+    USize,     // "usize"
+    UInt8,     // "uint8"
+    UInt16,    // "uint16"
+    UInt32,    // "uint32"
+    UInt64,    // "uint64"
+    NullPtr,   // "nullptr"
 };
 
-std::string to_string(PunctTokenKind kind);
-std::string to_string(KeywordTokenKind kind);
+std::string ToString(PunctTokenKind kind);
+std::string ToString(KeywordTokenKind kind);
 
 class Token {
 public:
     Token(Span span) : span_(span) {}
     virtual ~Token() {}
     Span span() const { return span_; }
-    virtual bool is_punct_of(PunctTokenKind kind) const { return false; }
-    virtual bool is_keyword_of(KeywordTokenKind kind) const { return false; }
-    virtual bool is_ident() const { return false; }
-    virtual bool is_int() const { return false; }
-    virtual bool is_string() const { return false; }
-    virtual const std::string& ident_value() const {
+    virtual bool IsPunctOf(PunctTokenKind) const { return false; }
+    virtual bool IsKeywordOf(KeywordTokenKind) const { return false; }
+    virtual bool IsIdent() const { return false; }
+    virtual bool IsInt() const { return false; }
+    virtual bool IsString() const { return false; }
+    virtual bool IsChar() const { return false; }
+    virtual const std::string& IdentValue() const {
         throw std::runtime_error(
-            "`ident_value` called when `is_ident` returns false");
+            "`IdentValue` called when `IsIdent` returns false");
     }
-    virtual uint64_t int_value() const {
+    virtual uint64_t IntValue() const {
         throw std::runtime_error(
-            "`int_value` called when `is_int` returns false");
+            "`IntValue` called when `IsInt` returns false");
     }
-    virtual const std::string& string_value() const {
+    virtual const std::string& StringValue() const {
         throw std::runtime_error(
-            "`string_value` called when `is_string` returns false");
+            "`StringValue` called when `IsString` returns false");
+    }
+    virtual char CharValue() const {
+        throw std::runtime_error(
+            "`CharValue` called when `IsChar` returns false");
     }
 
 private:
@@ -94,7 +115,7 @@ private:
 class PunctToken : public Token {
 public:
     PunctToken(PunctTokenKind kind, Span span) : Token(span), kind_(kind) {}
-    inline bool is_punct_of(PunctTokenKind kind) const override {
+    inline bool IsPunctOf(PunctTokenKind kind) const override {
         return kind == kind_;
     }
 
@@ -105,7 +126,7 @@ private:
 class KeywordToken : public Token {
 public:
     KeywordToken(KeywordTokenKind kind, Span span) : Token(span), kind_(kind) {}
-    inline bool is_keyword_of(KeywordTokenKind kind) const override {
+    inline bool IsKeywordOf(KeywordTokenKind kind) const override {
         return kind == kind_;
     }
 
@@ -117,8 +138,8 @@ class IdentToken : public Token {
 public:
     IdentToken(std::string&& value, Span span)
         : Token(span), value_(std::move(value)) {}
-    inline bool is_ident() const override { return true; }
-    inline const std::string& ident_value() const override { return value_; }
+    inline bool IsIdent() const override { return true; }
+    inline const std::string& IdentValue() const override { return value_; }
 
 private:
     std::string value_;
@@ -127,8 +148,8 @@ private:
 class IntToken : public Token {
 public:
     IntToken(uint64_t value, Span span) : Token(span), value_(value) {}
-    inline bool is_int() const override { return true; }
-    inline uint64_t int_value() const override { return value_; }
+    inline bool IsInt() const override { return true; }
+    inline uint64_t IntValue() const override { return value_; }
 
 private:
     uint64_t value_;
@@ -138,11 +159,23 @@ class StringToken : public Token {
 public:
     StringToken(std::string&& value, Span span)
         : Token(span), value_(std::move(value)) {}
-    inline bool is_string() const override { return true; }
-    inline const std::string& string_value() const override { return value_; }
+    inline bool IsString() const override { return true; }
+    inline const std::string& StringValue() const override { return value_; }
 
 private:
     std::string value_;
 };
+
+class CharToken : public Token {
+public:
+    CharToken(char value, Span span) : Token(span), value_(value) {}
+    inline bool IsChar() const override { return true; }
+    inline char CharValue() const override { return value_; }
+
+private:
+    char value_;
+};
+
+};  // namespace mini
 
 #endif  // MINI_TOKEN_H_

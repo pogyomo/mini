@@ -5,6 +5,8 @@
 #include <cassert>
 #include <cstddef>
 
+namespace mini {
+
 class Position {
 public:
     Position(size_t row, size_t offset) : row_(row), offset_(offset) {}
@@ -52,5 +54,7 @@ private:
     Position start_;
     Position end_;
 };
+
+};  // namespace mini
 
 #endif  // MINI_SPAN_H_

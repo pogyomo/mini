@@ -3,6 +3,8 @@
 #include <iostream>
 #include <ostream>
 
+namespace mini {
+
 // Start to coloring the output to `os` depende on `level`.
 static void start_color(std::ostream &os, ReportLevel level) {
     if (level == ReportLevel::Error) {
@@ -28,12 +30,12 @@ static int digits(int n) {
     return res;
 }
 
-void report(Context &ctx, ReportLevel level, const ReportInfo &info) {
-    if (ctx.suppress_report()) {
+void Report(Context &ctx, ReportLevel level, const ReportInfo &info) {
+    if (!ctx.should_report()) {
         return;
     }
 
-    auto entry = ctx.input_cache().fetch(info.span().id());
+    auto entry = ctx.input_cache().Fetch(info.span().id());
     auto start = info.span().start();
     auto end = info.span().end();
 
@@ -58,10 +60,10 @@ void report(Context &ctx, ReportLevel level, const ReportInfo &info) {
         std::cerr << "  " << start.row() << "|" << line << std::endl;
         for (int i = 0; i < 2 + row_width; i++) std::cerr << ' ';
         std::cerr << "|";
-        for (int i = 0; i < start.offset(); i++) std::cerr << ' ';
+        for (size_t i = 0; i < start.offset(); i++) std::cerr << ' ';
         start_color(std::cerr, level);
         std::cerr << '^';
-        for (int i = start.offset() + 1; i <= end.offset(); i++)
+        for (size_t i = start.offset() + 1; i <= end.offset(); i++)
             std::cerr << '~';
         end_color(std::cerr);
         std::cerr << " " << info.info() << std::endl;
@@ -73,10 +75,10 @@ void report(Context &ctx, ReportLevel level, const ReportInfo &info) {
         std::cerr << start.row() << "|" << sline << std::endl;
         for (int i = 0; i < 2 + row_width; i++) std::cerr << ' ';
         std::cerr << '|';
-        for (int i = 0; i < start.offset(); i++) std::cerr << ' ';
+        for (size_t i = 0; i < start.offset(); i++) std::cerr << ' ';
         start_color(std::cerr, level);
         std::cerr << '^';
-        for (int i = start.offset() + 1; i < sline.size(); i++)
+        for (size_t i = start.offset() + 1; i < sline.size(); i++)
             std::cerr << '~';
         end_color(std::cerr);
         std::cerr << std::endl;
@@ -93,8 +95,10 @@ void report(Context &ctx, ReportLevel level, const ReportInfo &info) {
         for (int i = 0; i < 2 + row_width; i++) std::cerr << ' ';
         std::cerr << '|';
         start_color(std::cerr, level);
-        for (int i = 0; i <= end.offset(); i++) std::cerr << '~';
+        for (size_t i = 0; i <= end.offset(); i++) std::cerr << '~';
         end_color(std::cerr);
         std::cerr << " " << info.info() << std::endl;
     }
 }
+
+};  // namespace mini

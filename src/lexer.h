@@ -8,8 +8,12 @@
 #include "context.h"
 #include "token.h"
 
+namespace mini {
+
 using LexResult = std::optional<std::vector<std::unique_ptr<Token>>>;
 
-LexResult lex_file(Context& ctx, const std::string& path);
+LexResult LexFile(Context& ctx, const std::string& path);
+
+};  // namespace mini
 
 #endif  // MINI_LEXER_H_
