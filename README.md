@@ -2,7 +2,7 @@
 
 This is a general-purpose, low-level programming language that is created by educational purpose.
 
-## Compile
+## Build from source
 
 At first, close this repository with `--recursive` option and enter the repository.
 
