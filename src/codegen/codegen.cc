@@ -12,8 +12,9 @@ bool CodeGenFile(Context &ctx, std::ostream &os, const std::string &path) {
 
     CodeGenContext gen_ctx(ctx, root->string_table(), os);
 
+    // Place string literals to the section `rodata`.
     if (!gen_ctx.string_table().InnerRepr().empty()) {
-        gen_ctx.printer().PrintLn("    .data");
+        gen_ctx.printer().PrintLn("    .section .rodata");
         for (const auto &[s, symbol] : gen_ctx.string_table().InnerRepr()) {
             gen_ctx.printer().PrintLn("{}:", symbol);
             gen_ctx.printer().Print("    .byte ");
