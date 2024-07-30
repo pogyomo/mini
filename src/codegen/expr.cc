@@ -14,36 +14,6 @@
 
 namespace mini {
 
-// TODO:
-//
-// The code
-// ```
-// struct a{
-//     a: uint64,
-//     b: uint8,
-// }
-//
-// function main() -> usize {
-//     return 1 + a { a: 10, b: 20 }.a;
-// }
-// ```
-// doesn't works correctly, as `+` requires that 1 and 10 is continueously
-// placed to memory, but `a { a: 10, b: 20 }` allocate memory after `1`, so `1`
-// and `10` is not to be continueous.
-//
-// Also the code
-// ```
-// function fib(n: usize): usize {
-//     if (n == 0 || n == 1) {
-//         return n;
-//     } else {
-//         return fib(n - 1) + fib(n - 2);
-//     }
-// }
-// ```
-// doesn't works because when call `fib(n - 1)` and `fib(n - 2)`, it align stack
-// by 16 bytes, so return value is not to be continueous, so the addition fail.
-
 static std::optional<std::string> IsVariable(
     const std::unique_ptr<hir::Expression> &expr) {
     class IsVariable : public hir::ExpressionVisitor {
@@ -252,6 +222,14 @@ void ExprRValGen::Visit(const hir::UnaryExpression &expr) {
     }
 }
 
+// NOTE:
+// In below functions for infix expression, I **always** free memory allocated
+// by rhs after pop value, as we expected lhs and rhs is continueous and two
+// value can be obtained by only tow pop.
+// But some expression may allocate memory more than 8 bytes, and it breaks the
+// assumption. So I free memory so that top of stack to be the value that lhs
+// generated.
+
 static void ReportErrorForInfixExpression(
     CodeGenContext &ctx, const std::shared_ptr<hir::Type> &lhs_type,
     const std::shared_ptr<hir::Type> &rhs_type, Span op_span) {
@@ -326,6 +304,8 @@ static bool GenAdditiveExpr(CodeGenContext &ctx,
     lhs->Accept(gen_lhs);
     if (!gen_lhs) return false;
 
+    ctx.lvar_table().SaveCalleeSize();
+
     ExprRValGen gen_rhs(ctx);
     rhs->Accept(gen_rhs);
     if (!gen_rhs) return false;
@@ -347,6 +327,10 @@ static bool GenAdditiveExpr(CodeGenContext &ctx,
         ctx.printer().PrintLn("    popq %rax");
         ctx.printer().PrintLn("    movq ${}, %rbx", size.size());
         ctx.printer().PrintLn("    mulq %rbx");
+
+        // Free memory allocated by rhs.
+        auto diff = ctx.lvar_table().RestoreCalleeSize();
+        if (diff) ctx.printer().PrintLn("    addq ${}, %rsp", diff);
 
         // Increment/decrement pointer
         if (is_add) {
@@ -380,6 +364,10 @@ static bool GenAdditiveExpr(CodeGenContext &ctx,
         }
         ctx.lvar_table().SubCalleeSize(8);
         ctx.printer().PrintLn("    popq %rbx");
+
+        // Free memory allocated by rhs.
+        auto diff = ctx.lvar_table().RestoreCalleeSize();
+        if (diff) ctx.printer().PrintLn("    addq ${}, %rsp", diff);
 
         // Convert lhs to proper type.
         if (!ImplicitlyConvertValueInStack(ctx, lhs->span(), gen_lhs.inferred(),
@@ -415,6 +403,8 @@ static bool GenMultiplicativeExpr(CodeGenContext &ctx,
     lhs->Accept(gen_lhs);
     if (!gen_lhs) return false;
 
+    ctx.lvar_table().SaveCalleeSize();
+
     ExprRValGen gen_rhs(ctx);
     rhs->Accept(gen_rhs);
     if (!gen_rhs) return false;
@@ -441,6 +431,10 @@ static bool GenMultiplicativeExpr(CodeGenContext &ctx,
         }
         ctx.lvar_table().SubCalleeSize(8);
         ctx.printer().PrintLn("    popq %rbx");
+
+        // Free memory allocated by rhs.
+        auto diff = ctx.lvar_table().RestoreCalleeSize();
+        if (diff) ctx.printer().PrintLn("    addq ${}, %rsp", diff);
 
         // Convert lhs to proper type, then pop it from stack.
         if (!ImplicitlyConvertValueInStack(ctx, lhs->span(), gen_lhs.inferred(),
@@ -513,6 +507,8 @@ static bool GenBooleanExpr(CodeGenContext &ctx,
     lhs->Accept(gen_lhs);
     if (!gen_lhs) return false;
 
+    ctx.lvar_table().SaveCalleeSize();
+
     ExprRValGen gen_rhs(ctx);
     rhs->Accept(gen_rhs);
     if (!gen_rhs) return false;
@@ -528,6 +524,10 @@ static bool GenBooleanExpr(CodeGenContext &ctx,
         }
         ctx.lvar_table().SubCalleeSize(8);
         ctx.printer().PrintLn("    popq %rbx");
+
+        // Free memory allocated by rhs.
+        auto diff = ctx.lvar_table().RestoreCalleeSize();
+        if (diff) ctx.printer().PrintLn("    addq ${}, %rsp", diff);
 
         // Convert lhs to proper type, then pop it from stack.
         if (!ImplicitlyConvertValueInStack(ctx, lhs->span(), gen_lhs.inferred(),
@@ -560,6 +560,8 @@ static bool GenBitExpr(CodeGenContext &ctx,
     lhs->Accept(gen_lhs);
     if (!gen_lhs) return false;
 
+    ctx.lvar_table().SaveCalleeSize();
+
     ExprRValGen gen_rhs(ctx);
     rhs->Accept(gen_rhs);
     if (!gen_rhs) return false;
@@ -587,7 +589,11 @@ static bool GenBitExpr(CodeGenContext &ctx,
         ctx.lvar_table().SubCalleeSize(8);
         ctx.printer().PrintLn("    popq %rbx");
 
-        // Convert lhs to proper type, then pop it from stack.
+        // Free memory allocated by rhs.
+        auto diff = ctx.lvar_table().RestoreCalleeSize();
+        if (diff) ctx.printer().PrintLn("    addq ${}, %rsp", diff);
+
+        // Convert lhs to proper type.
         if (!ImplicitlyConvertValueInStack(ctx, lhs->span(), gen_lhs.inferred(),
                                            merged.value())) {
             return false;
@@ -625,6 +631,8 @@ static bool GenComparsonExpr(CodeGenContext &ctx,
     ExprRValGen gen_lhs(ctx);
     lhs->Accept(gen_lhs);
     if (!gen_lhs) return false;
+
+    ctx.lvar_table().SaveCalleeSize();
 
     ExprRValGen gen_rhs(ctx);
     rhs->Accept(gen_rhs);
@@ -668,6 +676,10 @@ static bool GenComparsonExpr(CodeGenContext &ctx,
         }
         ctx.lvar_table().SubCalleeSize(8);
         ctx.printer().PrintLn("    popq %rbx");
+
+        // Free memory allocated by rhs.
+        auto diff = ctx.lvar_table().RestoreCalleeSize();
+        if (diff) ctx.printer().PrintLn("    addq ${}, %rsp", diff);
 
         // Convert lhs to proper type.
         if (!ImplicitlyConvertValueInStack(ctx, lhs->span(), gen_lhs.inferred(),
@@ -720,6 +732,8 @@ static bool GenShiftExpr(CodeGenContext &ctx,
     lhs->Accept(gen_lhs);
     if (!gen_lhs) return false;
 
+    ctx.lvar_table().SaveCalleeSize();
+
     ExprRValGen gen_rhs(ctx);
     rhs->Accept(gen_rhs);
     if (!gen_rhs) return false;
@@ -746,6 +760,10 @@ static bool GenShiftExpr(CodeGenContext &ctx,
         }
         ctx.lvar_table().SubCalleeSize(8);
         ctx.printer().PrintLn("    popq %rcx");
+
+        // Free memory allocated by rhs.
+        auto diff = ctx.lvar_table().RestoreCalleeSize();
+        if (diff) ctx.printer().PrintLn("    addq ${}, %rsp", diff);
 
         // Convert lhs to proper type.
         if (!ImplicitlyConvertValueInStack(ctx, lhs->span(), gen_lhs.inferred(),
