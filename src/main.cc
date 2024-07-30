@@ -24,6 +24,7 @@ enum class UsageKind {
 [[noreturn]] static void usage(std::ostream &os, UsageKind kind) {
     os << "Usage: mini <FILENAME> [ -o <OUTPUT> ]" << std::endl;
     os << "  -o filename Output to specified file" << std::endl;
+    os << "  -c          Output object file" << std::endl;
     os << "  -S          Output assembly code" << std::endl;
     os << "  --emit-hir  Output internal representation" << std::endl;
     os << "  -h          Print this help" << std::endl;
@@ -48,6 +49,15 @@ static bool startwith(const std::string &pattern, const std::string &target) {
     return true;
 }
 
+static std::string replace_suffix(const std::string &s,
+                                  const std::string &suffix) {
+    auto pos = s.find_last_of('.');
+    if (pos == std::string::npos) return s;
+    std::string result(s.begin(), s.begin() + pos + 1);
+    result.insert(result.end(), suffix.begin(), suffix.end());
+    return result;
+}
+
 class Arguments {
 public:
     Arguments(int argc, char *argv[]) {
@@ -55,19 +65,25 @@ public:
         std::optional<std::string> input;
         bool emit_hir = false;
         bool emit_asm = false;
+        bool emit_obj = false;
         bool print_help = false;
         for (int i = 1; i < argc; i++) {
             std::string arg = argv[i];
             if (arg == "--emit-hir") {
-                if (emit_asm) {
-                    mini::FatalError("cannot use --emit-hir with -S");
+                if (emit_asm || emit_obj) {
+                    mini::FatalError("cannot use --emit-hir with -S and -c");
                 }
                 emit_hir = true;
             } else if (arg == "-S") {
-                if (emit_asm) {
-                    mini::FatalError("cannot use -S with --emit-hir");
+                if (emit_hir || emit_obj) {
+                    mini::FatalError("cannot use -S with --emit-hir and -c");
                 }
                 emit_asm = true;
+            } else if (arg == "-c") {
+                if (emit_asm || emit_asm) {
+                    mini::FatalError("cannot use -c with --emit-hir and -S");
+                }
+                emit_obj = true;
             } else if (arg == "-o") {
                 if (i < argc - 1) {
                     output.emplace(argv[++i]);
@@ -93,6 +109,7 @@ public:
             output_ = output;
             emit_hir_ = emit_hir;
             emit_asm_ = emit_asm;
+            emit_obj_ = emit_obj;
             print_help_ = print_help;
         }
     }
@@ -100,6 +117,7 @@ public:
     const std::optional<std::string> &output() const { return output_; }
     bool emit_hir() const { return emit_hir_; }
     bool emit_asm() const { return emit_asm_; }
+    bool emit_obj() const { return emit_obj_; }
     bool print_help() const { return print_help_; }
 
 private:
@@ -107,6 +125,7 @@ private:
     std::optional<std::string> output_;
     bool emit_hir_;
     bool emit_asm_;
+    bool emit_obj_;
     bool print_help_;
 };
 
@@ -118,36 +137,35 @@ int main(int argc, char *argv[]) {
         mini::Context ctx;
         auto root = mini::HirGenFile(ctx, args.input());
         if (!root) std::exit(EXIT_FAILURE);
-        if (args.output()) {
-            std::ofstream ofs(args.output().value());
-            if (ofs.bad()) {
-                mini::FatalError("failed to open output file");
-            }
-            mini::hir::PrintableContext ctx(ofs, 4);
-            root->PrintLn(ctx);
-        } else {
-            mini::hir::PrintableContext ctx(std::cout, 4);
-            root->PrintLn(ctx);
-        }
-    } else if (args.emit_asm()) {
-        if (args.output()) {
-            std::ofstream ofs(args.output().value());
-            if (ofs.bad()) {
-                mini::FatalError("failed to open output file");
-            }
 
-            mini::Context ctx;
-            auto success = mini::CodeGenFile(ctx, ofs, args.input());
-            if (!success) std::exit(EXIT_FAILURE);
-        } else {
-            mini::Context ctx;
-            auto success = mini::CodeGenFile(ctx, std::cout, args.input());
-            if (!success) std::exit(EXIT_FAILURE);
-        }
+        std::string output = args.output()
+                                 ? args.output().value()
+                                 : replace_suffix(args.input(), "hir");
+        std::ofstream ofs(output);
+        if (ofs.bad()) mini::FatalError("failed to open output file");
+
+        mini::hir::PrintableContext pctx(ofs, 4);
+        root->PrintLn(pctx);
+    } else if (args.emit_asm()) {
+        std::string output = args.output() ? args.output().value()
+                                           : replace_suffix(args.input(), "s");
+        std::ofstream ofs(output);
+        if (ofs.bad()) mini::FatalError("failed to open output file");
+
+        mini::Context ctx;
+        auto success = mini::CodeGenFile(ctx, ofs, args.input());
+        if (!success) std::exit(EXIT_FAILURE);
     } else {
         char asm_file[] = "/tmp/mini-XXXXXX.s";
         char obj_file[] = "/tmp/mini-XXXXXX.o";
-        std::string output = args.output() ? args.output().value() : "a.out";
+        std::string output;
+        if (args.output()) {
+            output = args.output().value();
+        } else if (args.emit_obj()) {
+            output = replace_suffix(args.input(), "o");
+        } else {
+            output = "a.out";
+        }
 
         int asm_fd = mkstemps(asm_file, 2);
         if (asm_fd == -1) mini::FatalError("failed to create temporary file");
@@ -157,20 +175,38 @@ int main(int argc, char *argv[]) {
 
         std::ofstream asm_fs(asm_file);
         if (asm_fs.bad()) {
-            mini::FatalError("failed to open output file");
+            mini::FatalError("failed to open temporary file");
         }
 
         mini::Context ctx;
         auto success = mini::CodeGenFile(ctx, asm_fs, args.input());
         if (!success) std::exit(EXIT_FAILURE);
 
-        int as_result =
-            system(fmt::format("as {} -o {}", asm_file, obj_file).c_str());
-        if (as_result) mini::FatalError("as failed");
+        if (args.emit_obj()) {
+            int as_result =
+                system(fmt::format("as {} -o {}", asm_file, output).c_str());
+            if (as_result) {
+                close(asm_fd);
+                close(obj_fd);
+                mini::FatalError("as failed");
+            }
+        } else {
+            int as_result =
+                system(fmt::format("as {} -o {}", asm_file, obj_file).c_str());
+            if (as_result) {
+                close(asm_fd);
+                close(obj_fd);
+                mini::FatalError("as failed");
+            }
 
-        int ld_result =
-            system(fmt::format("ld {} -o {}", obj_file, output).c_str());
-        if (ld_result) mini::FatalError("ld failed");
+            int ld_result =
+                system(fmt::format("ld {} -o {}", obj_file, output).c_str());
+            if (ld_result) {
+                close(asm_fd);
+                close(obj_fd);
+                mini::FatalError("ld failed");
+            }
+        }
 
         close(asm_fd);
         close(obj_fd);
