@@ -1,0 +1,13 @@
+struct s {
+    a: usize,
+    b: uint8,
+    c: uint8,
+    d: uint8,
+}
+function main() -> usize {
+    // Struct object generates entire object to stack after `1`.
+    // Check the code correctly get `1` from stack.
+    let a: usize = 1 + s { a: 10, b: 20, c: 30, d: 40 }.d;
+    if (a != 41) return 1;
+    return 0;
+}

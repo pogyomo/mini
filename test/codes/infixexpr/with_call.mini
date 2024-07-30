@@ -1,0 +1,12 @@
+function one() -> usize {
+    return 1;
+}
+
+function main() -> usize {
+    // The call of `one` will allocate 8 bytes from stack after `1` in stack.
+    // Check if the addition correctly get `1` from stack and use it.
+    let a: usize;
+    let b: usize = 1 + one();
+    if (b != 2) return 1;
+    return 0;
+}
