@@ -1117,16 +1117,16 @@ void ExprRValGen::Visit(const hir::VariableExpression &expr) {
         expr.Accept(gen_addr);
         if (!gen_addr) return;
     } else {
-        // Allocate memory for value.
+        // non-fat object can be stored to register.
         TypeSizeCalc size(ctx_);
         entry.type()->Accept(size);
         if (!size) return;
-        AllocateAlignedStackMemory(ctx_, size.size(), 8);
+        assert(size.size() <= 8);
 
         // Push value the variable holds.
-        auto src = entry.CalleeAsmRepr();
-        IndexableAsmRegPtr dst(Register::BP, -ctx_.lvar_table().CalleeSize());
-        CopyBytes(ctx_, src, dst, size.size());
+        ctx_.lvar_table().AddCalleeSize(8);
+        ctx_.printer().PrintLn("    pushq {}",
+                               entry.CalleeAsmRepr().ToAsmRepr(0, 8));
     }
 
     inferred_ = entry.type();
