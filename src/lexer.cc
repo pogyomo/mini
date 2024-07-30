@@ -100,7 +100,9 @@ LexResult lex_line(Context &ctx, size_t id, size_t row,
 
         Position start = stream.Pos();
         Position end = start;
-        if (stream.Accept("+", end)) {
+        if (stream.Accept("//", end)) {
+            break;
+        } else if (stream.Accept("+", end)) {
             res.push_back(std::make_unique<PunctToken>(PunctTokenKind::Plus,
                                                        Span(id, start, end)));
         } else if (stream.Accept("->", end)) {

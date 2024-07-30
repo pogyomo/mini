@@ -7,11 +7,23 @@ A minimal, but self-hostable programming language.
 The `main` function should contained on a executable program, and the program start from the function.
 
 ```
-function main() {
+function main() -> usize {
     let a: usize = 10;
     let b: usize = 20;
-    a + b;
+    return a + b;
 }
+```
+
+## Comment
+
+This language support following style of comment:
+
+- One line comment that start with `//` and valid until newline.
+
+```
+let a: usize = 10;
+// This is comment, and b doesn't declared.
+// let b: usize = 20;
 ```
 
 ## Types
