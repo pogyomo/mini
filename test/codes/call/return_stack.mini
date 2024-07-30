@@ -1,0 +1,24 @@
+struct s {
+    a: usize,
+    b: uint8,
+    c: uint8,
+    d: uint8,
+}
+
+function init() -> s {
+    return s {
+        a: 1,
+        b: 2,
+        c: 3,
+        d: 4,
+    };
+}
+
+function main() -> usize {
+    let a: s = init();
+    if (a.a != 1) return 1;
+    if (a.b != 2) return 2;
+    if (a.c != 3) return 3;
+    if (a.d != 4) return 4;
+    return 0;
+}

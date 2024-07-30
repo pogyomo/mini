@@ -1,0 +1,11 @@
+function main() -> usize {
+    let i: usize = 0;
+    while (i < 10) {
+        i = i + 1;
+    }
+    if (i == 10) {
+        return 0;
+    } else {
+        return 1;
+    }
+}

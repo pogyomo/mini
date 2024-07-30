@@ -1,0 +1,11 @@
+function one() -> usize {
+    return 1;
+}
+
+function main() -> usize {
+    if (one() == 1) {
+        return 0;
+    } else {
+        return 1;
+    }
+}

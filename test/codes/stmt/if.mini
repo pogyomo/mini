@@ -1,0 +1,7 @@
+function main() -> usize {
+    if (true) {
+        return 0;
+    } else {
+        return 1;
+    }
+}
