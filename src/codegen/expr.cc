@@ -1038,7 +1038,7 @@ void ExprRValGen::Visit(const hir::CastExpression &expr) {
     expr.expr()->Accept(gen);
     if (!gen) return;
 
-    // No convertion in assembly code.
+    // No conversion in assembly code.
     if (gen.inferred_->IsPointer() && expr.cast_type()->IsPointer()) {
         inferred_ = expr.cast_type();
         success_ = true;
@@ -1571,153 +1571,153 @@ bool ImplicitlyConvertValueInStack(CodeGenContext &ctx, Span value_span,
                                    const std::shared_ptr<hir::Type> &to) {
     if (from->IsBuiltin()) {
         if (to->IsBuiltin()) {
-            bool convertion_happen = false;
+            bool conversion_happen = false;
             auto from_kind = from->ToBuiltin()->kind();
             auto to_kind = to->ToBuiltin()->kind();
             if (from_kind == hir::BuiltinType::UInt8) {
                 if (to_kind == hir::BuiltinType::UInt8) {
-                    // no convertion
+                    // no conversion
                 } else if (to_kind == hir::BuiltinType::UInt16) {
                     ctx.printer().PrintLn("    movzbw (%rsp), %ax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else if (to_kind == hir::BuiltinType::UInt32) {
                     ctx.printer().PrintLn("    movzbl (%rsp), %eax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else if (to_kind == hir::BuiltinType::UInt64) {
                     ctx.printer().PrintLn("    movzbq (%rsp), %rax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else if (to_kind == hir::BuiltinType::USize) {
                     ctx.printer().PrintLn("    movzbq (%rsp), %rax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else if (to_kind == hir::BuiltinType::Int16) {
                     ctx.printer().PrintLn("    movsbw (%rsp), %ax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else if (to_kind == hir::BuiltinType::Int32) {
                     ctx.printer().PrintLn("    movsbl (%rsp), %eax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else if (to_kind == hir::BuiltinType::Int64) {
                     ctx.printer().PrintLn("    movsbq (%rsp), %rax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else if (to_kind == hir::BuiltinType::ISize) {
                     ctx.printer().PrintLn("    movsbq (%rsp), %rax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else {
                     goto failed;
                 }
             } else if (from_kind == hir::BuiltinType::UInt16) {
                 if (to_kind == hir::BuiltinType::UInt16) {
-                    // no convertion
+                    // no conversion
                 } else if (to_kind == hir::BuiltinType::UInt32) {
                     ctx.printer().PrintLn("    movzwl (%rsp), %eax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else if (to_kind == hir::BuiltinType::UInt64) {
                     ctx.printer().PrintLn("    movzwq (%rsp), %rax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else if (to_kind == hir::BuiltinType::USize) {
                     ctx.printer().PrintLn("    movzwq (%rsp), %rax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else if (to_kind == hir::BuiltinType::Int32) {
                     ctx.printer().PrintLn("    movswl (%rsp), %eax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else if (to_kind == hir::BuiltinType::Int64) {
                     ctx.printer().PrintLn("    movswq (%rsp), %rax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else if (to_kind == hir::BuiltinType::ISize) {
                     ctx.printer().PrintLn("    movswq (%rsp), %rax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else {
                     goto failed;
                 }
             } else if (from_kind == hir::BuiltinType::UInt32) {
                 if (to_kind == hir::BuiltinType::UInt32) {
-                    // no convertion
+                    // no conversion
                 } else if (to_kind == hir::BuiltinType::UInt64) {
-                    // no convertion, as movzlq doesn't exists
+                    // no conversion, as movzlq doesn't exists
                 } else if (to_kind == hir::BuiltinType::USize) {
-                    // no convertion, as movzlq doesn't exists
+                    // no conversion, as movzlq doesn't exists
                 } else if (to_kind == hir::BuiltinType::Int64) {
                     ctx.printer().PrintLn("    movslq (%rsp), %rax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else if (to_kind == hir::BuiltinType::ISize) {
                     ctx.printer().PrintLn("    movslq (%rsp), %rax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else {
                     goto failed;
                 }
             } else if (from_kind == hir::BuiltinType::UInt64) {
                 if (to_kind == hir::BuiltinType::UInt64) {
-                    // no convertion
+                    // no conversion
                 } else if (to_kind == hir::BuiltinType::USize) {
-                    // no convertion
+                    // no conversion
                 } else {
                     goto failed;
                 }
             } else if (from_kind == hir::BuiltinType::USize) {
                 if (to_kind == hir::BuiltinType::UInt64) {
-                    // no convertion
+                    // no conversion
                 } else if (to_kind == hir::BuiltinType::USize) {
-                    // no convertion
+                    // no conversion
                 } else {
                     goto failed;
                 }
             } else if (from_kind == hir::BuiltinType::Int8) {
                 if (to_kind == hir::BuiltinType::Int8) {
-                    // no convertion
+                    // no conversion
                 } else if (to_kind == hir::BuiltinType::Int16) {
                     ctx.printer().PrintLn("    movsbw (%rsp), %ax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else if (to_kind == hir::BuiltinType::Int32) {
                     ctx.printer().PrintLn("    movsbl (%rsp), %eax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else if (to_kind == hir::BuiltinType::Int64) {
                     ctx.printer().PrintLn("    movsbq (%rsp), %rax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else if (to_kind == hir::BuiltinType::ISize) {
                     ctx.printer().PrintLn("    movsbq (%rsp), %rax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else {
                     goto failed;
                 }
             } else if (from_kind == hir::BuiltinType::Int16) {
                 if (to_kind == hir::BuiltinType::Int16) {
-                    // no convertion
+                    // no conversion
                 } else if (to_kind == hir::BuiltinType::Int32) {
                     ctx.printer().PrintLn("    movswl (%rsp), %eax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else if (to_kind == hir::BuiltinType::Int64) {
                     ctx.printer().PrintLn("    movswq (%rsp), %rax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else if (to_kind == hir::BuiltinType::ISize) {
                     ctx.printer().PrintLn("    movswq (%rsp), %rax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else {
                     goto failed;
                 }
             } else if (from_kind == hir::BuiltinType::Int32) {
                 if (to_kind == hir::BuiltinType::Int32) {
-                    // no convertion
+                    // no conversion
                 } else if (to_kind == hir::BuiltinType::Int64) {
                     ctx.printer().PrintLn("    movslq (%rsp), %rax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else if (to_kind == hir::BuiltinType::ISize) {
                     ctx.printer().PrintLn("    movslq (%rsp), %rax");
-                    convertion_happen = true;
+                    conversion_happen = true;
                 } else {
                     goto failed;
                 }
             } else if (from_kind == hir::BuiltinType::Int64) {
                 if (to_kind == hir::BuiltinType::Int64) {
-                    // no convertion
+                    // no conversion
                 } else if (to_kind == hir::BuiltinType::ISize) {
-                    // no convertion
+                    // no conversion
                 } else {
                     goto failed;
                 }
             } else if (from_kind == hir::BuiltinType::ISize) {
                 if (to_kind == hir::BuiltinType::Int64) {
-                    // no convertion
+                    // no conversion
                 } else if (to_kind == hir::BuiltinType::ISize) {
-                    // no convertion
+                    // no conversion
                 } else {
                     goto failed;
                 }
@@ -1730,7 +1730,7 @@ bool ImplicitlyConvertValueInStack(CodeGenContext &ctx, Span value_span,
                     goto failed;
                 }
             }
-            if (convertion_happen)
+            if (conversion_happen)
                 ctx.printer().PrintLn("    movq %rax, (%rsp)");
             return true;
         } else {
@@ -1782,7 +1782,7 @@ bool ImplicitlyConvertValueInStack(CodeGenContext &ctx, Span value_span,
 failed:
     auto spec = fmt::format("cannot convert this {} to {} implicitly",
                             from->ToString(), to->ToString());
-    ReportInfo info(value_span, "implicit convertion failed", std::move(spec));
+    ReportInfo info(value_span, "implicit conversion failed", std::move(spec));
     Report(ctx.ctx(), ReportLevel::Error, info);
     return false;
 }
