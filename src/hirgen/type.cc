@@ -7,7 +7,9 @@ namespace mini {
 
 void TypeHirGen::Visit(const ast::BuiltinType &type) {
     hir::BuiltinType::Kind kind;
-    if (type.kind() == ast::BuiltinType::USize)
+    if (type.kind() == ast::BuiltinType::Void)
+        kind = hir::BuiltinType::Void;
+    else if (type.kind() == ast::BuiltinType::USize)
         kind = hir::BuiltinType::USize;
     else if (type.kind() == ast::BuiltinType::UInt8)
         kind = hir::BuiltinType::UInt8;
