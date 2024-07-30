@@ -1522,7 +1522,8 @@ void ExprLValGen::Visit(const hir::VariableExpression &expr) {
     auto &entry = ctx_.lvar_table().Query(expr.value());
 
     ctx_.lvar_table().AddCalleeSize(8);
-    ctx_.printer().PrintLn("    leaq -{}(%rbp), %rax", entry.Offset());
+    ctx_.printer().PrintLn("    leaq {}, %rax",
+                           entry.CalleeAsmRepr().ToAsmRepr(0, 8));
     ctx_.printer().PrintLn("    pushq %rax");
 
     inferred_ = entry.type();
