@@ -414,7 +414,12 @@ void CopyBytes(CodeGenContext& ctx, const IndexableAsmRegPtr& src,
     static std::string moves[4] = {"movq", "movl", "movw", "movb"};
     int64_t offset = 0;
     while (size != 0) {
-        Register tmp_reg(Register::CX);
+        // TODO:
+        // Currently r10 is not used from any places, so use it as temporary
+        // register to copy bytes.
+        // It's maybe good to manage used register to determine what register to
+        // use.
+        Register tmp_reg(Register::R10);
         for (size_t i = 0; i < sizeof sizes / sizeof sizes[0]; i++) {
             if (size >= sizes[i]) {
                 ctx.printer().PrintLn("    {} {}, {}", moves[i],
