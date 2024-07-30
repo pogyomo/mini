@@ -73,13 +73,25 @@ void StmtCodeGen::Visit(const hir::ReturnStatement &stmt) {
     success_ = true;
 }
 
-void StmtCodeGen::Visit(const hir::BreakStatement &) {
+void StmtCodeGen::Visit(const hir::BreakStatement &expr) {
+    if (!ctx_.IsInLoop()) {
+        ReportInfo info(expr.span(), "break used from outside of loop", "");
+        Report(ctx_.ctx(), ReportLevel::Error, info);
+        return;
+    }
+
     auto id = ctx_.label_id_generator().CurrId();
     ctx_.printer().PrintLn("    jmp L.END.{}", id);
     success_ = true;
 }
 
-void StmtCodeGen::Visit(const hir::ContinueStatement &) {
+void StmtCodeGen::Visit(const hir::ContinueStatement &expr) {
+    if (!ctx_.IsInLoop()) {
+        ReportInfo info(expr.span(), "continue used from outside of loop", "");
+        Report(ctx_.ctx(), ReportLevel::Error, info);
+        return;
+    }
+
     auto id = ctx_.label_id_generator().CurrId();
     ctx_.printer().PrintLn("    jmp L.START.{}", id);
     success_ = true;
@@ -87,6 +99,8 @@ void StmtCodeGen::Visit(const hir::ContinueStatement &) {
 
 void StmtCodeGen::Visit(const hir::WhileStatement &stmt) {
     auto id = ctx_.label_id_generator().GenNewId();
+
+    ctx_.EnterLoop();
 
     ctx_.printer().PrintLn("L.START.{}:", id);
 
@@ -112,6 +126,8 @@ void StmtCodeGen::Visit(const hir::WhileStatement &stmt) {
     ctx_.printer().PrintLn("    jmp L.START.{}", id);
 
     ctx_.printer().PrintLn("L.END.{}:", id);
+
+    ctx_.LeaveLoop();
 
     success_ = true;
 }

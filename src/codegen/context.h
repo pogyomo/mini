@@ -517,7 +517,10 @@ class CodeGenContext {
 public:
     CodeGenContext(Context &ctx, const hir::StringTable &string_table,
                    std::ostream &os)
-        : ctx_(ctx), string_table_(string_table), printer_(os) {}
+        : ctx_(ctx),
+          string_table_(string_table),
+          printer_(os),
+          loop_depth_(0) {}
     inline Context &ctx() { return ctx_; }
     inline const hir::StringTable &string_table() { return string_table_; }
     inline Printer &printer() { return printer_; }
@@ -532,6 +535,15 @@ public:
     }
     inline void SetCurrFuncName(std::string &&name) { curr_func_name_ = name; }
     inline const std::string &CurrFuncName() const { return curr_func_name_; }
+    inline bool IsInLoop() const { return loop_depth_ != 0; }
+    inline void EnterLoop() { loop_depth_++; }
+    inline void LeaveLoop() {
+        if (loop_depth_ == 0) {
+            FatalError("leave from non-loop");
+        } else {
+            loop_depth_--;
+        }
+    }
 
 private:
     Context &ctx_;
@@ -542,6 +554,7 @@ private:
     FuncInfoTable func_info_table_;
     LabelIdGenerator label_id_generator_;
     std::string curr_func_name_;
+    uint64_t loop_depth_;
 };
 
 }  // namespace mini
