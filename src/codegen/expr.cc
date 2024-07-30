@@ -986,8 +986,11 @@ void ExprRValGen::Visit(const hir::AccessExpression &expr) {
     expr.expr()->Accept(gen);
     if (!gen) return;
 
-    // As struct and pointer to struct is same in code generation, just take
-    // inner value for check.
+    // If the generated value is struct, then top of stack is address to the
+    // struct.
+    // On the other hand, if the generated value is pointer to struct, then top
+    // of stack is also the address to the struct.
+    // So, just see the inner type when we got pointer.
     auto type = gen.inferred_;
     if (gen.inferred_->IsPointer()) {
         type = gen.inferred_->ToPointer()->of();
@@ -1389,7 +1392,7 @@ void ExprLValGen::Visit(const hir::IndexExpression &expr) {
         return;
     }
 
-    // We need address, not a pointer to address.
+    // We need address that variable holds, not a address of variable
     if (gen_addr.inferred_->IsPointer()) {
         ctx_.printer().PrintLn("    popq %rax");
         ctx_.printer().PrintLn("    movq (%rax), %rax");
@@ -1442,20 +1445,27 @@ void ExprLValGen::Visit(const hir::AccessExpression &expr) {
     expr.expr()->Accept(gen_addr);
     if (!gen_addr) return;
 
-    // As struct and pointer to struct is same in code generation, just take
-    // inner value for check.
+    // Unlike ExprRValGen, when we got pointer, the generated value is the
+    // address to the variable that holds address to struct.
+    // We need the address to struct for future operation, so we have to
+    // dereference the pointer.
     auto type = gen_addr.inferred_;
     if (type->IsPointer()) {
+        ctx_.printer().PrintLn("    popq %rax");
+        ctx_.printer().PrintLn("    movq (%rax), %rax");
+        ctx_.printer().PrintLn("    pushq %rax");
         type = type->ToPointer()->of();
     }
 
-    if (!gen_addr.inferred_->IsName()) {
+    if (!type->IsName()) {
+        auto spec =
+            fmt::format("{} is not a struct", gen_addr.inferred_->ToString());
         ReportInfo info(expr.expr()->span(), "invalid struct access",
-                        "not a struct");
+                        std::move(spec));
         Report(ctx_.ctx(), ReportLevel::Error, info);
         return;
     }
-    auto &name = gen_addr.inferred_->ToName()->value();
+    auto &name = type->ToName()->value();
 
     if (!ctx_.struct_table().Exists(name)) {
         FatalError("invalid struct inferred: {}", name);
