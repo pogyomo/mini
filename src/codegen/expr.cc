@@ -1389,6 +1389,13 @@ void ExprLValGen::Visit(const hir::IndexExpression &expr) {
         return;
     }
 
+    // We need address, not a pointer to address.
+    if (gen_addr.inferred_->IsPointer()) {
+        ctx_.printer().PrintLn("    popq %rax");
+        ctx_.printer().PrintLn("    movq (%rax), %rax");
+        ctx_.printer().PrintLn("    pushq %rax");
+    }
+
     std::shared_ptr<hir::Type> of;
     if (gen_addr.inferred_->IsArray()) {
         of = gen_addr.inferred_->ToArray()->of();
