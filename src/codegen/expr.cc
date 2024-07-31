@@ -821,54 +821,17 @@ void ExprRValGen::Visit(const hir::InfixExpression &expr) {
 }
 
 void ExprRValGen::Visit(const hir::IndexExpression &expr) {
-    ExprRValGen gen(ctx_);
-    expr.expr()->Accept(gen);
-    if (!gen) return;
-
-    if (!gen.inferred_->IsArray() && !gen.inferred_->IsPointer()) {
-        ReportInfo info(expr.expr()->span(), "invalid indexing",
-                        "not a array or pointer");
-        Report(ctx_.ctx(), ReportLevel::Error, info);
-        return;
-    }
-
-    std::shared_ptr<hir::Type> of;
-    if (gen.inferred_->IsArray()) {
-        of = gen.inferred_->ToArray()->of();
-    } else {
-        of = gen.inferred_->ToPointer()->of();
-    }
-
-    TypeSizeCalc of_size(ctx_);
-    of->Accept(of_size);
-    if (!of_size) return;
-
-    ExprRValGen gen_index(ctx_);
-    expr.index()->Accept(gen_index);
-    if (!gen_index) return;
-
-    // Convert index to usize.
-    auto to = std::make_shared<hir::BuiltinType>(hir::BuiltinType::USize,
-                                                 expr.index()->span());
-    if (!ImplicitlyConvertValueInStack(ctx_, expr.index()->span(),
-                                       gen_index.inferred(), to)) {
-        return;
-    }
-
-    // Pop index.
-    ctx_.lvar_table().SubCalleeSize(8);
-    ctx_.printer().PrintLn("    popq %rax");
-
-    // Calculate address to element.
-    // At this point, (%rsp) is address to the array or pointer.
-    ctx_.printer().PrintLn("    movq ${}, %rbx", of_size.size());
-    ctx_.printer().PrintLn("    mulq %rbx");
-    ctx_.printer().PrintLn("    addq %rax, (%rsp)");
+    ExprLValGen gen_addr(ctx_);
+    expr.Accept(gen_addr);
+    if (!gen_addr) return;
 
     // No operation required if the field is fat object, as it required to store
     // its address to stack, and is already done.
-    if (!IsFatObject(ctx_, of)) {
+    if (!IsFatObject(ctx_, gen_addr.inferred())) {
         // We expect non-fat object can be stored to register.
+        TypeSizeCalc of_size(ctx_);
+        gen_addr.inferred()->Accept(of_size);
+        if (!of_size) return;
         assert(of_size.size() <= 8);
 
         // Just copy value that the calculated address pointing.
@@ -876,7 +839,7 @@ void ExprRValGen::Visit(const hir::IndexExpression &expr) {
         ctx_.printer().PrintLn("    pushq (%rax)");
     }
 
-    inferred_ = of;
+    inferred_ = gen_addr.inferred();
     success_ = true;
 }
 
@@ -980,45 +943,16 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
 }
 
 void ExprRValGen::Visit(const hir::AccessExpression &expr) {
-    ExprRValGen gen(ctx_);
-    expr.expr()->Accept(gen);
-    if (!gen) return;
-
-    // If the generated value is struct, then top of stack is address to the
-    // struct.
-    // On the other hand, if the generated value is pointer to struct, then top
-    // of stack is also the address to the struct.
-    // So, just see the inner type when we got pointer.
-    auto type = gen.inferred_;
-    if (gen.inferred_->IsPointer()) {
-        type = gen.inferred_->ToPointer()->of();
-    }
-
-    if (!type->IsName() ||
-        !ctx_.struct_table().Exists(type->ToName()->value())) {
-        ReportInfo info(expr.span(), "invalid access", "not a struct");
-        Report(ctx_.ctx(), ReportLevel::Error, info);
-        return;
-    }
-    auto &entry = ctx_.struct_table().Query(type->ToName()->value());
-
-    if (!entry.Exists(expr.field().value())) {
-        ReportInfo info(expr.field().span(), "invalid access", "not a struct");
-        Report(ctx_.ctx(), ReportLevel::Error, info);
-        return;
-    }
-    auto field = entry.Query(expr.field().value());
-
-    // Change pointer in top of stack to point its field.
-    if (field.Offset())
-        ctx_.printer().PrintLn("    addq ${}, (%rsp)", field.Offset());
+    ExprLValGen gen_addr(ctx_);
+    expr.Accept(gen_addr);
+    if (!gen_addr) return;
 
     // No operation required if the element is fat object, as it required to
     // store its address to stack, and is already done.
-    if (!IsFatObject(ctx_, field.type())) {
+    if (!IsFatObject(ctx_, gen_addr.inferred())) {
         // We expect non-fat object can be stored to register.
         TypeSizeCalc field_size(ctx_);
-        field.type()->Accept(field_size);
+        gen_addr.inferred()->Accept(field_size);
         if (!field_size) return;
         assert(field_size.size() <= 8);
 
@@ -1027,7 +961,7 @@ void ExprRValGen::Visit(const hir::AccessExpression &expr) {
         ctx_.printer().PrintLn("    pushq (%rax)");
     }
 
-    inferred_ = field.type();
+    inferred_ = gen_addr.inferred();
     success_ = true;
 }
 
@@ -1342,29 +1276,26 @@ void ExprLValGen::Visit(const hir::InfixExpression &expr) {
 }
 
 void ExprLValGen::Visit(const hir::IndexExpression &expr) {
-    ExprLValGen gen_addr(ctx_);
+    ExprRValGen gen_addr(ctx_);
     expr.expr()->Accept(gen_addr);
     if (!gen_addr) return;
 
-    if (!gen_addr.inferred_->IsArray() && !gen_addr.inferred_->IsPointer()) {
+    if (!gen_addr.inferred()->IsArray() && !gen_addr.inferred()->IsPointer()) {
         ReportInfo info(expr.expr()->span(), "invalid indexing",
                         "not a array or pointer");
         Report(ctx_.ctx(), ReportLevel::Error, info);
         return;
     }
 
-    // We need address that variable holds, not a address of variable
-    if (gen_addr.inferred_->IsPointer()) {
-        ctx_.printer().PrintLn("    popq %rax");
-        ctx_.printer().PrintLn("    movq (%rax), %rax");
-        ctx_.printer().PrintLn("    pushq %rax");
-    }
+    // Here, top of stack is pointer to array, because
+    // - If it is pointer to array, it trivial.
+    // - If it is fat object, it also pushes pointer to it.
 
     std::shared_ptr<hir::Type> of;
-    if (gen_addr.inferred_->IsArray()) {
-        of = gen_addr.inferred_->ToArray()->of();
+    if (gen_addr.inferred()->IsArray()) {
+        of = gen_addr.inferred()->ToArray()->of();
     } else {
-        of = gen_addr.inferred_->ToPointer()->of();
+        of = gen_addr.inferred()->ToPointer()->of();
     }
 
     TypeSizeCalc of_size(ctx_);
@@ -1402,31 +1333,28 @@ void ExprLValGen::Visit(const hir::CallExpression &expr) {
 }
 
 void ExprLValGen::Visit(const hir::AccessExpression &expr) {
-    ExprLValGen gen_addr(ctx_);
+    ExprRValGen gen_addr(ctx_);
     expr.expr()->Accept(gen_addr);
     if (!gen_addr) return;
 
-    // Unlike ExprRValGen, when we got pointer, the generated value is the
-    // address to the variable that holds address to struct.
-    // We need the address to struct for future operation, so we have to
-    // dereference the pointer.
-    auto type = gen_addr.inferred_;
+    auto type = gen_addr.inferred();
     if (type->IsPointer()) {
-        ctx_.printer().PrintLn("    popq %rax");
-        ctx_.printer().PrintLn("    movq (%rax), %rax");
-        ctx_.printer().PrintLn("    pushq %rax");
         type = type->ToPointer()->of();
     }
 
     if (!type->IsName()) {
         auto spec =
-            fmt::format("{} is not a struct", gen_addr.inferred_->ToString());
+            fmt::format("{} is not a struct", gen_addr.inferred()->ToString());
         ReportInfo info(expr.expr()->span(), "invalid struct access",
                         std::move(spec));
         Report(ctx_.ctx(), ReportLevel::Error, info);
         return;
     }
     auto &name = type->ToName()->value();
+
+    // Here, top of stack is pointer to struct, because
+    // - If it is pointer to struct, it trivial.
+    // - If it is fat object, it also pushes pointer to it.
 
     if (!ctx_.struct_table().Exists(name)) {
         FatalError("invalid struct inferred: {}", name);
