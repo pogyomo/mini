@@ -1324,13 +1324,12 @@ void ExprLValGen::Visit(const hir::IndexExpression &expr) {
     ctx_.printer().PrintLn("    movq ${}, %rbx", of_size.size());
     ctx_.printer().PrintLn("    mulq %rbx");
 
-    // Change address to point to element.
-    ctx_.printer().PrintLn("    addq %rax, (%rsp)");
-
     // Free memory allocated by rhs so top of stack to be generated address.
-    ctx_.printer().PrintLn("    # HERE");
     auto diff = ctx_.lvar_table().RestoreCalleeSize();
     if (diff) ctx_.printer().PrintLn("    addq ${}, %rsp", diff);
+
+    // Change address to point to element.
+    ctx_.printer().PrintLn("    addq %rax, (%rsp)");
 
     inferred_ = of;
     success_ = true;
