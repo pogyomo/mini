@@ -473,20 +473,26 @@ private:
 
 class Printer {
 public:
-    Printer(std::ostream &os) : os_(os) {}
+    Printer(std::ostream &os, bool &should_output)
+        : os_(os), should_output_(should_output) {}
 
     template <typename... T>
     inline void Print(fmt::format_string<T...> fmt, T &&...args) {
-        os_ << fmt::format(fmt, std::forward<T>(args)...);
+        if (should_output_) {
+            os_ << fmt::format(fmt, std::forward<T>(args)...);
+        }
     }
 
     template <typename... T>
     inline void PrintLn(fmt::format_string<T...> fmt, T &&...args) {
-        os_ << fmt::format(fmt, std::forward<T>(args)...) << std::endl;
+        if (should_output_) {
+            os_ << fmt::format(fmt, std::forward<T>(args)...) << std::endl;
+        }
     }
 
 private:
     std::ostream &os_;
+    bool &should_output_;
 };
 
 // Unique id generator for label.
@@ -507,8 +513,9 @@ public:
                    std::ostream &os)
         : ctx_(ctx),
           string_table_(string_table),
-          printer_(os),
-          loop_depth_(0) {}
+          printer_(os, should_output_),
+          loop_depth_(0),
+          should_output_(true) {}
     inline Context &ctx() { return ctx_; }
     inline const hir::StringTable &string_table() { return string_table_; }
     inline Printer &printer() { return printer_; }
@@ -532,6 +539,9 @@ public:
             loop_depth_--;
         }
     }
+    inline bool ShouldOutput() const { return should_output_; }
+    inline void SuppressOutput() { should_output_ = false; }
+    inline void ActivateOutput() { should_output_ = true; }
 
 private:
     Context &ctx_;
@@ -543,6 +553,7 @@ private:
     LabelIdGenerator label_id_generator_;
     std::string curr_func_name_;
     uint64_t loop_depth_;
+    bool should_output_;
 };
 
 }  // namespace mini

@@ -1,0 +1,18 @@
+struct s {
+    a: uint64,
+    b: uint8,
+    c: uint8,
+    d: uint32,
+    e: uint8,
+    f: uint64,
+}
+
+function main() -> usize {
+    let a: uint64;
+    let b: (uint64)[10];
+    let c: s;
+    if (esizeof a != 8) return 1;
+    if (esizeof b != 80) return 2;
+    if (esizeof c != 32) return 3;
+    return 0;
+}

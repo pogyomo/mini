@@ -997,9 +997,23 @@ void ExprRValGen::Visit(const hir::CastExpression &expr) {
 }
 
 void ExprRValGen::Visit(const hir::ESizeofExpression &expr) {
-    ReportInfo info(expr.span(), "esizeof is not implemented", "");
-    Report(ctx_.ctx(), ReportLevel::Error, info);
-    return;
+    ctx_.SuppressOutput();
+
+    ExprRValGen gen(ctx_);
+    expr.expr()->Accept(gen);
+    if (!gen) return;
+
+    TypeSizeCalc size(ctx_);
+    gen.inferred_->Accept(size);
+    if (!size) return;
+
+    ctx_.ActivateOutput();
+
+    ctx_.printer().PrintLn("    pushq ${}", size.size());
+
+    inferred_ = std::make_shared<hir::BuiltinType>(hir::BuiltinType::USize,
+                                                   expr.span());
+    success_ = true;
 }
 
 void ExprRValGen::Visit(const hir::TSizeofExpression &expr) {

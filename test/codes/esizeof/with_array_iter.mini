@@ -1,0 +1,13 @@
+function main() -> usize {
+    let v: (usize)[] = {1, 2, 3, 4, 5};
+
+    let s: usize = 0;
+    let i: usize = 0;
+    while (i < esizeof v / esizeof v[0]) {
+        s = s + v[i];
+        i = i + 1;
+    }
+    
+    if (s != 15) return 1;
+    return 0;
+}
