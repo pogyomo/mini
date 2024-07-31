@@ -27,7 +27,7 @@ bool HirGenBlockItem(HirGenContext &ctx, const ast::BlockStatementItem &item,
             body.type()->Accept(gen_type);
             if (!gen_type) return false;
 
-            if (ctx.translator().Translatable(body.name().name())) {
+            if (ctx.translator().Translatable(body.name().name(), false)) {
                 ReportInfo info(body.name().span(), "variable already declared",
                                 "");
                 Report(ctx.ctx(), ReportLevel::Error, info);
