@@ -12,7 +12,7 @@ function build() {
 function run_test() {
     COMPILE=../build/mini
 
-    find "$(pwd)" -type f -name "*.mini" | while read file; do
+    find -type f -name "*.mini" | while read file; do
         echo "testing $file"
 
         $COMPILE $file
