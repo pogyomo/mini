@@ -91,24 +91,12 @@ public:
         // - `rbp+16+offset` is_caller_alloc == true
         inline uint64_t Offset() const { return offset_; }
 
-        // Returns the ptr from by callee.
-        inline IndexableAsmRegPtr CalleeAsmRepr() const {
+        // Returns the ptr when access this lvar from callee.
+        inline IndexableAsmRegPtr AsmRepr() const {
             if (IsCallerAlloc()) {
                 return IndexableAsmRegPtr(Register::BP, offset_ + 16);
             } else {
                 return IndexableAsmRegPtr(Register::BP, -offset_);
-            }
-        }
-
-        // Returns the ptr from by caller.
-        // This function expect that `rsp` pointing the memory block for
-        // arguments and return value. So when `rsp` doesn't point the memory
-        // e.g. stack allocated after the block, specify the amount with `diff`.
-        inline IndexableAsmRegPtr CallerAsmRepr(int64_t diff) const {
-            if (IsCallerAlloc()) {
-                return IndexableAsmRegPtr(Register::SP, offset_ + diff);
-            } else {
-                FatalError("no representation");
             }
         }
 

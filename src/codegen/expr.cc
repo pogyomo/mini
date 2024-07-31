@@ -923,9 +923,6 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
             arg->Accept(gen);
             if (!gen) return;
 
-            // How many bytes `gen` allocated.
-            const auto alloc_size = caller_table.CalleeSize() - offset;
-
             // Convert generated value to expected type.
             if (!ImplicitlyConvertValueInStack(ctx_, arg->span(), gen.inferred_,
                                                param_info.type())) {
@@ -946,9 +943,10 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
                 // But currently `gen` allocated memory and rsp doesn't point to
                 // the block, so I need to add `alloc_size` to
                 // `param_info.Offset` to get proper address.
-                IndexableAsmRegPtr src(Register::BP,
-                                       -ctx_.lvar_table().CalleeSize());
-                auto dst = param_info.CallerAsmRepr(alloc_size);
+                auto src_offset = -ctx_.lvar_table().CalleeSize();
+                auto dst_offset = -offset + param_info.Offset();
+                IndexableAsmRegPtr src(Register::BP, src_offset);
+                IndexableAsmRegPtr dst(Register::BP, dst_offset);
                 CopyBytes(ctx_, src, dst, calc.size());
             } else {
                 FatalError("unknown parameter");
@@ -963,8 +961,8 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
         // rdi.
         if (callee_table.Exists(callee_table.ret_name)) {
             auto &entry = callee_table.Query(callee_table.ret_name);
-            ctx_.printer().PrintLn("    leaq {}, %rdi",
-                                   entry.CallerAsmRepr(0).ToAsmRepr(0, 8));
+            ctx_.printer().PrintLn("    leaq {}(%rbp), %rdi",
+                                   -offset + entry.Offset());
         }
 
         ctx_.printer().PrintLn("    callq {}", var.value());
@@ -1128,8 +1126,7 @@ void ExprRValGen::Visit(const hir::VariableExpression &expr) {
 
         // Push value the variable holds.
         ctx_.lvar_table().AddCalleeSize(8);
-        ctx_.printer().PrintLn("    pushq {}",
-                               entry.CalleeAsmRepr().ToAsmRepr(0, 8));
+        ctx_.printer().PrintLn("    pushq {}", entry.AsmRepr().ToAsmRepr(0, 8));
     }
 
     inferred_ = entry.type();
@@ -1524,7 +1521,7 @@ void ExprLValGen::Visit(const hir::VariableExpression &expr) {
 
     ctx_.lvar_table().AddCalleeSize(8);
     ctx_.printer().PrintLn("    leaq {}, %rax",
-                           entry.CalleeAsmRepr().ToAsmRepr(0, 8));
+                           entry.AsmRepr().ToAsmRepr(0, 8));
     ctx_.printer().PrintLn("    pushq %rax");
 
     inferred_ = entry.type();

@@ -76,7 +76,7 @@ void DeclCodeGen::Visit(const hir::FunctionDeclaration &decl) {
         auto &lvar = ctx_.lvar_table().Query(name);
         if (lvar.ShouldInitializeWithReg()) {
             auto src = lvar.InitRegName();
-            auto dst = lvar.CalleeAsmRepr().ToAsmRepr(0, 8);
+            auto dst = lvar.AsmRepr().ToAsmRepr(0, 8);
             ctx_.printer().PrintLn("    movq {}, {}", src, dst);
         }
     }
