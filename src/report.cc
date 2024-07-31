@@ -39,8 +39,11 @@ void Report(Context &ctx, ReportLevel level, const ReportInfo &info) {
     auto start = info.span().start();
     auto end = info.span().end();
 
-    std::cerr << entry.name() << ":" << start.row() << ":" << start.offset()
-              << ":";
+    auto start_display_row = start.row() + 1;
+    auto end_display_row = start.row() + 1;
+
+    std::cerr << entry.name() << ":" << start_display_row << ":"
+              << start.offset() << ":";
     start_color(std::cerr, level);
     if (level == ReportLevel::Error) {
         std::cerr << "error: ";
@@ -52,12 +55,12 @@ void Report(Context &ctx, ReportLevel level, const ReportInfo &info) {
     end_color(std::cerr);
     std::cerr << info.what() << std::endl;
 
-    int row_width = digits(start.row()) > digits(end.row())
-                        ? digits(start.row())
-                        : digits(end.row());
+    int row_width = digits(start_display_row) > digits(end_display_row)
+                        ? digits(start_display_row)
+                        : digits(end_display_row);
     if (start.row() == end.row()) {
         auto line = entry.lines().at(start.row());
-        std::cerr << "  " << start.row() << "|" << line << std::endl;
+        std::cerr << "  " << start_display_row << "|" << line << std::endl;
         for (int i = 0; i < 2 + row_width; i++) std::cerr << ' ';
         std::cerr << "|";
         for (size_t i = 0; i < start.offset(); i++) std::cerr << ' ';
@@ -70,9 +73,9 @@ void Report(Context &ctx, ReportLevel level, const ReportInfo &info) {
     } else {
         auto sline = entry.lines().at(start.row());
         std::cerr << "  ";
-        for (int i = 0; i < row_width - digits(start.row()); i++)
+        for (int i = 0; i < row_width - digits(start_display_row); i++)
             std::cerr << '0';
-        std::cerr << start.row() << "|" << sline << std::endl;
+        std::cerr << start_display_row << "|" << sline << std::endl;
         for (int i = 0; i < 2 + row_width; i++) std::cerr << ' ';
         std::cerr << '|';
         for (size_t i = 0; i < start.offset(); i++) std::cerr << ' ';
@@ -89,9 +92,9 @@ void Report(Context &ctx, ReportLevel level, const ReportInfo &info) {
 
         auto eline = entry.lines().at(end.row());
         std::cerr << "  ";
-        for (int i = 0; i < row_width - digits(end.row()); i++)
+        for (int i = 0; i < row_width - digits(end_display_row); i++)
             std::cerr << '0';
-        std::cerr << end.row() << "|" << eline << std::endl;
+        std::cerr << end_display_row << "|" << eline << std::endl;
         for (int i = 0; i < 2 + row_width; i++) std::cerr << ' ';
         std::cerr << '|';
         start_color(std::cerr, level);
