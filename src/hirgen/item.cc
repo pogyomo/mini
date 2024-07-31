@@ -35,7 +35,7 @@ bool HirGenBlockItem(HirGenContext &ctx, const ast::BlockStatementItem &item,
             }
 
             hir::VariableDeclarationName name(
-                std::string(ctx.translator().RegVar(body.name().name())),
+                std::string(ctx.translator().RegName(body.name().name())),
                 body.name().span());
             decls.emplace_back(gen_type.type(), std::move(name));
 
