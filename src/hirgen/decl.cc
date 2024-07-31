@@ -1,5 +1,8 @@
 #include "decl.h"
 
+#include <memory>
+#include <vector>
+
 #include "../eval.h"
 #include "item.h"
 #include "type.h"
@@ -106,6 +109,31 @@ void DeclHirGen::Visit(const ast::EnumDeclaration &decl) {
         decl.name().span());
     decl_ = std::make_unique<hir::EnumDeclaration>(
         std::move(name), std::move(fields), decl.span());
+    success_ = true;
+}
+
+void DeclHirGen::Visit(const ast::ImportDeclaration &decl) {
+    std::vector<hir::ImportDeclarationImportedItem> items;
+    if (decl.item()->IsSingleItem()) {
+        items.emplace_back(std::string(decl.item()->ToSingleItem()->item()),
+                           decl.item()->ToSingleItem()->span());
+    } else {
+        for (const auto &item : decl.item()->ToMultiItems()->items()) {
+            items.emplace_back(std::string(item.item()), item.span());
+        }
+    }
+
+    hir::ImportDeclarationPathItem head(
+        std::string(decl.path().head().name().name()),
+        decl.path().head().span());
+    std::vector<hir::ImportDeclarationPathItem> rest;
+    for (const auto &item : decl.path().rest()) {
+        rest.emplace_back(std::string(item.name().name()), item.span());
+    }
+    hir::ImportDeclarationPath path(std::move(head), std::move(rest));
+
+    decl_ = std::make_unique<hir::ImportDeclaration>(
+        std::move(items), std::move(path), decl.span());
     success_ = true;
 }
 

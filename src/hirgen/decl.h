@@ -15,6 +15,7 @@ public:
     void Visit(const ast::FunctionDeclaration &decl) override;
     void Visit(const ast::StructDeclaration &decl) override;
     void Visit(const ast::EnumDeclaration &decl) override;
+    void Visit(const ast::ImportDeclaration &) override {}
 
 private:
     HirGenContext &ctx_;
@@ -29,6 +30,7 @@ public:
     void Visit(const ast::FunctionDeclaration &decl) override;
     void Visit(const ast::StructDeclaration &decl) override;
     void Visit(const ast::EnumDeclaration &decl) override;
+    void Visit(const ast::ImportDeclaration &decl) override;
 
 private:
     bool success_;

@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 
+#include "../panic.h"
 #include "expr.h"
 #include "node.h"
 #include "stmt.h"
@@ -16,6 +17,7 @@ namespace ast {
 class FunctionDeclaration;
 class StructDeclaration;
 class EnumDeclaration;
+class ImportDeclaration;
 
 class DeclarationVisitor {
 public:
@@ -23,6 +25,7 @@ public:
     virtual void Visit(const FunctionDeclaration& decl) = 0;
     virtual void Visit(const StructDeclaration& decl) = 0;
     virtual void Visit(const EnumDeclaration& decl) = 0;
+    virtual void Visit(const ImportDeclaration& decl) = 0;
 };
 
 class Declaration : public Node {
@@ -285,6 +288,160 @@ private:
     LCurly lcurly_;
     std::vector<EnumDeclarationField> fields_;
     RCurly rcurly_;
+};
+
+class ImportDeclarationImportedSingleItem;
+class ImportDeclarationImportedMultiItems;
+
+class ImportDeclarationImportedItem : public Node {
+public:
+    virtual bool IsSingleItem() const { return false; }
+    virtual bool IsMultiItems() const { return false; }
+    virtual ImportDeclarationImportedSingleItem* ToSingleItem() {
+        return nullptr;
+    }
+    virtual const ImportDeclarationImportedSingleItem* ToSingleItem() const {
+        return nullptr;
+    }
+    virtual ImportDeclarationImportedMultiItems* ToMultiItems() {
+        return nullptr;
+    }
+    virtual const ImportDeclarationImportedMultiItems* ToMultiItems() const {
+        return nullptr;
+    }
+};
+
+class ImportDeclarationImportedSingleItem
+    : public ImportDeclarationImportedItem {
+public:
+    ImportDeclarationImportedSingleItem(std::string&& item, Span span)
+        : item_(std::move(item)), span_(span) {}
+    bool IsSingleItem() const override { return true; }
+    ImportDeclarationImportedSingleItem* ToSingleItem() override {
+        return this;
+    }
+    const ImportDeclarationImportedSingleItem* ToSingleItem() const override {
+        return this;
+    }
+    inline Span span() const override { return span_; }
+    inline const std::string& item() const { return item_; }
+
+private:
+    std::string item_;
+    Span span_;
+};
+
+class ImportDeclarationImportedMultiItems
+    : public ImportDeclarationImportedItem {
+public:
+    ImportDeclarationImportedMultiItems(
+        LCurly lcurly, std::vector<ImportDeclarationImportedSingleItem>&& items,
+        RCurly rcurly)
+        : lcurly_(lcurly), items_(std::move(items)), rcurly_(rcurly) {}
+    bool IsMultiItems() const override { return true; }
+    ImportDeclarationImportedMultiItems* ToMultiItems() override {
+        return this;
+    }
+    const ImportDeclarationImportedMultiItems* ToMultiItems() const override {
+        return this;
+    }
+    inline Span span() const override {
+        return lcurly_.span() + rcurly_.span();
+    }
+    inline LCurly lcurly() const { return lcurly_; }
+    inline const std::vector<ImportDeclarationImportedSingleItem>& items()
+        const {
+        return items_;
+    }
+    inline RCurly rcurly() const { return rcurly_; }
+
+private:
+    LCurly lcurly_;
+    std::vector<ImportDeclarationImportedSingleItem> items_;
+    RCurly rcurly_;
+};
+
+class ImportDeclarationPathItemName : public Node {
+public:
+    ImportDeclarationPathItemName(std::string&& name, Span span)
+        : name_(std::move(name)), span_(span) {}
+    inline Span span() const override { return span_; }
+    inline const std::string& name() const { return name_; }
+
+private:
+    std::string name_;
+    Span span_;
+};
+
+class ImportDeclarationPathItem : public Node {
+public:
+    ImportDeclarationPathItem(ImportDeclarationPathItemName&& name,
+                              std::optional<Dot> dot)
+        : name_(std::move(name)), dot_(dot) {}
+    inline Span span() const override {
+        return dot_ ? name_.span() + dot_->span() : name_.span();
+    }
+    inline const ImportDeclarationPathItemName& name() const { return name_; }
+    inline std::optional<Dot> dot() const { return dot_; }
+
+private:
+    ImportDeclarationPathItemName name_;
+    std::optional<Dot> dot_;
+};
+
+class ImportDeclarationPath : public Node {
+public:
+    ImportDeclarationPath(ImportDeclarationPathItem&& head,
+                          std::vector<ImportDeclarationPathItem>&& rest)
+        : head_(std::move(head)), rest_(std::move(rest)) {}
+    Span span() const override {
+        auto span = rest_.at(0).span();
+        for (size_t i = 0; i < rest_.size(); i++) {
+            span = span + rest_.at(i).span();
+        }
+        return span;
+    }
+    inline const ImportDeclarationPathItem& head() const { return head_; }
+    inline const std::vector<ImportDeclarationPathItem>& rest() const {
+        return rest_;
+    }
+
+private:
+    ImportDeclarationPathItem head_;
+    std::vector<ImportDeclarationPathItem> rest_;
+};
+
+class ImportDeclaration : public Declaration {
+public:
+    ImportDeclaration(Import import_kw,
+                      std::unique_ptr<ImportDeclarationImportedItem>&& item,
+                      From from_kw, ImportDeclarationPath&& path,
+                      Semicolon semicolon)
+        : import_kw_(import_kw),
+          item_(std::move(item)),
+          from_kw_(from_kw),
+          path_(std::move(path)),
+          semicolon_(semicolon) {}
+    inline void Accept(DeclarationVisitor& visitor) const override {
+        visitor.Visit(*this);
+    }
+    inline Span span() const override {
+        return import_kw_.span() + path_.span();
+    }
+    inline Import import_kw() const { return import_kw_; }
+    inline const std::unique_ptr<ImportDeclarationImportedItem>& item() const {
+        return item_;
+    }
+    inline From from_kw() const { return from_kw_; }
+    inline const ImportDeclarationPath& path() const { return path_; }
+    inline Semicolon semicolon() const { return semicolon_; }
+
+private:
+    Import import_kw_;
+    std::unique_ptr<ImportDeclarationImportedItem> item_;
+    From from_kw_;
+    ImportDeclarationPath path_;
+    Semicolon semicolon_;
 };
 
 };  // namespace ast

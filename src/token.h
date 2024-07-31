@@ -75,6 +75,8 @@ enum class KeywordTokenKind {
     UInt32,    // "uint32"
     UInt64,    // "uint64"
     NullPtr,   // "nullptr"
+    Import,    // "import"
+    From,      // "from"
 };
 
 std::string ToString(PunctTokenKind kind);

@@ -17,6 +17,7 @@ target_sources(${PROJECT_NAME} PRIVATE
     src/eval.cc
     src/hir/decl.cc
     src/hir/expr.cc
+    src/hir/root.cc
     src/hir/stmt.cc
     src/hir/type.cc
     src/hirgen/context.cc

@@ -88,6 +88,8 @@ static const std::map<std::string, KeywordTokenKind> keywords = {
     {"uint32", KeywordTokenKind::UInt32},
     {"uint64", KeywordTokenKind::UInt64},
     {"nullptr", KeywordTokenKind::NullPtr},
+    {"import", KeywordTokenKind::Import},
+    {"from", KeywordTokenKind::From},
 };
 
 class LexContext {

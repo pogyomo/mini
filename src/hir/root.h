@@ -1,7 +1,6 @@
 #ifndef MINI_HIR_HIR_H_
 #define MINI_HIR_HIR_H_
 
-#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <string>
@@ -49,31 +48,7 @@ public:
     Root(StringTable &&string_table,
          std::vector<std::unique_ptr<hir::Declaration>> &&decls)
         : string_table_(std::move(string_table)), decls_(std::move(decls)) {}
-    void Print(PrintableContext &ctx) const override {
-        if (decls_.empty()) {
-            auto size = string_table_.InnerRepr().size();
-            for (const auto &s : string_table_.InnerRepr()) {
-                size--;
-                ctx.printer().Print("{} = \"{}\"", s.second, s.first);
-                if (size == 0) {
-                    ctx.printer().PrintLn("");
-                }
-            }
-        } else {
-            for (const auto &s : string_table_.InnerRepr()) {
-                ctx.printer().PrintLn("{} = \"{}\"", s.second, s.first);
-            }
-            ctx.printer().PrintLn("");
-            for (size_t i = 0; i < decls_.size(); i++) {
-                if (i == decls_.size() - 1) {
-                    decls_.at(i)->Print(ctx);
-                } else {
-                    decls_.at(i)->PrintLn(ctx);
-                    ctx.printer().PrintLn("");
-                }
-            }
-        }
-    }
+    void Print(PrintableContext &ctx) const override;
     const StringTable &string_table() const { return string_table_; }
     const std::vector<std::unique_ptr<hir::Declaration>> &decls() const {
         return decls_;

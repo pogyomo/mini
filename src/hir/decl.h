@@ -18,6 +18,7 @@ namespace hir {
 class StructDeclaration;
 class EnumDeclaration;
 class FunctionDeclaration;
+class ImportDeclaration;
 
 class DeclarationVisitor {
 public:
@@ -25,6 +26,7 @@ public:
     virtual void Visit(const StructDeclaration &decl) = 0;
     virtual void Visit(const EnumDeclaration &decl) = 0;
     virtual void Visit(const FunctionDeclaration &decl) = 0;
+    virtual void Visit(const ImportDeclaration &decl) = 0;
 };
 
 class Declaration : public Printable {
@@ -265,6 +267,69 @@ private:
     std::shared_ptr<Type> ret_;
     std::vector<VariableDeclaration> decls_;
     BlockStatement body_;
+};
+
+class ImportDeclarationImportedItem {
+public:
+    ImportDeclarationImportedItem(std::string &&name, Span span)
+        : name_(std::move(name)), span_(span) {}
+    inline const std::string &name() const { return name_; }
+    inline Span span() const { return span_; }
+
+private:
+    std::string name_;
+    Span span_;
+};
+
+class ImportDeclarationPathItem {
+public:
+    ImportDeclarationPathItem(std::string &&name, Span span)
+        : name_(std::move(name)), span_(span) {}
+    inline const std::string &name() const { return name_; }
+    inline Span span() const { return span_; }
+
+private:
+    std::string name_;
+    Span span_;
+};
+
+class ImportDeclarationPath {
+public:
+    ImportDeclarationPath(ImportDeclarationPathItem &&head,
+                          std::vector<ImportDeclarationPathItem> &&rest)
+        : head_(std::move(head)), rest_(std::move(rest)) {}
+    Span span() const {
+        auto span = head_.span();
+        for (const auto &item : rest_) span = span + item.span();
+        return span;
+    }
+    inline const ImportDeclarationPathItem &head() const { return head_; }
+    inline const std::vector<ImportDeclarationPathItem> &rest() const {
+        return rest_;
+    }
+
+private:
+    ImportDeclarationPathItem head_;
+    std::vector<ImportDeclarationPathItem> rest_;
+};
+
+class ImportDeclaration : public Declaration {
+public:
+    ImportDeclaration(std::vector<ImportDeclarationImportedItem> &&items,
+                      ImportDeclarationPath &&path, Span span)
+        : Declaration(span), items_(std::move(items)), path_(std::move(path)) {}
+    inline void Accept(DeclarationVisitor &visitor) const override {
+        visitor.Visit(*this);
+    }
+    void Print(PrintableContext &ctx) const override;
+    inline const std::vector<ImportDeclarationImportedItem> &items() const {
+        return items_;
+    }
+    inline const ImportDeclarationPath &path() const { return path_; }
+
+private:
+    std::vector<ImportDeclarationImportedItem> items_;
+    ImportDeclarationPath path_;
 };
 
 }  // namespace hir

@@ -123,6 +123,7 @@ The syntax of mini programming language is as follow:
 <declaration> ::= <function-declaration>
                 | <struct-declaration>
                 | <enum-declaration>
+                | <import-declaration>
 <function-declaration> ::= "function" "(" <function-parameters> ")" [ "->" <type> ] <block-statement>
 <function-parameters> ::= <function-parameter>
                         | <function-parameter> "," <function-parameters>
@@ -133,6 +134,11 @@ The syntax of mini programming language is as follow:
 <enum-declaration> ::= "enum" "{" <enum-items> "}"
 <enum-items> ::= <enum-item> [ "," [ <enum-items> ] ]
 <enum-item> ::= <identifier> [ "=" <constant-expression> ]
+<import-declaration> ::= "import" <import-item> "from" <import-path>
+<import-item> ::= "identifier"
+                 | "{" <import-items> "}"
+<import-items> ::= <identifier> [ "," [ "<import-items>" ] ]
+<import-path> ::= <identifier> [ "." <import-path> ]
 
 <type> ::= "void"
          | "isize"

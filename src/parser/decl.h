@@ -18,6 +18,8 @@ std::optional<std::unique_ptr<ast::StructDeclaration>> ParseStructDecl(
     Context& ctx, TokenStream& ts);
 std::optional<std::unique_ptr<ast::EnumDeclaration>> ParseEnumDecl(
     Context& ctx, TokenStream& ts);
+std::optional<std::unique_ptr<ast::ImportDeclaration>> ParseImportDecl(
+    Context& ctx, TokenStream& ts);
 
 }  // namespace mini
 

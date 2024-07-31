@@ -76,6 +76,29 @@ void FunctionDeclaration::Print(PrintableContext &ctx) const {
     body_.Print(ctx);
 }
 
+void ImportDeclaration::Print(PrintableContext &ctx) const {
+    ctx.printer().Print("import ");
+    if (items_.size() == 1) {
+        ctx.printer().Print("{} ", items_.front().name());
+    } else {
+        ctx.printer().Print("{{ ");
+        for (size_t i = 0; i < items_.size(); i++) {
+            ctx.printer().Print("{}", items_.at(i).name());
+            if (i == items_.size() - 1)
+                ctx.printer().Print(" ");
+            else
+                ctx.printer().Print(", ");
+        }
+        ctx.printer().Print("}} ");
+    }
+    ctx.printer().Print("from ");
+    ctx.printer().Print("{}", path_.head().name());
+    for (const auto &item : path_.rest()) {
+        ctx.printer().Print(".{}", item.name());
+    }
+    ctx.printer().Print(";");
+}
+
 }  // namespace hir
 
 }  // namespace mini

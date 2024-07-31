@@ -50,6 +50,8 @@ GEN_NODE(TSizeof);
 GEN_NODE(Function);
 GEN_NODE(Struct);
 GEN_NODE(Enum);
+GEN_NODE(Import);
+GEN_NODE(From);
 
 };  // namespace ast
 

@@ -13,6 +13,7 @@ public:
     void Visit(const hir::StructDeclaration &decl) override;
     void Visit(const hir::EnumDeclaration &decl) override;
     void Visit(const hir::FunctionDeclaration &decl) override;
+    void Visit(const hir::ImportDeclaration &) override { success_ = true; }
 
 private:
     bool success_;
@@ -26,6 +27,7 @@ public:
     void Visit(const hir::StructDeclaration &) override { success_ = true; }
     void Visit(const hir::EnumDeclaration &) override { success_ = true; }
     void Visit(const hir::FunctionDeclaration &decl) override;
+    void Visit(const hir::ImportDeclaration &) override { success_ = true; }
 
 private:
     bool success_;
