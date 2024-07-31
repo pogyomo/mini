@@ -66,8 +66,17 @@ void DeclCodeGen::Visit(const hir::FunctionDeclaration &decl) {
     ctx_.printer().PrintLn("{}:", decl.name().value());
     ctx_.printer().PrintLn("    pushq %rbp");
     ctx_.printer().PrintLn("    movq %rsp, %rbp");
+
+    // Allocate memory for arguments and local variables.
     if (callee_size != 0)
         ctx_.printer().PrintLn("    subq ${}, %rsp", callee_size);
+
+    // Push callee preserve registers.
+    ctx_.printer().PrintLn("    movq %rbx, -8(%rbp)");
+    ctx_.printer().PrintLn("    movq %r12, -16(%rbp)");
+    ctx_.printer().PrintLn("    movq %r13, -24(%rbp)");
+    ctx_.printer().PrintLn("    movq %r14, -32(%rbp)");
+    ctx_.printer().PrintLn("    movq %r15, -40(%rbp)");
 
     // Copy arguments passed by register to stack so that these can take its
     // address.
@@ -86,6 +95,15 @@ void DeclCodeGen::Visit(const hir::FunctionDeclaration &decl) {
     if (!gen) return;
 
     ctx_.printer().PrintLn("{}.END:", ctx_.CurrFuncName());
+
+    // Pop callee preserve registers.
+    ctx_.printer().PrintLn("    movq -8(%rbp) , %rbx");
+    ctx_.printer().PrintLn("    movq -16(%rbp), %r12");
+    ctx_.printer().PrintLn("    movq -24(%rbp), %r13");
+    ctx_.printer().PrintLn("    movq -32(%rbp), %r14");
+    ctx_.printer().PrintLn("    movq -40(%rbp), %r15");
+
+    // Epilogue
     ctx_.printer().PrintLn("    movq %rbp, %rsp");
     ctx_.printer().PrintLn("    popq %rbp");
     ctx_.printer().PrintLn("    retq");
@@ -98,8 +116,11 @@ bool ConstructLVarTable(CodeGenContext &ctx,
     auto &entry = ctx.func_info_table().Query(decl.name().value());
     auto &table = entry.lvar_table();
     table.Clear();
-    table.ChangeCalleeSize(0);
     table.ChangeCallerSize(0);
+
+    // System V ABI requires to preserve rbx and r12 ~ r15, so preserve stack
+    // for these register.
+    table.ChangeCalleeSize(40);
 
     TypeSizeCalc ret_size(ctx);
     entry.ret_type()->Accept(ret_size);
