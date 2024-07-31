@@ -1287,15 +1287,19 @@ void ExprRValGen::Visit(const hir::ArrayExpression &expr) {
         if (IsFatObject(ctx_, array_base_type_.value())) {
             ctx_.printer().PrintLn("    movq -{}(%rbp), %rax",
                                    ctx_.lvar_table().CalleeSize());
-        } else {
-            ctx_.printer().PrintLn("    leaq -{}(%rbp), %rax",
-                                   ctx_.lvar_table().CalleeSize());
-        }
 
-        // Copy generated value.
-        IndexableAsmRegPtr src(Register::AX, 0);
-        IndexableAsmRegPtr dst(Register::BP, -offset + i * base_size.size());
-        CopyBytes(ctx_, src, dst, base_size.size());
+            // Copy generated value.
+            IndexableAsmRegPtr src(Register::AX, 0);
+            IndexableAsmRegPtr dst(Register::BP,
+                                   -offset + i * base_size.size());
+            CopyBytes(ctx_, src, dst, base_size.size());
+        } else {
+            assert(base_size.size() <= 8);
+            ctx_.lvar_table().SubCalleeSize(8);
+            ctx_.printer().PrintLn("    popq %rax");
+            ctx_.printer().PrintLn("    movq %rax, {}(%rbp)",
+                                   -offset + i * base_size.size());
+        }
 
         // Free temporary generate value.
         auto diff = ctx_.lvar_table().RestoreCalleeSize();
