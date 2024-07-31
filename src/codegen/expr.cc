@@ -1278,8 +1278,12 @@ void ExprRValGen::Visit(const hir::ArrayExpression &expr) {
         expr.inits().at(i)->Accept(gen);
         if (!gen) return;
 
-        // If the object is fat, then copy the address in stack.
-        // Otherwise copy address to the value.
+        if (!ImplicitlyConvertValueInStack(ctx_, expr.inits().at(i)->span(),
+                                           gen.inferred_,
+                                           array_base_type_.value())) {
+            return;
+        }
+
         if (IsFatObject(ctx_, array_base_type_.value())) {
             ctx_.printer().PrintLn("    movq -{}(%rbp), %rax",
                                    ctx_.lvar_table().CalleeSize());
