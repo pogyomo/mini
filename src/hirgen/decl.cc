@@ -7,15 +7,15 @@
 namespace mini {
 
 void DeclVarReg::Visit(const ast::FunctionDeclaration &decl) {
-    ctx_.translator().RegVar(decl.name().name());
+    ctx_.translator().RegVarRaw(decl.name().name());
 }
 
 void DeclVarReg::Visit(const ast::StructDeclaration &decl) {
-    ctx_.translator().RegVar(decl.name().name());
+    ctx_.translator().RegVarRaw(decl.name().name());
 }
 
 void DeclVarReg::Visit(const ast::EnumDeclaration &decl) {
-    ctx_.translator().RegVar(decl.name().name());
+    ctx_.translator().RegVarRaw(decl.name().name());
 }
 
 void DeclHirGen::Visit(const ast::FunctionDeclaration &decl) {

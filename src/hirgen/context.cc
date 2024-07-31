@@ -12,6 +12,11 @@ const std::string &VariableTranslator::RegVar(const std::string &name) {
     return assoc_table_->Query(name);
 }
 
+const std::string &VariableTranslator::RegVarRaw(const std::string &name) {
+    assoc_table_->Insert(std::string(name), std::string(name));
+    return assoc_table_->Query(name);
+}
+
 const std::string &VariableTranslator::Translate(const std::string &name) {
     if (Translatable(name))
         return assoc_table_->Query(name);

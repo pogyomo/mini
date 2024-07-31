@@ -21,6 +21,7 @@ public:
         return assoc_table_->Exists(name);
     }
     const std::string &RegVar(const std::string &name);
+    const std::string &RegVarRaw(const std::string &name);
     const std::string &Translate(const std::string &name);
     void EnterScope();
     void LeaveScope();
