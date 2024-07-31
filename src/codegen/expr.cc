@@ -1295,10 +1295,10 @@ void ExprRValGen::Visit(const hir::ArrayExpression &expr) {
             CopyBytes(ctx_, src, dst, base_size.size());
         } else {
             assert(base_size.size() <= 8);
+            int64_t elem_offset = -offset + i * base_size.size();
             ctx_.lvar_table().SubCalleeSize(8);
             ctx_.printer().PrintLn("    popq %rax");
-            ctx_.printer().PrintLn("    movq %rax, {}(%rbp)",
-                                   -offset + i * base_size.size());
+            ctx_.printer().PrintLn("    movq %rax, {}(%rbp)", elem_offset);
         }
 
         // Free temporary generate value.
