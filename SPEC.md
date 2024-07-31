@@ -191,7 +191,7 @@ The syntax of mini programming language is as follow:
                     | <cast-expression> "as" <type>
 <unary-expression> ::= <postfix-expression>
                      | { "&" | "*" | "-" | "~" | "!" } <unary-expression>
-                     | "esizeof" <expression>
+                     | "esizeof" <unary-expression>
                      | "tsizeof" <type>
 <postfix-expression> ::= <primary-expression>
                        | <postfix-expression> "[" <expression> "]"

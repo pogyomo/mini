@@ -372,7 +372,7 @@ std::optional<std::unique_ptr<ast::Expression>> ParseUnaryExpr(
         ast::ESizeof esizeof_kw(ts.CurrToken()->span());
         ts.Advance();
 
-        auto expr = ParseExpr(ctx, ts);
+        auto expr = ParseUnaryExpr(ctx, ts);
         if (!expr) return std::nullopt;
 
         return std::make_unique<ast::ESizeofExpression>(esizeof_kw,
