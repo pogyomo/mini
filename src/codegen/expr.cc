@@ -279,15 +279,17 @@ static bool GenAssignExpr(CodeGenContext &ctx,
     if (IsFatObject(ctx, gen_addr.inferred())) {
         ctx.printer().PrintLn("    movq -{}(%rbp), %rbx",
                               ctx.lvar_table().CalleeSize());
-    } else {
-        ctx.printer().PrintLn("    leaq -{}(%rbp), %rbx",
-                              ctx.lvar_table().CalleeSize());
-    }
 
-    // Copy rhs to lhs.
-    IndexableAsmRegPtr src(Register::BX, 0);
-    IndexableAsmRegPtr dst(Register::AX, 0);
-    CopyBytes(ctx, src, dst, size.size());
+        // Copy rhs to lhs.
+        IndexableAsmRegPtr src(Register::BX, 0);
+        IndexableAsmRegPtr dst(Register::AX, 0);
+        CopyBytes(ctx, src, dst, size.size());
+    } else {
+        assert(size.size() <= 8);
+        ctx.printer().PrintLn("    movq -{}(%rbp), %rbx",
+                              ctx.lvar_table().CalleeSize());
+        ctx.printer().PrintLn("    movq %rbx, (%rax)");
+    }
 
     inferred = gen_addr.inferred();
     return true;
