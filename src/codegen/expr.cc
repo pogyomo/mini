@@ -1318,21 +1318,17 @@ void ExprRValGen::Visit(const hir::ArrayExpression &expr) {
 
 void ExprLValGen::Visit(const hir::UnaryExpression &expr) {
     if (expr.op().kind() == hir::UnaryExpression::Op::Deref) {
-        ExprLValGen addr_gen(ctx_);
-        expr.expr()->Accept(addr_gen);
-        if (!addr_gen) return;
+        ExprRValGen gen_addr(ctx_);
+        expr.expr()->Accept(gen_addr);
+        if (!gen_addr) return;
 
-        if (!addr_gen.inferred_->IsPointer()) {
+        if (!gen_addr.inferred()->IsPointer()) {
             ReportInfo info(expr.span(), "cannot deref non-pointer", "");
             Report(ctx_.ctx(), ReportLevel::Error, info);
             return;
         }
 
-        ctx_.printer().PrintLn("    popq %rax");
-        ctx_.printer().PrintLn("    movq (%rax), %rax");
-        ctx_.printer().PrintLn("    pushq %rax");
-
-        inferred_ = addr_gen.inferred_->ToPointer()->of();
+        inferred_ = gen_addr.inferred()->ToPointer()->of();
         success_ = true;
     } else {
         ReportInfo info(expr.span(), "invalid unary operator for lvalue", "");
@@ -1341,49 +1337,8 @@ void ExprLValGen::Visit(const hir::UnaryExpression &expr) {
 }
 
 void ExprLValGen::Visit(const hir::InfixExpression &expr) {
-    if (expr.op().kind() == hir::InfixExpression::Op::Add ||
-        expr.op().kind() == hir::InfixExpression::Op::Sub) {
-        ExprLValGen lhs_addr_gen(ctx_);
-        expr.lhs()->Accept(lhs_addr_gen);
-        if (!lhs_addr_gen) return;
-
-        if (!lhs_addr_gen.inferred_->IsPointer()) {
-            ReportInfo info(expr.lhs()->span(),
-                            "non-pointer cannot be lvalue of infix expression",
-                            "");
-            Report(ctx_.ctx(), ReportLevel::Error, info);
-            return;
-        }
-
-        ExprRValGen rhs_gen(ctx_);
-        expr.rhs()->Accept(rhs_gen);
-        if (!rhs_gen) return;
-
-        // Convert rhs to usize
-        auto to = std::make_shared<hir::BuiltinType>(hir::BuiltinType::USize,
-                                                     expr.rhs()->span());
-        if (!ImplicitlyConvertValueInStack(ctx_, expr.rhs()->span(),
-                                           rhs_gen.inferred(), to)) {
-            return;
-        }
-
-        // Pop rhs
-        ctx_.lvar_table().SubCalleeSize(8);
-        ctx_.printer().PrintLn("    popq %rax");
-
-        // Calculate added/subtracted pointer.
-        if (expr.op().kind() == hir::InfixExpression::Op::Add) {
-            ctx_.printer().PrintLn("    addq %rax, (%rsp)");
-        } else {
-            ctx_.printer().PrintLn("    subq %rax, (%rsp)");
-        }
-
-        inferred_ = lhs_addr_gen.inferred_;
-        success_ = true;
-    } else {
-        ReportInfo info(expr.span(), "not a lvalue", "");
-        Report(ctx_.ctx(), ReportLevel::Error, info);
-    }
+    ReportInfo info(expr.span(), "not a lvalue", "");
+    Report(ctx_.ctx(), ReportLevel::Error, info);
 }
 
 void ExprLValGen::Visit(const hir::IndexExpression &expr) {
