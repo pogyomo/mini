@@ -85,6 +85,7 @@ void DeclCodeGen::Visit(const hir::FunctionDeclaration &decl) {
     decl.body().Accept(gen);
     if (!gen) return;
 
+    ctx_.printer().PrintLn("{}.END:", ctx_.CurrFuncName());
     ctx_.printer().PrintLn("    movq %rbp, %rsp");
     ctx_.printer().PrintLn("    popq %rbp");
     ctx_.printer().PrintLn("    retq");

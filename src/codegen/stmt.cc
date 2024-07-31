@@ -70,6 +70,8 @@ void StmtCodeGen::Visit(const hir::ReturnStatement &stmt) {
         if (diff) ctx_.printer().PrintLn("    addq ${}, %rsp", diff);
     }
 
+    ctx_.printer().PrintLn("    jmp {}.END", ctx_.CurrFuncName());
+
     success_ = true;
 }
 
