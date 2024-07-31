@@ -10,15 +10,15 @@
 namespace mini {
 
 void DeclVarReg::Visit(const ast::FunctionDeclaration &decl) {
-    ctx_.translator().RegVarRaw(decl.name().name());
+    ctx_.translator().RegNameRaw(decl.name().name());
 }
 
 void DeclVarReg::Visit(const ast::StructDeclaration &decl) {
-    ctx_.translator().RegVarRaw(decl.name().name());
+    ctx_.translator().RegNameRaw(decl.name().name());
 }
 
 void DeclVarReg::Visit(const ast::EnumDeclaration &decl) {
-    ctx_.translator().RegVarRaw(decl.name().name());
+    ctx_.translator().RegNameRaw(decl.name().name());
 }
 
 void DeclHirGen::Visit(const ast::FunctionDeclaration &decl) {
@@ -27,6 +27,7 @@ void DeclHirGen::Visit(const ast::FunctionDeclaration &decl) {
         decl.name().span());
 
     ctx_.translator().EnterScope();
+    ctx_.translator().EnterFunc();
 
     std::vector<hir::FunctionDeclarationParam> params;
     for (const auto &param : decl.params()) {
@@ -35,7 +36,7 @@ void DeclHirGen::Visit(const ast::FunctionDeclaration &decl) {
         if (!gen) return;
 
         hir::FunctionDeclarationParamName name(
-            std::string(ctx_.translator().RegVar(param.name().name())),
+            std::string(ctx_.translator().RegName(param.name().name())),
             param.name().span());
         params.emplace_back(gen.type(), std::move(name), param.span());
     }

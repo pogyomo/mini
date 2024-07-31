@@ -3,7 +3,6 @@
 
 #include <map>
 #include <memory>
-#include <stack>
 #include <string>
 
 #include "../context.h"
@@ -11,18 +10,26 @@
 
 namespace mini {
 
-class VariableTranslator {
+class NameTranslator {
 public:
-    VariableTranslator()
-        : assoc_table_(std::make_shared<SymbolAssocTable>()),
-          id_tracker_({0}),
-          current_scope_id_(0) {}
+    NameTranslator()
+        : assoc_table_(std::make_shared<SymbolAssocTable>()), curr_id_(0) {}
+
+    // Returns true if the name is registered at current or parent scopes.
     inline bool Translatable(const std::string &name) {
         return assoc_table_->Exists(name);
     }
-    const std::string &RegVar(const std::string &name);
-    const std::string &RegVarRaw(const std::string &name);
+
+    // Register name and associate it with unique name.
+    const std::string &RegName(const std::string &name);
+
+    // Register name but associate with itself.
+    const std::string &RegNameRaw(const std::string &name);
+
+    // Translate given name into associated name.
     const std::string &Translate(const std::string &name);
+
+    void EnterFunc() { curr_id_ = 0; }
     void EnterScope();
     void LeaveScope();
 
@@ -47,8 +54,7 @@ private:
     };
 
     std::shared_ptr<SymbolAssocTable> assoc_table_;
-    std::stack<uint64_t> id_tracker_;
-    uint64_t current_scope_id_;
+    uint64_t curr_id_;
 };
 
 class HirGenContext {
@@ -57,12 +63,12 @@ public:
         : ctx_(ctx), string_table_(string_table), translator_() {}
     Context &ctx() { return ctx_; }
     hir::StringTable &string_table() { return string_table_; }
-    VariableTranslator &translator() { return translator_; }
+    NameTranslator &translator() { return translator_; }
 
 private:
     Context &ctx_;
     hir::StringTable &string_table_;
-    VariableTranslator translator_;
+    NameTranslator translator_;
 };
 
 }  // namespace mini
