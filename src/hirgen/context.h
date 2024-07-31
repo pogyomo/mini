@@ -15,9 +15,10 @@ public:
     NameTranslator()
         : assoc_table_(std::make_shared<SymbolAssocTable>()), curr_id_(0) {}
 
-    // Returns true if the name is registered at current or parent scopes.
-    inline bool Translatable(const std::string &name) {
-        return assoc_table_->Exists(name);
+    // Returns true if the name is translatable.
+    // Set `upward` false will checks translatability only at current scope.
+    inline bool Translatable(const std::string &name, bool upward = true) {
+        return assoc_table_->Exists(name, upward);
     }
 
     // Register name and associate it with unique name.
@@ -39,14 +40,23 @@ private:
         SymbolAssocTable() : outer_(nullptr) {}
         SymbolAssocTable(const std::shared_ptr<SymbolAssocTable> &outer)
             : outer_(outer) {}
+
+        // Get outer table.
         inline const std::shared_ptr<SymbolAssocTable> &outer() const {
             return outer_;
         }
+
+        // Try to get name associated with `name`.
         const std::string &Query(const std::string &name);
+
+        // Insert `symbol` with `assoc`.
         inline void Insert(std::string &&symbol, std::string &&assoc) {
             map_.insert(std::make_pair(symbol, assoc));
         }
-        bool Exists(const std::string &name);
+
+        // Returns true if the `name` is registerd in thsi table.
+        // Set `upward` false will ignore outer table.
+        bool Exists(const std::string &name, bool upward);
 
     private:
         std::shared_ptr<SymbolAssocTable> outer_;

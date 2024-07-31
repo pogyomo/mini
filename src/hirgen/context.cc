@@ -48,11 +48,14 @@ const std::string &NameTranslator::SymbolAssocTable::Query(
     }
 }
 
-bool NameTranslator::SymbolAssocTable::Exists(const std::string &name) {
+bool NameTranslator::SymbolAssocTable::Exists(const std::string &name,
+                                              bool upward) {
     if (map_.find(name) != map_.end()) {
         return true;
+    } else if (upward) {
+        return outer_ ? outer_->Exists(name, upward) : false;
     } else {
-        return outer_ ? outer_->Exists(name) : false;
+        return false;
     }
 }
 
