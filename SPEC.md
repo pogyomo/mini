@@ -1,6 +1,4 @@
-# Mini
-
-A minimal, but self-hostable programming language.
+# The mini language specification
 
 ## Entry point of program
 
@@ -218,6 +216,6 @@ The syntax of mini programming language is as follow:
 <struct-init> ::= <identifier> "{" <struct-initializers> "}"
 <struct-initializers> ::= <struct-initializer> [ "," [ <struct-initializers> ] ]
 <struct-initializer> ::= <identifier> ":" <expression>
-<array-init> ::= "[" <array-initializers> "]"
+<array-init> ::= "{" <array-initializers> "}"
 <array-initializers> ::= <expression> [ "," [ <array-initializers> ] ]
 ```
