@@ -1302,6 +1302,8 @@ void ExprLValGen::Visit(const hir::IndexExpression &expr) {
     of->Accept(of_size);
     if (!of_size) return;
 
+    ctx_.lvar_table().SaveCalleeSize();
+
     ExprRValGen gen_index(ctx_, std::nullopt);
     expr.index()->Accept(gen_index);
     if (!gen_index) return;
@@ -1318,10 +1320,17 @@ void ExprLValGen::Visit(const hir::IndexExpression &expr) {
     ctx_.lvar_table().SubCalleeSize(8);
     ctx_.printer().PrintLn("    popq %rax");
 
-    // Calculate address to element.
+    // Calculate offset to the element
     ctx_.printer().PrintLn("    movq ${}, %rbx", of_size.size());
     ctx_.printer().PrintLn("    mulq %rbx");
+
+    // Change address to point to element.
     ctx_.printer().PrintLn("    addq %rax, (%rsp)");
+
+    // Free memory allocated by rhs so top of stack to be generated address.
+    ctx_.printer().PrintLn("    # HERE");
+    auto diff = ctx_.lvar_table().RestoreCalleeSize();
+    if (diff) ctx_.printer().PrintLn("    addq ${}, %rsp", diff);
 
     inferred_ = of;
     success_ = true;
