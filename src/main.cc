@@ -192,19 +192,53 @@ int main(int argc, char *argv[]) {
                 mini::FatalError("as failed");
             }
         } else {
-            int as_result =
+            char start_asm_file[] = "/tmp/mini-XXXXXX.s";
+            char start_obj_file[] = "/tmp/mini-XXXXXX.o";
+            int start_asm_fd = mkstemps(start_asm_file, 2);
+            if (start_asm_fd == -1)
+                mini::FatalError("failed to create temporary file");
+            int start_obj_fd = mkstemps(start_obj_file, 2);
+            if (start_obj_fd == -1)
+                mini::FatalError("failed to create temporary file");
+
+            std::ofstream start(start_asm_file);
+            start << "    .text" << std::endl;
+            start << "    .global _start" << std::endl;
+            start << "_start:" << std::endl;
+            start << "    callq main" << std::endl;
+            start << "    movq %rax, %rdi" << std::endl;
+            start << "    movq $60, %rax" << std::endl;
+            start << "    syscall" << std::endl;
+
+            int as_result = system(
+                fmt::format("as {} -o {}", start_asm_file, start_obj_file)
+                    .c_str());
+            if (as_result) {
+                close(asm_fd);
+                close(obj_fd);
+                close(start_asm_fd);
+                close(start_obj_fd);
+                mini::FatalError("as failed");
+            }
+
+            as_result =
                 system(fmt::format("as {} -o {}", asm_file, obj_file).c_str());
             if (as_result) {
                 close(asm_fd);
                 close(obj_fd);
+                close(start_asm_fd);
+                close(start_obj_fd);
                 mini::FatalError("as failed");
             }
 
-            int ld_result =
-                system(fmt::format("ld -dynamic-linker "
-                                   "/lib64/ld-linux-x86-64.so.2 -lc {} -o {}",
-                                   obj_file, output)
-                           .c_str());
+            int ld_result = system(
+                fmt::format("ld -dynamic-linker "
+                            "/lib64/ld-linux-x86-64.so.2 -lc {} {} -o {}",
+                            obj_file, start_obj_file, output)
+                    .c_str());
+
+            close(start_asm_fd);
+            close(start_obj_fd);
             if (ld_result) {
                 close(asm_fd);
                 close(obj_fd);
