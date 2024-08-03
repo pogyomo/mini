@@ -129,32 +129,40 @@ private:
     bool print_help_;
 };
 
+static void gen_hir(const std::string &input, const std::string &output) {
+    mini::Context ctx;
+    auto root = mini::HirGenFile(ctx, input);
+    if (!root) std::exit(EXIT_FAILURE);
+
+    std::ofstream ofs(output);
+    if (ofs.bad()) mini::FatalError("failed to open output file");
+
+    mini::hir::PrintableContext pctx(ofs, 4);
+    root->PrintLn(pctx);
+}
+
+static void gen_asm(const std::string &input, const std::string &output) {
+    std::ofstream ofs(output);
+    if (ofs.bad()) mini::FatalError("failed to open output file");
+
+    mini::Context ctx;
+    auto success = mini::CodeGenFile(ctx, ofs, input);
+    if (!success) std::exit(EXIT_FAILURE);
+}
+
 int main(int argc, char *argv[]) {
     Arguments args(argc, argv);
     if (args.print_help()) {
         usage(std::cout, UsageKind::Normal);
     } else if (args.emit_hir()) {
-        mini::Context ctx;
-        auto root = mini::HirGenFile(ctx, args.input());
-        if (!root) std::exit(EXIT_FAILURE);
-
         std::string output = args.output()
                                  ? args.output().value()
                                  : replace_suffix(args.input(), "hir");
-        std::ofstream ofs(output);
-        if (ofs.bad()) mini::FatalError("failed to open output file");
-
-        mini::hir::PrintableContext pctx(ofs, 4);
-        root->PrintLn(pctx);
+        gen_hir(args.input(), output);
     } else if (args.emit_asm()) {
         std::string output = args.output() ? args.output().value()
                                            : replace_suffix(args.input(), "s");
-        std::ofstream ofs(output);
-        if (ofs.bad()) mini::FatalError("failed to open output file");
-
-        mini::Context ctx;
-        auto success = mini::CodeGenFile(ctx, ofs, args.input());
-        if (!success) std::exit(EXIT_FAILURE);
+        gen_asm(args.input(), output);
     } else {
         char asm_file[] = "/tmp/mini-XXXXXX.s";
         char obj_file[] = "/tmp/mini-XXXXXX.o";
@@ -173,14 +181,7 @@ int main(int argc, char *argv[]) {
         int obj_fd = mkstemps(obj_file, 2);
         if (obj_fd == -1) mini::FatalError("failed to create temporary file");
 
-        std::ofstream asm_fs(asm_file);
-        if (asm_fs.bad()) {
-            mini::FatalError("failed to open temporary file");
-        }
-
-        mini::Context ctx;
-        auto success = mini::CodeGenFile(ctx, asm_fs, args.input());
-        if (!success) std::exit(EXIT_FAILURE);
+        gen_asm(args.input(), asm_file);
 
         if (args.emit_obj()) {
             int as_result =
@@ -200,7 +201,10 @@ int main(int argc, char *argv[]) {
             }
 
             int ld_result =
-                system(fmt::format("ld {} -o {}", obj_file, output).c_str());
+                system(fmt::format("ld -dynamic-linker "
+                                   "/lib64/ld-linux-x86-64.so.2 -lc {} -o {}",
+                                   obj_file, output)
+                           .c_str());
             if (ld_result) {
                 close(asm_fd);
                 close(obj_fd);
