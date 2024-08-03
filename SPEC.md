@@ -123,7 +123,7 @@ The syntax of mini programming language is as follow:
 <declaration> ::= <function-declaration>
                 | <struct-declaration>
                 | <enum-declaration>
-<function-declaration> ::= "function" "(" <function-parameters> ")" [ "->" <type> ] <block-statement>
+<function-declaration> ::= "function" "(" <function-parameters> ")" [ "->" <type> ] [ <block-statement> ]
 <function-parameters> ::= <function-parameter>
                         | <function-parameter> "," <function-parameters>
 <function-parameter> ::= <identifier> ":" <type>

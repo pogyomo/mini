@@ -51,16 +51,24 @@ void DeclHirGen::Visit(const ast::FunctionDeclaration &decl) {
 
     std::vector<std::unique_ptr<hir::Statement>> stmts;
     std::vector<hir::VariableDeclaration> decls;
-    for (const auto &item : decl.body()->items()) {
-        if (!HirGenBlockItem(ctx_, item, stmts, decls)) return;
+    if (decl.body().IsConcrete()) {
+        for (const auto &item : decl.body().ToConcrete()->items()) {
+            if (!HirGenBlockItem(ctx_, item, stmts, decls)) return;
+        }
     }
 
     ctx_.translator().LeaveScope();
 
-    hir::BlockStatement body(std::move(stmts), decl.body()->span());
-    decl_ = std::make_unique<hir::FunctionDeclaration>(
-        std::move(name), std::move(params), ret, std::move(decls),
-        std::move(body), decl.span());
+    if (decl.body().IsConcrete()) {
+        hir::BlockStatement body(std::move(stmts), decl.body().span());
+        decl_ = std::make_unique<hir::FunctionDeclaration>(
+            std::move(name), std::move(params), ret, std::move(decls),
+            std::move(body), decl.span());
+    } else {
+        decl_ = std::make_unique<hir::FunctionDeclaration>(
+            std::move(name), std::move(params), ret, std::move(decls),
+            std::nullopt, decl.span());
+    }
     success_ = true;
 }
 

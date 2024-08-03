@@ -930,7 +930,10 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
                                    -offset + entry.Offset());
         }
 
-        ctx_.printer().PrintLn("    callq {}", var.value());
+        if (callee_info.is_outer())
+            ctx_.printer().PrintLn("    callq {}@PLT", var.value());
+        else
+            ctx_.printer().PrintLn("    callq {}", var.value());
 
         // Ensure push returned value.
         caller_table.AddCalleeSize(8);

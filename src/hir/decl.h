@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -238,7 +239,7 @@ public:
                         std::vector<FunctionDeclarationParam> &&params,
                         const std::shared_ptr<Type> &ret,
                         std::vector<VariableDeclaration> &&decls,
-                        BlockStatement &&body, Span span)
+                        std::optional<BlockStatement> &&body, Span span)
         : Declaration(span),
           name_(std::move(name)),
           params_(std::move(params)),
@@ -257,14 +258,14 @@ public:
     inline const std::vector<VariableDeclaration> &decls() const {
         return decls_;
     }
-    inline const BlockStatement &body() const { return body_; }
+    inline const std::optional<BlockStatement> &body() const { return body_; }
 
 private:
     FunctionDeclarationName name_;
     std::vector<FunctionDeclarationParam> params_;
     std::shared_ptr<Type> ret_;
     std::vector<VariableDeclaration> decls_;
-    BlockStatement body_;
+    std::optional<BlockStatement> body_;
 };
 
 }  // namespace hir

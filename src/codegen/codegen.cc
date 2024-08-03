@@ -37,13 +37,15 @@ bool CodeGenFile(Context &ctx, std::ostream &os, const std::string &path) {
         if (!gen) return false;
     }
 
-    gen_ctx.printer().PrintLn("    .text");
-    gen_ctx.printer().PrintLn("    .global _start");
-    gen_ctx.printer().PrintLn("_start:");
-    gen_ctx.printer().PrintLn("    callq main");
-    gen_ctx.printer().PrintLn("    movq %rax, %rdi");
-    gen_ctx.printer().PrintLn("    movq $60, %rax");
-    gen_ctx.printer().PrintLn("    syscall");
+    if (gen_ctx.func_info_table().Exists("main")) {
+        gen_ctx.printer().PrintLn("    .text");
+        gen_ctx.printer().PrintLn("    .global _start");
+        gen_ctx.printer().PrintLn("_start:");
+        gen_ctx.printer().PrintLn("    callq main");
+        gen_ctx.printer().PrintLn("    movq %rax, %rdi");
+        gen_ctx.printer().PrintLn("    movq $60, %rax");
+        gen_ctx.printer().PrintLn("    syscall");
+    }
 
     return true;
 }

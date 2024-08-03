@@ -1,8 +1,10 @@
 #ifndef MINI_AST_DECL_H_
 #define MINI_AST_DECL_H_
 
+#include <memory>
 #include <optional>
 #include <string>
+#include <variant>
 
 #include "expr.h"
 #include "node.h"
@@ -86,6 +88,26 @@ private:
     std::shared_ptr<Type> type_;
 };
 
+class FunctionDeclarationBody : public Node {
+public:
+    FunctionDeclarationBody(std::unique_ptr<BlockStatement>&& concrete)
+        : vars_(std::move(concrete)) {}
+    FunctionDeclarationBody(Semicolon opaque) : vars_(opaque) {}
+    inline Span span() const {
+        return vars_.index() == 0 ? std::get<0>(vars_)->span()
+                                  : std::get<1>(vars_).span();
+    }
+    inline bool IsConcrete() const { return vars_.index() == 0; }
+    inline bool IsOpaque() const { return vars_.index() == 1; }
+    inline const std::unique_ptr<BlockStatement>& ToConcrete() const {
+        return std::get<0>(vars_);
+    }
+    inline Semicolon ToOpaque() const { return std::get<1>(vars_); }
+
+private:
+    std::variant<std::unique_ptr<BlockStatement>, Semicolon> vars_;
+};
+
 class FunctionDeclaration : public Declaration {
 public:
     FunctionDeclaration(Function function_kw, FunctionDeclarationName&& name,
@@ -93,7 +115,7 @@ public:
                         std::vector<FunctionDeclarationParameter>&& params,
                         RParen rparen,
                         std::optional<FunctionDeclarationReturn>&& ret,
-                        std::unique_ptr<BlockStatement>&& body)
+                        FunctionDeclarationBody&& body)
         : function_kw_(function_kw),
           name_(std::move(name)),
           lparen_(lparen),
@@ -105,7 +127,7 @@ public:
         visitor.Visit(*this);
     }
     inline Span span() const override {
-        return function_kw_.span() + body_->span();
+        return function_kw_.span() + body_.span();
     }
     inline Function function_kw() const { return function_kw_; }
     inline const FunctionDeclarationName& name() const { return name_; }
@@ -115,7 +137,7 @@ public:
     }
     inline RParen rparen() const { return rparen_; }
     const std::optional<FunctionDeclarationReturn>& ret() const { return ret_; }
-    inline const std::unique_ptr<BlockStatement>& body() const { return body_; }
+    inline const FunctionDeclarationBody& body() const { return body_; }
 
 private:
     Function function_kw_;
@@ -124,7 +146,7 @@ private:
     std::vector<FunctionDeclarationParameter> params_;
     RParen rparen_;
     std::optional<FunctionDeclarationReturn> ret_;
-    std::unique_ptr<BlockStatement> body_;
+    FunctionDeclarationBody body_;
 };
 
 class StructDeclarationName : public Node {

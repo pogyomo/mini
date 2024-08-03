@@ -42,7 +42,8 @@ void DeclCollect::Visit(const hir::EnumDeclaration &decl) {
 }
 
 void DeclCollect::Visit(const hir::FunctionDeclaration &decl) {
-    FuncInfoTable::Entry entry(decl.ret(), decl.span());
+    bool is_outer = decl.body() ? false : true;
+    FuncInfoTable::Entry entry(decl.ret(), is_outer, decl.span());
     for (const auto &param : decl.params()) {
         entry.params().Insert(std::string(param.name().value()), param.type());
     }
@@ -53,6 +54,11 @@ void DeclCollect::Visit(const hir::FunctionDeclaration &decl) {
 
 void DeclCodeGen::Visit(const hir::FunctionDeclaration &decl) {
     if (!ConstructLVarTable(ctx_, decl)) {
+        return;
+    }
+
+    if (!decl.body()) {
+        success_ = true;
         return;
     }
 
@@ -91,7 +97,7 @@ void DeclCodeGen::Visit(const hir::FunctionDeclaration &decl) {
     }
 
     StmtCodeGen gen(ctx_);
-    decl.body().Accept(gen);
+    decl.body()->Accept(gen);
     if (!gen) return;
 
     ctx_.printer().PrintLn("{}.END:", ctx_.CurrFuncName());

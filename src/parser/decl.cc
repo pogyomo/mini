@@ -93,12 +93,21 @@ std::optional<std::unique_ptr<ast::FunctionDeclaration>> ParseFuncDecl(
         ret.emplace(arrow, std::move(*type));
     }
 
-    auto body = ParseBlockStmt(ctx, ts);
-    if (!body) return std::nullopt;
+    if (ts && ts.CurrToken()->IsPunctOf(PunctTokenKind::Semicolon)) {
+        ast::Semicolon semicolon(ts.CurrToken()->span());
+        ts.Advance();
 
-    return std::make_unique<ast::FunctionDeclaration>(
-        function_kw, std::move(name), lparen, std::move(params), rparen,
-        std::move(ret), std::move(*body));
+        return std::make_unique<ast::FunctionDeclaration>(
+            function_kw, std::move(name), lparen, std::move(params), rparen,
+            std::move(ret), semicolon);
+    } else {
+        auto body = ParseBlockStmt(ctx, ts);
+        if (!body) return std::nullopt;
+
+        return std::make_unique<ast::FunctionDeclaration>(
+            function_kw, std::move(name), lparen, std::move(params), rparen,
+            std::move(ret), std::move(*body));
+    }
 }
 
 std::optional<std::unique_ptr<ast::StructDeclaration>> ParseStructDecl(

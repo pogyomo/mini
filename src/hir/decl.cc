@@ -69,11 +69,15 @@ void FunctionDeclaration::Print(PrintableContext &ctx) const {
             decl.type()->Print(ctx);
             ctx.printer().PrintLn(",");
         }
-        ctx.printer().Print("}} ");
+        ctx.printer().Print("}}");
     } else {
-        ctx.printer().Print("): {} {{}} ", ret_->ToString());
+        ctx.printer().Print("): {} {{}}", ret_->ToString());
     }
-    body_.Print(ctx);
+    if (body_) {
+        body_->Print(ctx);
+    } else {
+        ctx.printer().Print(";");
+    }
 }
 
 }  // namespace hir
