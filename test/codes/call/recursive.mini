@@ -1,0 +1,56 @@
+function fib(n: usize, m: *usize, f: *bool) -> usize {
+    if (f[n]) {
+        return m[n];
+    } else if (n == 0 || n == 1){
+        m[n] = n;
+        f[n] = true;
+        return m[n];
+    } else {
+        m[n - 1] = fib(n - 1, m, f);
+        f[n - 1] = true;
+        m[n - 2] = fib(n - 2, m, f);
+        f[n - 2] = true;
+        return m[n - 1] + m[n - 2];
+    }
+}
+
+function main() -> usize {
+    let m: (usize)[100];
+    let f: (bool)[100];
+    {
+        let i: usize = 0;
+        while (i < 100) {
+            f[i] = false;
+            i = i + 1;
+        }
+    }
+
+    let expect: ((usize)[2])[] = {
+        {0, 0},
+        {1, 1},
+        {2, 1},
+        {3, 2},
+        {4, 3},
+        {5, 5},
+        {6, 8},
+        {7, 13},
+        {8, 21},
+        {9, 34},
+        {10, 55},
+        {11, 89},
+        {12, 144},
+        {13, 233},
+        {14, 377},
+        {15, 610},
+    };
+    {
+        let i: usize = 0;
+        while (i < esizeof expect / esizeof expect[0]) {
+            if (fib(expect[i][0], m, f) != expect[i][1]) {
+                return i + 1;
+            }
+            i = i + 1;
+        }
+    }
+    return 0;
+}
