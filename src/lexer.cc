@@ -4,7 +4,9 @@
 #include <cstdint>
 #include <iterator>
 #include <map>
+#include <memory>
 #include <string>
+#include <vector>
 
 #include "context.h"
 #include "panic.h"
@@ -59,35 +61,71 @@ private:
 };
 
 static const std::map<std::string, KeywordTokenKind> keywords = {
-    {"as", KeywordTokenKind::As},
-    {"bool", KeywordTokenKind::Bool},
-    {"break", KeywordTokenKind::Break},
-    {"char", KeywordTokenKind::Char},
+    {"as",       KeywordTokenKind::As      },
+    {"bool",     KeywordTokenKind::Bool    },
+    {"break",    KeywordTokenKind::Break   },
+    {"char",     KeywordTokenKind::Char    },
     {"continue", KeywordTokenKind::Continue},
-    {"esizeof", KeywordTokenKind::ESizeof},
-    {"else", KeywordTokenKind::Else},
-    {"enum", KeywordTokenKind::Enum},
-    {"false", KeywordTokenKind::False},
+    {"esizeof",  KeywordTokenKind::ESizeof },
+    {"else",     KeywordTokenKind::Else    },
+    {"enum",     KeywordTokenKind::Enum    },
+    {"false",    KeywordTokenKind::False   },
     {"function", KeywordTokenKind::Function},
-    {"if", KeywordTokenKind::If},
-    {"let", KeywordTokenKind::Let},
-    {"return", KeywordTokenKind::Return},
-    {"struct", KeywordTokenKind::Struct},
-    {"tsizeof", KeywordTokenKind::TSizeof},
-    {"true", KeywordTokenKind::True},
-    {"while", KeywordTokenKind::While},
-    {"void", KeywordTokenKind::Void},
-    {"isize", KeywordTokenKind::ISize},
-    {"int8", KeywordTokenKind::Int8},
-    {"int16", KeywordTokenKind::Int16},
-    {"int32", KeywordTokenKind::Int32},
-    {"int64", KeywordTokenKind::Int64},
-    {"usize", KeywordTokenKind::USize},
-    {"uint8", KeywordTokenKind::UInt8},
-    {"uint16", KeywordTokenKind::UInt16},
-    {"uint32", KeywordTokenKind::UInt32},
-    {"uint64", KeywordTokenKind::UInt64},
-    {"nullptr", KeywordTokenKind::NullPtr},
+    {"if",       KeywordTokenKind::If      },
+    {"let",      KeywordTokenKind::Let     },
+    {"return",   KeywordTokenKind::Return  },
+    {"struct",   KeywordTokenKind::Struct  },
+    {"tsizeof",  KeywordTokenKind::TSizeof },
+    {"true",     KeywordTokenKind::True    },
+    {"while",    KeywordTokenKind::While   },
+    {"void",     KeywordTokenKind::Void    },
+    {"isize",    KeywordTokenKind::ISize   },
+    {"int8",     KeywordTokenKind::Int8    },
+    {"int16",    KeywordTokenKind::Int16   },
+    {"int32",    KeywordTokenKind::Int32   },
+    {"int64",    KeywordTokenKind::Int64   },
+    {"usize",    KeywordTokenKind::USize   },
+    {"uint8",    KeywordTokenKind::UInt8   },
+    {"uint16",   KeywordTokenKind::UInt16  },
+    {"uint32",   KeywordTokenKind::UInt32  },
+    {"uint64",   KeywordTokenKind::UInt64  },
+    {"nullptr",  KeywordTokenKind::NullPtr },
+};
+
+static const std::vector<std::pair<std::string, PunctTokenKind>> puncts = {
+    {"+",  PunctTokenKind::Plus       },
+    {"->", PunctTokenKind::Arrow      },
+    {"-",  PunctTokenKind::Minus      },
+    {"*",  PunctTokenKind::Star       },
+    {"/",  PunctTokenKind::Slash      },
+    {"%",  PunctTokenKind::Percent    },
+    {"||", PunctTokenKind::Or         },
+    {"|",  PunctTokenKind::Vertical   },
+    {"&&", PunctTokenKind::And        },
+    {"&",  PunctTokenKind::Ampersand  },
+    {"^",  PunctTokenKind::Hat        },
+    {"==", PunctTokenKind::EQ         },
+    {"!=", PunctTokenKind::NE         },
+    {"=",  PunctTokenKind::Assign     },
+    {"<=", PunctTokenKind::LE         },
+    {"<<", PunctTokenKind::LShift     },
+    {"<",  PunctTokenKind::LT         },
+    {">=", PunctTokenKind::GE         },
+    {">>", PunctTokenKind::RShift     },
+    {">",  PunctTokenKind::GT         },
+    {"~",  PunctTokenKind::Tilde      },
+    {"!",  PunctTokenKind::Exclamation},
+    {".",  PunctTokenKind::Dot        },
+    {"{",  PunctTokenKind::LCurly     },
+    {"(",  PunctTokenKind::LParen     },
+    {"[",  PunctTokenKind::LSquare    },
+    {"}",  PunctTokenKind::RCurly     },
+    {")",  PunctTokenKind::RParen     },
+    {"]",  PunctTokenKind::RSquare    },
+    {";",  PunctTokenKind::Semicolon  },
+    {",",  PunctTokenKind::Comma      },
+    {":",  PunctTokenKind::Colon      },
+    {"::", PunctTokenKind::ColonColon },
 };
 
 class LexContext {
@@ -133,111 +171,26 @@ static LexResult lex_line(LexContext &ctx, size_t id, size_t row,
 
         Position start = stream.Pos();
         Position end = start;
+
         if (stream.Accept("//", end)) {
             break;
         } else if (stream.Accept("/*", end)) {
             ctx.EnterMultilineComment();
             continue;
-        } else if (stream.Accept("+", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::Plus,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept("->", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::Arrow,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept("-", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::Minus,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept("*", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::Star,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept("/", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::Slash,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept("%", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::Percent,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept("||", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::Or,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept("|", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::Vertical,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept("&&", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::And,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept("&", end)) {
-            res.push_back(std::make_unique<PunctToken>(
-                PunctTokenKind::Ampersand, Span(id, start, end)));
-        } else if (stream.Accept("^", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::Hat,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept("==", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::EQ,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept("!=", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::NE,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept("=", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::Assign,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept("<=", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::LE,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept("<<", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::LShift,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept("<", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::LT,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept(">=", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::GE,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept(">>", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::RShift,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept(">", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::GT,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept("~", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::Tilde,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept("!", end)) {
-            res.push_back(std::make_unique<PunctToken>(
-                PunctTokenKind::Exclamation, Span(id, start, end)));
-        } else if (stream.Accept(".", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::Dot,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept("{", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::LCurly,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept("(", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::LParen,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept("[", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::LSquare,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept("}", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::RCurly,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept(")", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::RParen,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept("]", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::RSquare,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept(";", end)) {
-            res.push_back(std::make_unique<PunctToken>(
-                PunctTokenKind::Semicolon, Span(id, start, end)));
-        } else if (stream.Accept(",", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::Comma,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept("::", end)) {
-            res.push_back(std::make_unique<PunctToken>(
-                PunctTokenKind::ColonColon, Span(id, start, end)));
-        } else if (stream.Accept(":", end)) {
-            res.push_back(std::make_unique<PunctToken>(PunctTokenKind::Colon,
-                                                       Span(id, start, end)));
-        } else if (stream.Accept('"', end)) {
+        }
+
+        bool found = false;
+        for (const auto &punct : puncts) {
+            if (stream.Accept(punct.first, end)) {
+                res.push_back(std::make_unique<PunctToken>(
+                    punct.second, Span(id, start, end)));
+                found = true;
+                break;
+            }
+        }
+        if (found) continue;
+
+        if (stream.Accept('"', end)) {
             std::string value;
             while (true) {
                 if (!stream) {
