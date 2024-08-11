@@ -518,7 +518,8 @@ public:
           string_table_(string_table),
           printer_(os, should_output_),
           loop_depth_(0),
-          should_output_(true) {}
+          should_output_(true),
+          suppress_output_count_(0) {}
     inline Context &ctx() { return ctx_; }
     inline const hir::StringTable &string_table() { return string_table_; }
     inline Printer &printer() { return printer_; }
@@ -543,8 +544,14 @@ public:
         }
     }
     inline bool ShouldOutput() const { return should_output_; }
-    inline void SuppressOutput() { should_output_ = false; }
-    inline void ActivateOutput() { should_output_ = true; }
+    inline void SuppressOutput() {
+        suppress_output_count_++;
+        should_output_ = false;
+    }
+    inline void ActivateOutput() {
+        if (suppress_output_count_-- == 0) FatalError("already activated");
+        if (suppress_output_count_ == 0) should_output_ = true;
+    }
 
 private:
     Context &ctx_;
@@ -557,6 +564,7 @@ private:
     std::string curr_func_name_;
     uint64_t loop_depth_;
     bool should_output_;
+    uint64_t suppress_output_count_;
 };
 
 }  // namespace mini
