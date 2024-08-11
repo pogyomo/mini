@@ -204,7 +204,10 @@ bool ConstructLVarTable(CodeGenContext &ctx,
     }
 
     // Ensure the stack aligned 8 bytes
+    auto prev = table.CalleeSize();
     table.AlignCalleeSize(8);
+    auto diff = table.CalleeSize() - prev;
+    if (diff) ctx.printer().PrintLn("    subq ${}, %rsp", diff);
 
     return true;
 }
