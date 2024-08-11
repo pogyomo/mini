@@ -43,6 +43,7 @@ enum class PunctTokenKind {
     Comma,        // ","
     Colon,        // ":"
     ColonColon,   // "::"
+    DotDotDot,    // "..."
 };
 
 enum class KeywordTokenKind {

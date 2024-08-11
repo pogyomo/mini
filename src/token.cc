@@ -70,6 +70,8 @@ std::string ToString(PunctTokenKind kind) {
             return ":";
         case PunctTokenKind::ColonColon:
             return "::";
+        case PunctTokenKind::DotDotDot:
+            return "...";
         default:
             return "";
     }

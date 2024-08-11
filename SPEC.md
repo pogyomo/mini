@@ -126,6 +126,7 @@ The syntax of mini programming language is as follow:
 <function-declaration> ::= "function" "(" <function-parameters> ")" [ "->" <type> ] [ <block-statement> ]
 <function-parameters> ::= <function-parameter>
                         | <function-parameter> "," <function-parameters>
+                        | "..."
 <function-parameter> ::= <identifier> ":" <type>
 <struct-declaration> ::= "struct" "{" <struct-items> "}"
 <struct-items> ::= <struct-item> [ "," [ <struct-items> ] ]
