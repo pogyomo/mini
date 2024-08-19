@@ -38,6 +38,9 @@ void DeclHirGen::Visit(const ast::FunctionDeclaration &decl) {
         params.emplace_back(gen.type(), std::move(name), param.span());
     }
 
+    std::optional<hir::FunctionDeclarationVariadic> variadic;
+    if (decl.variadic()) variadic.emplace(decl.variadic()->span());
+
     std::shared_ptr<hir::Type> ret;
     if (decl.ret()) {
         TypeHirGen gen(ctx_);
@@ -62,11 +65,11 @@ void DeclHirGen::Visit(const ast::FunctionDeclaration &decl) {
     if (decl.body().IsConcrete()) {
         hir::BlockStatement body(std::move(stmts), decl.body().span());
         decl_ = std::make_unique<hir::FunctionDeclaration>(
-            std::move(name), std::move(params), ret, std::move(decls),
+            std::move(name), std::move(params), variadic, ret, std::move(decls),
             std::move(body), decl.span());
     } else {
         decl_ = std::make_unique<hir::FunctionDeclaration>(
-            std::move(name), std::move(params), ret, std::move(decls),
+            std::move(name), std::move(params), variadic, ret, std::move(decls),
             std::nullopt, decl.span());
     }
     success_ = true;

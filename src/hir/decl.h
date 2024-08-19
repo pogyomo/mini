@@ -233,16 +233,27 @@ private:
     VariableDeclarationName name_;
 };
 
+class FunctionDeclarationVariadic {
+public:
+    FunctionDeclarationVariadic(Span span) : span_(span) {}
+    inline Span span() const { return span_; }
+
+private:
+    Span span_;
+};
+
 class FunctionDeclaration : public Declaration {
 public:
     FunctionDeclaration(FunctionDeclarationName &&name,
                         std::vector<FunctionDeclarationParam> &&params,
+                        std::optional<FunctionDeclarationVariadic> variadic,
                         const std::shared_ptr<Type> &ret,
                         std::vector<VariableDeclaration> &&decls,
                         std::optional<BlockStatement> &&body, Span span)
         : Declaration(span),
           name_(std::move(name)),
           params_(std::move(params)),
+          variadic_(variadic),
           ret_(ret),
           decls_(std::move(decls)),
           body_(std::move(body)) {}
@@ -263,6 +274,7 @@ public:
 private:
     FunctionDeclarationName name_;
     std::vector<FunctionDeclarationParam> params_;
+    std::optional<FunctionDeclarationVariadic> variadic_;
     std::shared_ptr<Type> ret_;
     std::vector<VariableDeclaration> decls_;
     std::optional<BlockStatement> body_;

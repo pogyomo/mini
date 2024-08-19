@@ -45,9 +45,9 @@ private:
     Span span_;
 };
 
-class FunctionDeclarationParameterName : public Node {
+class FunctionDeclarationParamName : public Node {
 public:
-    FunctionDeclarationParameterName(std::string&& name, Span span)
+    FunctionDeclarationParamName(std::string&& name, Span span)
         : name_(std::move(name)), span_(span) {}
     inline Span span() const override { return span_; }
     inline const std::string& name() const { return name_; }
@@ -57,20 +57,18 @@ private:
     Span span_;
 };
 
-class FunctionDeclarationParameter : public Node {
+class FunctionDeclarationParam : public Node {
 public:
-    FunctionDeclarationParameter(FunctionDeclarationParameterName&& name,
-                                 Colon colon, const std::shared_ptr<Type>& type)
+    FunctionDeclarationParam(FunctionDeclarationParamName&& name, Colon colon,
+                             const std::shared_ptr<Type>& type)
         : name_(std::move(name)), colon_(colon), type_(type) {}
     inline Span span() const override { return type_->span() + name_.span(); }
     inline const std::shared_ptr<Type>& type() const { return type_; }
     inline Colon colon() const { return colon_; }
-    inline const FunctionDeclarationParameterName& name() const {
-        return name_;
-    }
+    inline const FunctionDeclarationParamName& name() const { return name_; }
 
 private:
-    FunctionDeclarationParameterName name_;
+    FunctionDeclarationParamName name_;
     Colon colon_;
     std::shared_ptr<Type> type_;
 };
@@ -79,13 +77,23 @@ class FunctionDeclarationReturn : public Node {
 public:
     FunctionDeclarationReturn(Arrow arrow, const std::shared_ptr<Type>& type)
         : arrow_(arrow), type_(type) {}
-    inline Span span() const { return arrow_.span() + type_->span(); }
+    inline Span span() const override { return arrow_.span() + type_->span(); }
     inline Arrow arrow() const { return arrow_; }
     inline const std::shared_ptr<Type>& type() const { return type_; }
 
 private:
     Arrow arrow_;
     std::shared_ptr<Type> type_;
+};
+
+class FunctionDeclarationVariadic : public Node {
+public:
+    FunctionDeclarationVariadic(DotDotDot dotdotdot) : dotdotdot_(dotdotdot) {}
+    inline Span span() const override { return dotdotdot_.span(); }
+    inline DotDotDot dotdotdot() const { return dotdotdot_; }
+
+private:
+    DotDotDot dotdotdot_;
 };
 
 class FunctionDeclarationBody : public Node {
@@ -112,7 +120,8 @@ class FunctionDeclaration : public Declaration {
 public:
     FunctionDeclaration(Function function_kw, FunctionDeclarationName&& name,
                         LParen lparen,
-                        std::vector<FunctionDeclarationParameter>&& params,
+                        std::vector<FunctionDeclarationParam>&& params,
+                        std::optional<FunctionDeclarationVariadic> variadic,
                         RParen rparen,
                         std::optional<FunctionDeclarationReturn>&& ret,
                         FunctionDeclarationBody&& body)
@@ -120,6 +129,7 @@ public:
           name_(std::move(name)),
           lparen_(lparen),
           params_(std::move(params)),
+          variadic_(variadic),
           rparen_(rparen),
           ret_(std::move(ret)),
           body_(std::move(body)) {}
@@ -131,8 +141,11 @@ public:
     }
     inline Function function_kw() const { return function_kw_; }
     inline const FunctionDeclarationName& name() const { return name_; }
+    inline std::optional<FunctionDeclarationVariadic> variadic() const {
+        return variadic_;
+    }
     inline LParen lparen() const { return lparen_; }
-    inline const std::vector<FunctionDeclarationParameter>& params() const {
+    inline const std::vector<FunctionDeclarationParam>& params() const {
         return params_;
     }
     inline RParen rparen() const { return rparen_; }
@@ -143,7 +156,8 @@ private:
     Function function_kw_;
     FunctionDeclarationName name_;
     LParen lparen_;
-    std::vector<FunctionDeclarationParameter> params_;
+    std::vector<FunctionDeclarationParam> params_;
+    std::optional<FunctionDeclarationVariadic> variadic_;
     RParen rparen_;
     std::optional<FunctionDeclarationReturn> ret_;
     FunctionDeclarationBody body_;

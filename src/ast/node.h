@@ -36,6 +36,7 @@ GEN_NODE(Star);
 GEN_NODE(Arrow);
 GEN_NODE(Colon);
 GEN_NODE(ColonColon);
+GEN_NODE(DotDotDot);
 
 GEN_NODE(As);
 GEN_NODE(Break);

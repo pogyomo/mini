@@ -56,6 +56,7 @@ void FunctionDeclaration::Print(PrintableContext &ctx) const {
             ctx.printer().Print("{}: ", param.name().value());
             param.type()->Print(ctx);
         }
+        if (variadic_) ctx.printer().Print(", ...");
     }
     if (!decls_.empty()) {
         ctx.printer().ShiftR();
