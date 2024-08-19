@@ -1056,6 +1056,10 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
                                    -offset + entry.Offset());
         }
 
+        // This compiler doesn't use floating point number at a time.
+        // So, set %al to 0 as system v abi claim it.
+        ctx_.printer().PrintLn("    movb $0, %al");
+
         if (callee_info.is_outer())
             ctx_.printer().PrintLn("    callq {}@PLT", var.value());
         else
