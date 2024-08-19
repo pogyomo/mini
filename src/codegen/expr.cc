@@ -87,7 +87,7 @@ public:
         uint64_t offset_;              // Used when kind_ == Stack.
     };
 
-    bool Build(CodeGenContext &ctx, bool big_ret,
+    bool Build(CodeGenContext &ctx, uint64_t ret_size,
                const std::vector<std::unique_ptr<hir::Expression>> &args,
                const FuncInfoTable::Entry::Params &params, bool has_variadic) {
         static Register regs[6] = {
@@ -97,7 +97,7 @@ public:
 
         assert(has_variadic || args.size() == params.size());
 
-        uint8_t regnum = big_ret ? 1 : 0;
+        uint8_t regnum = ret_size > 8 ? 1 : 0;
         uint64_t offset = 0;
         for (size_t i = 0; i < args.size(); i++) {
             auto &arg = args.at(i);
@@ -112,10 +112,12 @@ public:
                 i < params.size() ? params.at(i).second
                                   : ConvertArrayToPointer(inferred);
 
+            ctx.SuppressOutput();
             if (!ImplicitlyConvertValueInStack(ctx, arg->span(), inferred,
                                                expect_type)) {
                 return false;
             }
+            ctx.ActivateOutput();
 
             TypeSizeCalc size(ctx);
             expect_type->Accept(size);
@@ -130,6 +132,8 @@ public:
                 entries_.push_back(entry);
             }
         }
+        ret_offset_ = offset;
+        if (ret_size > 8) offset += ret_size;
         stack_size_ = offset;
 
         return true;
@@ -137,10 +141,12 @@ public:
 
     inline const std::vector<Entry> &Entries() const { return entries_; }
     inline uint64_t StackSize() const { return stack_size_; }
+    inline uint64_t RetOffset() const { return ret_offset_; }
 
 private:
     std::vector<Entry> entries_;
     uint64_t stack_size_;
+    uint64_t ret_offset_;
 };
 
 static std::optional<std::string> IsVariable(
@@ -993,10 +999,14 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
         auto &caller_table = ctx_.lvar_table();
         auto &callee_table = callee_info.lvar_table();
 
+        TypeSizeCalc ret_size(ctx_);
+        callee_info.ret_type()->Accept(ret_size);
+        if (!ret_size) return;
+
         // Assign register or stack for each argument.
         ArgumentAssignmentTable arg_table;
-        if (!arg_table.Build(ctx_, callee_table.Exists(callee_table.ret_name),
-                             expr.args(), callee_info.params(),
+        if (!arg_table.Build(ctx_, ret_size.size(), expr.args(),
+                             callee_info.params(),
                              callee_info.has_variadic())) {
             return;
         }
@@ -1030,12 +1040,6 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
                 entry.expect_type()->Accept(size);
                 if (!size) return;
 
-                // NOTE:
-                // As param_info.Offset is relative position from the addres of
-                // arguments block.
-                // But currently `gen` allocated memory and rsp doesn't point to
-                // the block, so I need to add `alloc_size` to
-                // `param_info.Offset` to get proper address.
                 auto src_offset = -ctx_.lvar_table().CalleeSize();
                 auto dst_offset = -offset + entry.offset();
                 IndexableAsmRegPtr src(Register::BP, src_offset);
@@ -1051,9 +1055,9 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
         // If return value needs caller-allocated memory, move the address to
         // rdi.
         if (callee_table.Exists(callee_table.ret_name)) {
-            auto &entry = callee_table.Query(callee_table.ret_name);
-            ctx_.printer().PrintLn("    leaq {}(%rbp), %rdi",
-                                   -offset + entry.Offset());
+            IndexableAsmRegPtr src(Register::BP,
+                                   -offset + arg_table.RetOffset());
+            ctx_.printer().PrintLn("    leaq {}, %rdi", src.ToAsmRepr(0, 8));
         }
 
         // This compiler doesn't use floating point number at a time.
