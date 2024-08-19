@@ -265,6 +265,9 @@ public:
     inline const std::vector<FunctionDeclarationParam> &params() const {
         return params_;
     }
+    inline const std::optional<FunctionDeclarationVariadic> &variadic() const {
+        return variadic_;
+    }
     inline const std::shared_ptr<Type> &ret() const { return ret_; }
     inline const std::vector<VariableDeclaration> &decls() const {
         return decls_;

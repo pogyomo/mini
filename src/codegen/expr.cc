@@ -5,6 +5,8 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "../report.h"
 #include "asm.h"
@@ -13,6 +15,133 @@
 #include "type.h"
 
 namespace mini {
+
+static uint64_t RoundUp(uint64_t n, uint64_t t) {
+    while (n % t) n++;
+    return n;
+}
+
+static std::shared_ptr<hir::Type> ConvertArrayToPointer(
+    const std::shared_ptr<hir::Type> &type) {
+    if (!type->IsArray()) return type;
+    return std::make_shared<hir::PointerType>(type->ToArray()->of(),
+                                              type->span());
+}
+
+static std::shared_ptr<hir::Type> InferExprType(
+    CodeGenContext &ctx, const std::unique_ptr<hir::Expression> &expr,
+    std::optional<std::shared_ptr<hir::Type>> &array_base_type) {
+    ctx.SuppressOutput();
+    ctx.lvar_table().SaveCalleeSize();
+    ExprRValGen gen(ctx, array_base_type);
+    expr->Accept(gen);
+    ctx.lvar_table().RestoreCalleeSize();
+    ctx.ActivateOutput();
+    return gen.inferred();
+}
+
+class ArgumentAssignmentTable {
+public:
+    class Entry {
+    public:
+        enum Kind {
+            Reg,
+            Stack,
+        };
+        Entry(const std::unique_ptr<hir::Expression> &arg,
+              std::optional<std::shared_ptr<hir::Type>> &array_base_type,
+              std::shared_ptr<hir::Type> &expect_type, Register reg)
+            : kind_(Reg),
+              arg_(arg),
+              array_base_type_(array_base_type),
+              expect_type_(expect_type),
+              reg_(reg) {}
+        Entry(const std::unique_ptr<hir::Expression> &arg,
+              std::optional<std::shared_ptr<hir::Type>> &array_base_type,
+              std::shared_ptr<hir::Type> &expect_type, uint64_t offset)
+            : kind_(Stack),
+              arg_(arg),
+              array_base_type_(array_base_type),
+              expect_type_(expect_type),
+              offset_(offset) {}
+        inline Kind kind() const { return kind_; }
+        inline const std::unique_ptr<hir::Expression> &arg() const {
+            return arg_;
+        }
+        inline const std::optional<std::shared_ptr<hir::Type>> &
+        array_base_type() const {
+            return array_base_type_;
+        }
+        inline const std::shared_ptr<hir::Type> &expect_type() const {
+            return expect_type_;
+        }
+        inline const std::optional<Register> &reg() const { return reg_; }
+        inline uint64_t offset() const { return offset_; }
+
+    private:
+        Kind kind_;
+        const std::unique_ptr<hir::Expression> &arg_;
+        std::optional<std::shared_ptr<hir::Type>> array_base_type_;
+        std::shared_ptr<hir::Type> expect_type_;
+        std::optional<Register> reg_;  // Used when kind_ == Reg.
+        uint64_t offset_;              // Used when kind_ == Stack.
+    };
+
+    bool Build(CodeGenContext &ctx, bool big_ret,
+               const std::vector<std::unique_ptr<hir::Expression>> &args,
+               const FuncInfoTable::Entry::Params &params, bool has_variadic) {
+        static Register regs[6] = {
+            Register::DI, Register::SI, Register::DX,
+            Register::CX, Register::R8, Register::R9,
+        };
+
+        assert(has_variadic || args.size() == params.size());
+
+        uint8_t regnum = big_ret ? 1 : 0;
+        uint64_t offset = 0;
+        for (size_t i = 0; i < args.size(); i++) {
+            auto &arg = args.at(i);
+
+            std::optional<std::shared_ptr<hir::Type>> array_base_type;
+            if (i < params.size() && params.at(i).second->IsArray()) {
+                array_base_type.emplace(params.at(i).second->ToArray()->of());
+            }
+            auto inferred = InferExprType(ctx, arg, array_base_type);
+
+            std::shared_ptr<hir::Type> expect_type =
+                i < params.size() ? params.at(i).second
+                                  : ConvertArrayToPointer(inferred);
+
+            if (!ImplicitlyConvertValueInStack(ctx, arg->span(), inferred,
+                                               expect_type)) {
+                return false;
+            }
+
+            TypeSizeCalc size(ctx);
+            expect_type->Accept(size);
+            if (!size) return false;
+
+            if (size.size() <= 8 && regnum < 6) {
+                Entry entry(arg, array_base_type, expect_type, regs[regnum++]);
+                entries_.push_back(entry);
+            } else {
+                Entry entry(arg, array_base_type, expect_type, offset);
+                offset += RoundUp(size.size(), 8);
+                entries_.push_back(entry);
+            }
+        }
+        stack_size_ = offset;
+
+        return true;
+    }
+
+    inline const std::vector<Entry> &Entries() const { return entries_; }
+    inline uint64_t StackSize() const { return stack_size_; }
+
+private:
+    std::vector<Entry> entries_;
+    uint64_t stack_size_;
+};
 
 static std::optional<std::string> IsVariable(
     const std::unique_ptr<hir::Expression> &expr) {
@@ -850,7 +979,8 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
     if (var && ctx_.func_info_table().Exists(var.value())) {
         auto &callee_info = ctx_.func_info_table().Query(var.value());
 
-        if (callee_info.params().size() != expr.args().size()) {
+        if (!callee_info.has_variadic() &&
+            callee_info.params().size() != expr.args().size()) {
             auto spec =
                 fmt::format("expected {}, but got {}",
                             callee_info.params().size(), expr.args().size());
@@ -863,44 +993,42 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
         auto &caller_table = ctx_.lvar_table();
         auto &callee_table = callee_info.lvar_table();
 
+        // Assign register or stack for each argument.
+        ArgumentAssignmentTable arg_table;
+        if (!arg_table.Build(ctx_, callee_table.Exists(callee_table.ret_name),
+                             expr.args(), callee_info.params(),
+                             callee_info.has_variadic())) {
+            return;
+        }
+
         // Allocate stack for arguments.
-        auto size = callee_info.lvar_table().CallerSize();
-        AllocateAlignedStackMemory(ctx_, size, 16);
+        AllocateAlignedStackMemory(ctx_, arg_table.StackSize(), 16);
 
         // Offset to the arguments block.
         const auto offset = caller_table.CalleeSize();
 
         // Prepare arguments.
-        for (size_t i = 0; i < expr.args().size(); i++) {
-            auto &arg = expr.args().at(i);
-            auto &param_info = callee_info.lvar_table().Query(
-                callee_info.params().at(i).first);
-
-            std::optional<std::shared_ptr<hir::Type>> of;
-            if (param_info.type()->IsPointer()) {
-                of = param_info.type()->ToPointer()->of();
-            } else if (param_info.type()->IsArray()) {
-                of = param_info.type()->ToArray()->of();
-            }
-
+        for (const auto &entry : arg_table.Entries()) {
             caller_table.SaveCalleeSize();
-            ExprRValGen gen(ctx_, of);
-            arg->Accept(gen);
+            ExprRValGen gen(ctx_, entry.array_base_type());
+            entry.arg()->Accept(gen);
             if (!gen) return;
 
             // Convert generated value to expected type.
-            if (!ImplicitlyConvertValueInStack(ctx_, arg->span(), gen.inferred_,
-                                               param_info.type())) {
+            if (!ImplicitlyConvertValueInStack(ctx_, entry.arg()->span(),
+                                               gen.inferred_,
+                                               entry.expect_type())) {
                 return;
             }
 
-            if (param_info.ShouldInitializeWithReg()) {
+            if (entry.kind() == ArgumentAssignmentTable::Entry::Reg) {
                 ctx_.lvar_table().SubCalleeSize(8);
-                ctx_.printer().PrintLn("    popq {}", param_info.InitRegName());
-            } else if (param_info.IsCallerAlloc()) {
-                TypeSizeCalc calc(ctx_);
-                param_info.type()->Accept(calc);
-                if (!calc) return;
+                ctx_.printer().PrintLn("    popq {}",
+                                       entry.reg()->ToQuadName());
+            } else {
+                TypeSizeCalc size(ctx_);
+                entry.expect_type()->Accept(size);
+                if (!size) return;
 
                 // NOTE:
                 // As param_info.Offset is relative position from the addres of
@@ -909,12 +1037,10 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
                 // the block, so I need to add `alloc_size` to
                 // `param_info.Offset` to get proper address.
                 auto src_offset = -ctx_.lvar_table().CalleeSize();
-                auto dst_offset = -offset + param_info.Offset();
+                auto dst_offset = -offset + entry.offset();
                 IndexableAsmRegPtr src(Register::BP, src_offset);
                 IndexableAsmRegPtr dst(Register::BP, dst_offset);
-                CopyBytes(ctx_, src, dst, calc.size());
-            } else {
-                FatalError("unknown parameter");
+                CopyBytes(ctx_, src, dst, RoundUp(size.size(), 8));
             }
 
             // Free allocated memory.

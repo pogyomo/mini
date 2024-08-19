@@ -11,6 +11,11 @@
 
 namespace mini {
 
+static uint64_t RoundUp(uint64_t n, uint64_t t) {
+    while (n % t) n++;
+    return n;
+}
+
 void DeclCollect::Visit(const hir::StructDeclaration &decl) {
     StructTable::Entry entry(decl.span());
     for (const auto &field : decl.fields()) {
@@ -43,7 +48,8 @@ void DeclCollect::Visit(const hir::EnumDeclaration &decl) {
 
 void DeclCollect::Visit(const hir::FunctionDeclaration &decl) {
     bool is_outer = decl.body() ? false : true;
-    FuncInfoTable::Entry entry(decl.ret(), is_outer, decl.span());
+    FuncInfoTable::Entry entry(decl.ret(), decl.variadic() ? true : false,
+                               is_outer, decl.span());
     for (const auto &param : decl.params()) {
         entry.params().Insert(std::string(param.name().value()), param.type());
     }
@@ -170,7 +176,7 @@ bool ConstructLVarTable(CodeGenContext &ctx,
                                    table.CallerSize(), param.type());
             table.Insert(std::string(param.name().value()), std::move(entry));
 
-            table.AddCallerSize(size.size());
+            table.AddCallerSize(RoundUp(size.size(), 8));
         }
     }
 

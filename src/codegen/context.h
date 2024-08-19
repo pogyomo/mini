@@ -434,19 +434,24 @@ public:
         };
 
         Span span() const { return span_; }
-        Entry(const std::shared_ptr<hir::Type> &ret_type, bool is_outer,
-              Span span)
-            : ret_type_(ret_type), is_outer_(is_outer), span_(span) {}
+        Entry(const std::shared_ptr<hir::Type> &ret_type, bool has_variadic,
+              bool is_outer, Span span)
+            : ret_type_(ret_type),
+              has_variadic_(has_variadic),
+              is_outer_(is_outer),
+              span_(span) {}
         inline const std::shared_ptr<hir::Type> &ret_type() const {
             return ret_type_;
         }
         inline Params &params() { return params_; }
+        inline bool has_variadic() const { return has_variadic_; }
         inline LVarTable &lvar_table() { return lvar_table_; }
         inline bool is_outer() const { return is_outer_; }
 
     private:
         std::shared_ptr<hir::Type> ret_type_;
         Params params_;
+        bool has_variadic_;
         LVarTable lvar_table_;
         bool is_outer_;
         Span span_;
