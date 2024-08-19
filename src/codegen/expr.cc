@@ -980,6 +980,14 @@ void ExprRValGen::Visit(const hir::IndexExpression &expr) {
     success_ = true;
 }
 
+// TODO:
+// Calling function inside function call doesn't works as it override register.
+// For example, the following code doesn't works
+// ```
+// function frac(n:usize)->usize{ if (n==1) return 1; else return n*frac(n-1); }
+// function printf(s: *char, ...);
+// function main() { printf("%d\n", frac(10)); }
+// ```
 void ExprRValGen::Visit(const hir::CallExpression &expr) {
     auto var = IsVariable(expr.func());
     if (var && ctx_.func_info_table().Exists(var.value())) {
