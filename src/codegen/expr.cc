@@ -85,11 +85,30 @@ static uint64_t RoundUp(uint64_t n, uint64_t t) {
     return n;
 }
 
-static std::shared_ptr<hir::Type> ConvertArrayToPointer(
+static std::shared_ptr<hir::Type> ConvertTypeAtVariadic(
     const std::shared_ptr<hir::Type> &type) {
-    if (!type->IsArray()) return type;
-    return std::make_shared<hir::PointerType>(type->ToArray()->of(),
-                                              type->span());
+    if (type->IsBuiltin() && type->ToBuiltin()->IsInteger()) {
+        // If the callee expect larger integer than passed one, the passed value
+        // may be interpreted incorrectly as the higher bit is indeterminate
+        // because the caller doesn't initialize there.
+        // For example, if caller passed 8bit signed integer, but callee expect
+        // 16bit signed integer, the msb of passed value is not initialized by
+        // caller and so callee interpret it as bigger or smaller one.
+        // So, it's safe to extend the integer to biggest one, and here I return
+        // isize or usize.
+        if (type->ToBuiltin()->IsSigned()) {
+            return std::make_shared<hir::BuiltinType>(hir::BuiltinType::ISize,
+                                                      type->span());
+        } else {
+            return std::make_shared<hir::BuiltinType>(hir::BuiltinType::USize,
+                                                      type->span());
+        }
+    } else if (type->IsArray()) {
+        return std::make_shared<hir::PointerType>(type->ToArray()->of(),
+                                                  type->span());
+    } else {
+        return type;
+    }
 }
 
 static std::shared_ptr<hir::Type> InferExprType(
@@ -172,9 +191,10 @@ public:
             }
             auto inferred = InferExprType(ctx, arg, array_base_type);
 
+            // If it's variadic, infer expected type from inferred type.
             std::shared_ptr<hir::Type> expect_type =
                 i < params.size() ? params.at(i).second
-                                  : ConvertArrayToPointer(inferred);
+                                  : ConvertTypeAtVariadic(inferred);
 
             ctx.SuppressOutput();
             if (!ImplicitlyConvertValueInStack(ctx, arg->span(), inferred,
