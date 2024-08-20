@@ -980,14 +980,6 @@ void ExprRValGen::Visit(const hir::IndexExpression &expr) {
     success_ = true;
 }
 
-// TODO:
-// Calling function inside function call doesn't works as it override register.
-// For example, the following code doesn't works
-// ```
-// function frac(n:usize)->usize{ if (n==1) return 1; else return n*frac(n-1); }
-// function printf(s: *char, ...);
-// function main() { printf("%d\n", frac(10)); }
-// ```
 void ExprRValGen::Visit(const hir::CallExpression &expr) {
     auto var = IsVariable(expr.func());
     if (var && ctx_.func_info_table().Exists(var.value())) {
@@ -1026,7 +1018,14 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
         const auto offset = caller_table.CalleeSize();
 
         // Prepare arguments.
+        std::vector<Register> used_reg;
         for (const auto &entry : arg_table.Entries()) {
+            // Save argument register as `entry.arg()` may change these.
+            for (const auto &reg : used_reg) {
+                ctx_.lvar_table().AddCalleeSize(8);
+                ctx_.printer().PrintLn("    pushq {}", reg.ToQuadName());
+            }
+
             caller_table.SaveCalleeSize();
             ExprRValGen gen(ctx_, entry.array_base_type());
             entry.arg()->Accept(gen);
@@ -1058,6 +1057,16 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
             // Free allocated memory.
             auto diff = caller_table.RestoreCalleeSize();
             if (diff) ctx_.printer().PrintLn("    addq ${}, %rsp", diff);
+
+            // Restore previous argument registers
+            for (auto reg = used_reg.rbegin(); reg != used_reg.rend(); reg++) {
+                ctx_.lvar_table().SubCalleeSize(8);
+                ctx_.printer().PrintLn("    popq {}", reg->ToQuadName());
+            }
+
+            // Add new argument register
+            if (entry.kind() == ArgumentAssignmentTable::Entry::Reg)
+                used_reg.push_back(entry.reg().value());
         }
 
         // If return value needs caller-allocated memory, move the address to
