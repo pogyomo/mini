@@ -55,6 +55,18 @@ void DeclCollect::Visit(const hir::FunctionDeclaration &decl) {
     }
     ctx_.func_info_table().Insert(std::string(decl.name().value()),
                                   std::move(entry));
+
+    if (decl.name().value() == "main") {
+        if (!decl.ret()->IsBuiltin() ||
+            decl.ret()->ToBuiltin()->kind() != hir::BuiltinType::USize) {
+            ReportInfo info(decl.ret()->span(),
+                            "main function has incorrect return type",
+                            "expected this to be usize");
+            Report(ctx_.ctx(), ReportLevel::Error, info);
+            return;
+        }
+    }
+
     success_ = true;
 }
 
