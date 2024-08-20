@@ -16,7 +16,7 @@ bool CodeGenFile(Context &ctx, std::ostream &os, const std::string &path) {
     if (!gen_ctx.string_table().InnerRepr().empty()) {
         gen_ctx.printer().PrintLn("    .section .rodata");
         for (const auto &[s, symbol] : gen_ctx.string_table().InnerRepr()) {
-            gen_ctx.printer().PrintLn("{}:", symbol);
+            gen_ctx.printer().PrintLn(".L.{}:", symbol);
             gen_ctx.printer().Print("    .byte ");
             for (const char c : s) {
                 gen_ctx.printer().Print("0x{:02x}, ", c);

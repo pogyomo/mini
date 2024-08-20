@@ -118,7 +118,7 @@ void DeclCodeGen::Visit(const hir::FunctionDeclaration &decl) {
     decl.body()->Accept(gen);
     if (!gen) return;
 
-    ctx_.printer().PrintLn("{}.END:", ctx_.CurrFuncName());
+    ctx_.printer().PrintLn(".L.{}.END:", ctx_.CurrFuncName());
 
     // Pop callee preserve registers.
     ctx_.printer().PrintLn("    movq -8(%rbp) , %rbx");

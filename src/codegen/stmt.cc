@@ -70,7 +70,7 @@ void StmtCodeGen::Visit(const hir::ReturnStatement &stmt) {
         if (diff) ctx_.printer().PrintLn("    addq ${}, %rsp", diff);
     }
 
-    ctx_.printer().PrintLn("    jmp {}.END", ctx_.CurrFuncName());
+    ctx_.printer().PrintLn("    jmp .L.{}.END", ctx_.CurrFuncName());
 
     success_ = true;
 }
@@ -83,7 +83,7 @@ void StmtCodeGen::Visit(const hir::BreakStatement &expr) {
     }
 
     auto id = ctx_.label_id_generator().CurrId();
-    ctx_.printer().PrintLn("    jmp L.END.{}", id);
+    ctx_.printer().PrintLn("    jmp .L.END.{}", id);
     success_ = true;
 }
 
@@ -95,7 +95,7 @@ void StmtCodeGen::Visit(const hir::ContinueStatement &expr) {
     }
 
     auto id = ctx_.label_id_generator().CurrId();
-    ctx_.printer().PrintLn("    jmp L.START.{}", id);
+    ctx_.printer().PrintLn("    jmp .L.START.{}", id);
     success_ = true;
 }
 
@@ -104,7 +104,7 @@ void StmtCodeGen::Visit(const hir::WhileStatement &stmt) {
 
     ctx_.EnterLoop();
 
-    ctx_.printer().PrintLn("L.START.{}:", id);
+    ctx_.printer().PrintLn(".L.START.{}:", id);
 
     ExprRValGen cond_gen(ctx_);
     stmt.cond()->Accept(cond_gen);
@@ -120,14 +120,14 @@ void StmtCodeGen::Visit(const hir::WhileStatement &stmt) {
     ctx_.lvar_table().SubCalleeSize(8);
     ctx_.printer().PrintLn("    popq %rax");
     ctx_.printer().PrintLn("    test %ax, %ax");
-    ctx_.printer().PrintLn("    je L.END.{}", id);
+    ctx_.printer().PrintLn("    je .L.END.{}", id);
 
     StmtCodeGen body_gen(ctx_);
     stmt.body()->Accept(body_gen);
     if (!body_gen) return;
-    ctx_.printer().PrintLn("    jmp L.START.{}", id);
+    ctx_.printer().PrintLn("    jmp .L.START.{}", id);
 
-    ctx_.printer().PrintLn("L.END.{}:", id);
+    ctx_.printer().PrintLn(".L.END.{}:", id);
 
     ctx_.LeaveLoop();
 
@@ -151,14 +151,14 @@ void StmtCodeGen::Visit(const hir::IfStatement &stmt) {
     ctx_.lvar_table().SubCalleeSize(8);
     ctx_.printer().PrintLn("    popq %rax");
     ctx_.printer().PrintLn("    test %ax, %ax");
-    ctx_.printer().PrintLn("    je L.ELSE.{}", id);
+    ctx_.printer().PrintLn("    je .L.ELSE.{}", id);
 
     StmtCodeGen then_gen(ctx_);
     stmt.then_body()->Accept(then_gen);
     if (!then_gen) return;
-    ctx_.printer().PrintLn("    jmp L.END.{}", id);
+    ctx_.printer().PrintLn("    jmp .L.END.{}", id);
 
-    ctx_.printer().PrintLn("L.ELSE.{}:", id);
+    ctx_.printer().PrintLn(".L.ELSE.{}:", id);
 
     if (stmt.else_body()) {
         StmtCodeGen else_gen(ctx_);
@@ -166,7 +166,7 @@ void StmtCodeGen::Visit(const hir::IfStatement &stmt) {
         if (!else_gen) return;
     }
 
-    ctx_.printer().PrintLn("L.END.{}:", id);
+    ctx_.printer().PrintLn(".L.END.{}:", id);
 
     success_ = true;
 }
