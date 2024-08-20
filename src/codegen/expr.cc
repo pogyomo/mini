@@ -16,6 +16,70 @@
 
 namespace mini {
 
+class HasCall : public hir::ExpressionVisitor {
+public:
+    HasCall() : success_(false) {}
+    explicit operator bool() const { return success_; }
+    void Visit(const hir::UnaryExpression &expr) override {
+        HasCall check;
+        expr.expr()->Accept(check);
+        success_ = check.success_;
+    }
+    void Visit(const hir::InfixExpression &expr) override {
+        HasCall check_lhs;
+        expr.lhs()->Accept(check_lhs);
+        HasCall check_rhs;
+        expr.rhs()->Accept(check_rhs);
+        success_ = check_lhs.success_ || check_rhs.success_;
+    }
+    void Visit(const hir::IndexExpression &expr) override {
+        HasCall check_expr;
+        expr.expr()->Accept(check_expr);
+        HasCall check_index;
+        expr.index()->Accept(check_index);
+        success_ = check_expr.success_ || check_index.success_;
+    }
+    void Visit(const hir::CallExpression &) override { success_ = true; }
+    void Visit(const hir::AccessExpression &expr) override {
+        HasCall check;
+        expr.expr()->Accept(check);
+        success_ = check.success_;
+    }
+    void Visit(const hir::CastExpression &expr) override {
+        HasCall check;
+        expr.expr()->Accept(check);
+        success_ = check.success_;
+    }
+    void Visit(const hir::ESizeofExpression &) override {}
+    void Visit(const hir::TSizeofExpression &) override {}
+    void Visit(const hir::EnumSelectExpression &) override {}
+    void Visit(const hir::VariableExpression &) override {}
+    void Visit(const hir::IntegerExpression &) override {}
+    void Visit(const hir::StringExpression &) override {}
+    void Visit(const hir::CharExpression &) override {}
+    void Visit(const hir::BoolExpression &) override {}
+    void Visit(const hir::NullPtrExpression &) override {}
+    void Visit(const hir::StructExpression &expr) override {
+        success_ = false;
+        for (const auto &init : expr.inits()) {
+            HasCall check;
+            init.value()->Accept(check);
+            success_ = success_ || check.success_;
+        }
+    }
+    void Visit(const hir::ArrayExpression &expr) override {
+        success_ = false;
+        for (const auto &init : expr.inits()) {
+            HasCall check;
+            init->Accept(check);
+            success_ = success_ || check.success_;
+        }
+    }
+
+private:
+    bool success_;
+};
+
 static uint64_t RoundUp(uint64_t n, uint64_t t) {
     while (n % t) n++;
     return n;
@@ -1020,10 +1084,15 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
         // Prepare arguments.
         std::vector<Register> used_reg;
         for (const auto &entry : arg_table.Entries()) {
+            HasCall has_call;
+            entry.arg()->Accept(has_call);
+
             // Save argument register as `entry.arg()` may change these.
-            for (const auto &reg : used_reg) {
-                ctx_.lvar_table().AddCalleeSize(8);
-                ctx_.printer().PrintLn("    pushq {}", reg.ToQuadName());
+            if (has_call) {
+                for (const auto &reg : used_reg) {
+                    ctx_.lvar_table().AddCalleeSize(8);
+                    ctx_.printer().PrintLn("    pushq {}", reg.ToQuadName());
+                }
             }
 
             caller_table.SaveCalleeSize();
@@ -1059,9 +1128,12 @@ void ExprRValGen::Visit(const hir::CallExpression &expr) {
             if (diff) ctx_.printer().PrintLn("    addq ${}, %rsp", diff);
 
             // Restore previous argument registers
-            for (auto reg = used_reg.rbegin(); reg != used_reg.rend(); reg++) {
-                ctx_.lvar_table().SubCalleeSize(8);
-                ctx_.printer().PrintLn("    popq {}", reg->ToQuadName());
+            if (has_call) {
+                for (auto reg = used_reg.rbegin(); reg != used_reg.rend();
+                     reg++) {
+                    ctx_.lvar_table().SubCalleeSize(8);
+                    ctx_.printer().PrintLn("    popq {}", reg->ToQuadName());
+                }
             }
 
             // Add new argument register
