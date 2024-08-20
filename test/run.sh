@@ -21,7 +21,8 @@ function run_test() {
 
         rm a.out
         if [ $CODE -ne 0 ]; then
-            echo "test failed with code $CODE"
+            ESC=$(printf "\033")
+            echo "${ESC}[31merror: ${ESC}[mtest failed with code $CODE"
             exit 1
         fi
     done
