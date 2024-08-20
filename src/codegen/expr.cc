@@ -1332,7 +1332,8 @@ void ExprRValGen::Visit(const hir::StringExpression &expr) {
     auto symbol = ctx_.string_table().QuerySymbol(expr.value());
 
     ctx_.lvar_table().AddCalleeSize(8);
-    ctx_.printer().PrintLn("    pushq ${}", symbol);
+    ctx_.printer().PrintLn("    leaq {}(%rip), %rax", symbol);
+    ctx_.printer().PrintLn("    pushq %rax");
 
     auto of =
         std::make_shared<hir::BuiltinType>(hir::BuiltinType::Char, expr.span());
