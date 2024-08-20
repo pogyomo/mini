@@ -4,6 +4,6 @@ function inc(n: usize) -> usize {
 
 function main() -> usize {
     let n: usize = inc(inc(inc(inc(1))));
-    if (n != 4) return n;
+    if (n != 5) return n;
     return 0;
 }
