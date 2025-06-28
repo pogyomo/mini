@@ -125,8 +125,8 @@ static const std::vector<std::pair<std::string, PunctTokenKind>> puncts = {
     {"]",   PunctTokenKind::RSquare    },
     {";",   PunctTokenKind::Semicolon  },
     {",",   PunctTokenKind::Comma      },
-    {":",   PunctTokenKind::Colon      },
     {"::",  PunctTokenKind::ColonColon },
+    {":",   PunctTokenKind::Colon      },
 };
 
 class LexContext {
