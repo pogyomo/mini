@@ -1,0 +1,16 @@
+enum n {
+    a,
+    b,
+}
+
+function main() -> usize {
+    if (n::a == n::b) {
+        return 1;
+    } else if (n::a != n::a) {
+        return 2;
+    } else if (n::b != n::b) {
+        return 2;
+    } else {
+        return 0;
+    }
+}

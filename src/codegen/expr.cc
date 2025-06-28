@@ -860,7 +860,8 @@ static bool GenComparsonExpr(CodeGenContext &ctx,
     if (!gen_rhs) return false;
 
     if ((gen_lhs.inferred()->IsBuiltin() && gen_rhs.inferred()->IsBuiltin()) ||
-        (gen_lhs.inferred()->IsPointer() && gen_rhs.inferred()->IsPointer())) {
+        (gen_lhs.inferred()->IsPointer() && gen_rhs.inferred()->IsPointer()) ||
+        (gen_lhs.inferred()->IsName() && gen_rhs.inferred()->IsName())) {
         auto merged =
             ImplicitlyMergeTwoType(ctx, gen_lhs.inferred(), gen_rhs.inferred());
         if (!merged ||
@@ -872,11 +873,13 @@ static bool GenComparsonExpr(CodeGenContext &ctx,
         }
 
         // Check two types is merged correctly.
-        assert(merged.value()->IsBuiltin() || merged.value()->IsPointer());
+        assert(merged.value()->IsBuiltin() || merged.value()->IsPointer() ||
+               merged.value()->IsName());
 
         // Relational operator cannot be used for non-integer type.
         if (merged.value()->IsPointer() ||
-            !merged.value()->ToBuiltin()->IsInteger()) {
+            (merged.value()->IsBuiltin() &&
+             !merged.value()->ToBuiltin()->IsInteger())) {
             if (expr.op().kind() != hir::InfixExpression::Op::EQ &&
                 expr.op().kind() != hir::InfixExpression::Op::NE) {
                 ReportErrorForInfixExpression(ctx, gen_lhs.inferred(),
