@@ -2,6 +2,7 @@
 #define MINI_AST_EXPR_H_
 
 #include <cstdint>
+#include <vector>
 
 #include "node.h"
 #include "type.h"
