@@ -1,7 +1,7 @@
 #include "hirgen.h"
 
-#include "../cflow.h"
 #include "../parser/parser.h"
+#include "cflow.h"
 #include "decl.h"
 
 namespace mini {

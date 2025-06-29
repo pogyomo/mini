@@ -1,10 +1,10 @@
 #include "cflow.h"
 
-#include "context.h"
-#include "hir/decl.h"
-#include "hir/stmt.h"
-#include "hir/type.h"
-#include "report.h"
+#include "../context.h"
+#include "../hir/decl.h"
+#include "../hir/stmt.h"
+#include "../hir/type.h"
+#include "../report.h"
 
 namespace mini {
 

@@ -1,8 +1,8 @@
 #ifndef MINI_CFLOW_H_
 #define MINI_CFLOW_H_
 
-#include "context.h"
-#include "hir/decl.h"
+#include "../context.h"
+#include "../hir/decl.h"
 
 namespace mini {
 
