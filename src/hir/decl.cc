@@ -72,7 +72,7 @@ void FunctionDeclaration::Print(PrintableContext &ctx) const {
         }
         ctx.printer().Print("}}");
     } else {
-        ctx.printer().Print("): {} {{}}", ret_->ToString());
+        ctx.printer().Print(") -> {} {{}}", ret_->ToString());
     }
     if (body_) {
         ctx.printer().Print(" ");
