@@ -1,5 +1,6 @@
 #include "hirgen.h"
 
+#include "../cflow.h"
 #include "../parser/parser.h"
 #include "decl.h"
 
@@ -22,6 +23,10 @@ HirGenResult HirGenFile(Context &ctx, const std::string &path) {
         DeclHirGen gen(gen_ctx);
         decl->Accept(gen);
         if (!gen) return std::nullopt;
+
+        ControlFlowChecker check(ctx);
+        gen.decl()->Accept(check);
+        if (!check) return std::nullopt;
         decls.emplace_back(std::move(gen.decl()));
     }
     return hir::Root(std::move(table), std::move(decls));
