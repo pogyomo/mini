@@ -68,7 +68,7 @@ void FunctionDeclaration::Print(PrintableContext &ctx) const {
             }
             ctx.printer().Print("let {}: ", decl.name().value());
             decl.type()->Print(ctx);
-            ctx.printer().PrintLn(",");
+            ctx.printer().PrintLn(";");
         }
         ctx.printer().Print("}}");
     } else {
