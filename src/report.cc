@@ -40,7 +40,7 @@ void Report(Context &ctx, ReportLevel level, const ReportInfo &info) {
     auto end = info.span().end();
 
     auto start_display_row = start.row() + 1;
-    auto end_display_row = start.row() + 1;
+    auto end_display_row = end.row() + 1;
 
     std::cerr << entry.name() << ":" << start_display_row << ":"
               << start.offset() << ":";
