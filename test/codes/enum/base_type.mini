@@ -1,0 +1,93 @@
+enum a1 : uint8 {
+    a = 1,
+}
+
+enum a2 : uint16 {
+    a = 1,
+}
+
+enum a3 : uint32 {
+    a = 1,
+}
+
+enum a4 : uint64 {
+    a = 1,
+}
+
+enum a5 : int8 {
+    a = 1,
+}
+
+enum a6 : int16 {
+    a = 1,
+}
+
+enum a7 : int32 {
+    a = 1,
+}
+
+enum a8 : int64 {
+    a = 1,
+}
+
+enum a9 : usize {
+    a = 1,
+}
+
+enum a10 : isize {
+    a = 1,
+}
+
+function f1() -> uint8 {
+    return a1::a;
+}
+
+function f2() -> uint16 {
+    return a2::a;
+}
+
+function f3() -> uint32 {
+    return a3::a;
+}
+
+function f4() -> uint64 {
+    return a4::a;
+}
+
+function f5() -> int8 {
+    return a5::a;
+}
+
+function f6() -> int16 {
+    return a6::a;
+}
+
+function f7() -> int32 {
+    return a7::a;
+}
+
+function f8() -> int64 {
+    return a8::a;
+}
+
+function f9() -> usize {
+    return a9::a;
+}
+
+function f10() -> isize {
+    return a10::a;
+}
+
+function main() -> usize {
+    if (f1() != 1) return 1;
+    if (f2() != 1) return 2;
+    if (f3() != 1) return 3;
+    if (f4() != 1) return 4;
+    if (f5() != 1) return 5;
+    if (f6() != 1) return 6;
+    if (f7() != 1) return 7;
+    if (f8() != 1) return 8;
+    if (f9() != 1) return 9;
+    if (f10() != 1) return 10;
+    return 0;
+}

@@ -328,8 +328,12 @@ class EnumTable {
 public:
     class Entry {
     public:
-        Entry(Span span) : span_(span) {}
+        Entry(const std::shared_ptr<hir::Type> &base_type, Span span)
+            : base_type_(base_type), span_(span) {}
         Span span() const { return span_; }
+        const std::shared_ptr<hir::Type> &base_type() const {
+            return base_type_;
+        }
         bool Exists(const std::string &name) const {
             return fields_.find(name) != fields_.end();
         }
@@ -349,6 +353,7 @@ public:
         }
 
     private:
+        std::shared_ptr<hir::Type> base_type_;
         std::map<std::string, uint64_t> fields_;
         Span span_;
     };

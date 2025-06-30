@@ -190,6 +190,16 @@ std::optional<std::unique_ptr<ast::EnumDeclaration>> ParseEnumDecl(
     ast::EnumDeclarationName name(std::move(value), ts.CurrToken()->span());
     ts.Advance();
 
+    std::optional<ast::EnumBaseType> base_type;
+    if (ts && ts.CurrToken()->IsPunctOf(PunctTokenKind::Colon)) {
+        ast::Colon colon(ts.CurrToken()->span());
+        ts.Advance();
+
+        auto type = ParseType(ctx, ts);
+        if (!type) return std::nullopt;
+        base_type.emplace(colon, std::move(*type));
+    }
+
     TRY(check_punct(ctx, ts, PunctTokenKind::LCurly));
     ast::LCurly lcurly(ts.CurrToken()->span());
     ts.Advance();
@@ -242,8 +252,9 @@ std::optional<std::unique_ptr<ast::EnumDeclaration>> ParseEnumDecl(
     ast::RCurly rcurly(ts.CurrToken()->span());
     ts.Advance();
 
-    return std::make_unique<ast::EnumDeclaration>(
-        enum_kw, std::move(name), lcurly, std::move(fields), rcurly);
+    return std::make_unique<ast::EnumDeclaration>(enum_kw, std::move(name),
+                                                  std::move(base_type), lcurly,
+                                                  std::move(fields), rcurly);
 }
 
 }  // namespace mini

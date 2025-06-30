@@ -292,12 +292,27 @@ private:
     std::optional<EnumDeclarationFieldInit> init_;
 };
 
+class EnumBaseType : public Node {
+public:
+    EnumBaseType(Colon colon, std::unique_ptr<Type>&& type)
+        : colon_(colon), type_(std::move(type)) {}
+    inline Span span() const override { return colon_.span() + type_->span(); }
+    inline Colon name() const { return colon_; }
+    inline const std::shared_ptr<Type> type() const { return type_; }
+
+private:
+    Colon colon_;
+    std::shared_ptr<Type> type_;
+};
+
 class EnumDeclaration : public Declaration {
 public:
-    EnumDeclaration(Enum enum_kw, EnumDeclarationName&& name, LCurly lcurly,
+    EnumDeclaration(Enum enum_kw, EnumDeclarationName&& name,
+                    std::optional<EnumBaseType>&& base_type, LCurly lcurly,
                     std::vector<EnumDeclarationField>&& fields, RCurly rcurly)
         : enum_kw_(enum_kw),
           name_(std::move(name)),
+          base_type_(std::move(base_type)),
           lcurly_(lcurly),
           fields_(std::move(fields)),
           rcurly_(rcurly) {}
@@ -309,6 +324,9 @@ public:
     }
     inline Enum enum_kw() const { return enum_kw_; }
     inline const EnumDeclarationName name() const { return name_; }
+    inline const std::optional<EnumBaseType>& base_type() const {
+        return base_type_;
+    }
     inline LCurly lcurly() const { return lcurly_; }
     inline const std::vector<EnumDeclarationField>& fields() const {
         return fields_;
@@ -318,6 +336,7 @@ public:
 private:
     Enum enum_kw_;
     EnumDeclarationName name_;
+    std::optional<EnumBaseType> base_type_;
     LCurly lcurly_;
     std::vector<EnumDeclarationField> fields_;
     RCurly rcurly_;

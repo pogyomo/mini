@@ -32,7 +32,7 @@ void DeclCollect::Visit(const hir::StructDeclaration &decl) {
 }
 
 void DeclCollect::Visit(const hir::EnumDeclaration &decl) {
-    EnumTable::Entry entry(decl.span());
+    EnumTable::Entry entry(decl.base_type(), decl.span());
     for (const auto &field : decl.fields()) {
         if (entry.Exists(field.name().value())) {
             ReportInfo info(field.span(), "duplicated field", "");

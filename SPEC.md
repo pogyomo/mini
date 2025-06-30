@@ -131,7 +131,7 @@ The syntax of mini programming language is as follow:
 <struct-declaration> ::= "struct" "{" <struct-items> "}"
 <struct-items> ::= <struct-item> [ "," [ <struct-items> ] ]
 <struct-item> ::= <identifier> ":" <type>
-<enum-declaration> ::= "enum" "{" <enum-items> "}"
+<enum-declaration> ::= "enum" [ ":" <type> ] "{" <enum-items> "}"
 <enum-items> ::= <enum-item> [ "," [ <enum-items> ] ]
 <enum-item> ::= <identifier> [ "=" <constant-expression> ]
 
