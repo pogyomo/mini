@@ -1917,9 +1917,9 @@ bool ImplicitlyConvertValueInStack(
             goto failed;
         }
     } else if (from->IsName()) {
+        if (*from == *to) return true;
         auto name = from->ToName()->value();
         if (!ctx.enum_table().Exists(name)) {
-            if (*from == *to) return true;
             goto failed;
         }
         auto base_type = ctx.enum_table().Query(name).base_type();
