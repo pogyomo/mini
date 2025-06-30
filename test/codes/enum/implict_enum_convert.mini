@@ -1,4 +1,4 @@
-enum a {
+enum a : usize {
     a,
 }
 
