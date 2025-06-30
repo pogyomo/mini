@@ -151,21 +151,25 @@ private:
 class EnumDeclaration : public Declaration {
 public:
     EnumDeclaration(EnumDeclarationName &&name,
+                    const std::shared_ptr<Type> &base_type,
                     std::vector<EnumDeclarationField> &&fields, Span span)
         : Declaration(span),
           name_(std::move(name)),
+          base_type_(base_type),
           fields_(std::move(fields)) {}
     inline void Accept(DeclarationVisitor &visitor) const override {
         visitor.Visit(*this);
     }
     void Print(PrintableContext &ctx) const override;
     inline const EnumDeclarationName &name() const { return name_; }
+    inline const std::shared_ptr<Type> &base_type() const { return base_type_; }
     inline const std::vector<EnumDeclarationField> &fields() const {
         return fields_;
     }
 
 private:
     EnumDeclarationName name_;
+    std::shared_ptr<Type> base_type_;
     std::vector<EnumDeclarationField> fields_;
 };
 

@@ -88,9 +88,11 @@ private:
 
 // Implicitly convert value of type `from` to type `to` which in top of stack
 // This breaks rax internally.
-bool ImplicitlyConvertValueInStack(CodeGenContext &ctx, Span value_span,
-                                   const std::shared_ptr<hir::Type> &from,
-                                   const std::shared_ptr<hir::Type> &to);
+bool ImplicitlyConvertValueInStack(
+    CodeGenContext &ctx, Span value_span,
+    const std::shared_ptr<hir::Type> &from,
+    const std::shared_ptr<hir::Type> &to,
+    const std::shared_ptr<hir::Type> &from_original = nullptr);
 
 }  // namespace mini
 

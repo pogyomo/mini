@@ -75,7 +75,10 @@ void TypeAlignCalc::Visit(const hir::NameType &type) {
         }
         success_ = true;
     } else if (ctx_.enum_table().Exists(type.value())) {
-        align_ = 8;
+        TypeAlignCalc calc(ctx_);
+        ctx_.enum_table().Query(type.value()).base_type()->Accept(calc);
+        if (!calc) return;
+        align_ = calc.align_;
         success_ = true;
     } else {
         ReportInfo info(type.span(), "no such type exists", "");
@@ -173,7 +176,10 @@ void TypeSizeCalc::Visit(const hir::NameType &type) {
 
         success_ = true;
     } else if (ctx_.enum_table().Exists(type.value())) {
-        size_ = 8;
+        TypeSizeCalc calc(ctx_);
+        ctx_.enum_table().Query(type.value()).base_type()->Accept(calc);
+        if (!calc) return;
+        size_ = calc.size_;
         success_ = true;
     } else {
         ReportInfo info(type.span(), "no such type exists", "");

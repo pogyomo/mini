@@ -1,6 +1,7 @@
 #include "decl.h"
 
 #include "../eval.h"
+#include "../report.h"
 #include "item.h"
 #include "type.h"
 
@@ -113,11 +114,30 @@ void DeclHirGen::Visit(const ast::EnumDeclaration &decl) {
         value++;
     }
 
+    std::optional<std::shared_ptr<hir::Type>> base_type;
+    if (decl.base_type()) {
+        TypeHirGen gen(ctx_);
+        decl.base_type()->type()->Accept(gen);
+        if (!gen) return;
+        base_type.emplace(gen.type());
+
+        if (!gen.type()->IsBuiltin() || !gen.type()->ToBuiltin()->IsInteger()) {
+            ReportInfo info(gen.type()->span(),
+                            "non-integer type for enum base type", "");
+            Report(ctx_.ctx(), ReportLevel::Error, info);
+            return;
+        }
+    } else {
+        std::shared_ptr<hir::Type> type = std::make_shared<hir::BuiltinType>(
+            hir::BuiltinType::USize, decl.span());
+        base_type.emplace(type);
+    }
+
     hir::EnumDeclarationName name(
         std::string(ctx_.translator().Translate(decl.name().name())),
         decl.name().span());
     decl_ = std::make_unique<hir::EnumDeclaration>(
-        std::move(name), std::move(fields), decl.span());
+        std::move(name), base_type.value(), std::move(fields), decl.span());
     success_ = true;
 }
 

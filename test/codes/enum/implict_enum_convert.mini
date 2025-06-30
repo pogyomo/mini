@@ -1,0 +1,7 @@
+enum a : usize {
+    a,
+}
+
+function main() -> usize {
+    return a::a;
+}

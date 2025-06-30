@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <string>
@@ -1728,9 +1729,11 @@ void ExprLValGen::Visit(const hir::ArrayExpression &expr) {
     Report(ctx_.ctx(), ReportLevel::Error, info);
 }
 
-bool ImplicitlyConvertValueInStack(CodeGenContext &ctx, Span value_span,
-                                   const std::shared_ptr<hir::Type> &from,
-                                   const std::shared_ptr<hir::Type> &to) {
+bool ImplicitlyConvertValueInStack(
+    CodeGenContext &ctx, Span value_span,
+    const std::shared_ptr<hir::Type> &from,
+    const std::shared_ptr<hir::Type> &to,
+    const std::shared_ptr<hir::Type> &from_original) {
     if (from->IsBuiltin()) {
         if (to->IsBuiltin()) {
             bool conversion_happen = false;
@@ -1913,6 +1916,15 @@ bool ImplicitlyConvertValueInStack(CodeGenContext &ctx, Span value_span,
         } else {
             goto failed;
         }
+    } else if (from->IsName()) {
+        if (*from == *to) return true;
+        auto name = from->ToName()->value();
+        if (!ctx.enum_table().Exists(name)) {
+            goto failed;
+        }
+        auto base_type = ctx.enum_table().Query(name).base_type();
+        return ImplicitlyConvertValueInStack(ctx, value_span, base_type, to,
+                                             from);
     } else if (from->IsArray()) {
         if (to->IsArray()) {
             if (*from == *to) {
@@ -1931,19 +1943,19 @@ bool ImplicitlyConvertValueInStack(CodeGenContext &ctx, Span value_span,
         } else {
             goto failed;
         }
-    } else if (from->IsName()) {
-        if (*from == *to) {
-            return true;
-        } else {
-            goto failed;
-        }
     } else {
         FatalError("unreachable");
     }
 
 failed:
-    auto spec = fmt::format("cannot convert this {} to {} implicitly",
-                            from->ToString(), to->ToString());
+    std::string spec;
+    if (from_original == nullptr) {
+        spec = fmt::format("cannot convert this {} to {} implicitly",
+                           from->ToString(), to->ToString());
+    } else {
+        spec = fmt::format("cannot convert this {} to {} implicitly",
+                           from_original->ToString(), to->ToString());
+    }
     ReportInfo info(value_span, "implicit conversion failed", std::move(spec));
     Report(ctx.ctx(), ReportLevel::Error, info);
     return false;

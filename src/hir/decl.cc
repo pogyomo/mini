@@ -27,7 +27,9 @@ void StructDeclaration::Print(PrintableContext &ctx) const {
 void EnumDeclaration::Print(PrintableContext &ctx) const {
     if (!fields_.empty()) {
         ctx.printer().ShiftR();
-        ctx.printer().PrintLn("enum {} {{", name_.value());
+        ctx.printer().Print("enum {} : ", name_.value());
+        base_type_->Print(ctx);
+        ctx.printer().PrintLn(" {{", name_.value());
         for (size_t i = 0; i < fields_.size(); i++) {
             auto &field = fields_.at(i);
             ctx.printer().Print("{} = {}", field.name().value(),
