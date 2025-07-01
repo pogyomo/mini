@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "../span.h"
+#include "../utils.h"
 #include "printable.h"
 #include "type.h"
 
@@ -347,7 +348,7 @@ public:
         return visitor.Visit(*this);
     }
     inline void Print(PrintableContext& ctx) const override {
-        ctx.printer().Print("\"{}\"", value_);
+        ctx.printer().Print("\"{}\"", EscapeStringContent(value_));
     }
     inline const std::string& value() const { return value_; }
 

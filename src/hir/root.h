@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "../utils.h"
 #include "decl.h"
 #include "fmt/format.h"
 #include "printable.h"
@@ -54,14 +55,16 @@ public:
             auto size = string_table_.InnerRepr().size();
             for (const auto &s : string_table_.InnerRepr()) {
                 size--;
-                ctx.printer().Print("{} = \"{}\"", s.second, s.first);
+                ctx.printer().Print("{} = \"{}\"", s.second,
+                                    EscapeStringContent(s.first));
                 if (size == 0) {
                     ctx.printer().PrintLn("");
                 }
             }
         } else {
             for (const auto &s : string_table_.InnerRepr()) {
-                ctx.printer().PrintLn("{} = \"{}\"", s.second, s.first);
+                ctx.printer().PrintLn("{} = \"{}\"", s.second,
+                                      EscapeStringContent(s.first));
             }
             ctx.printer().PrintLn("");
             for (size_t i = 0; i < decls_.size(); i++) {
