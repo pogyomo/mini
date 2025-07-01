@@ -363,7 +363,7 @@ public:
         return visitor.Visit(*this);
     }
     inline void Print(PrintableContext& ctx) const override {
-        ctx.printer().Print("{}", value_);
+        ctx.printer().Print("'{}'", EscapeCharContent(value_));
     }
     inline char value() const { return value_; }
 

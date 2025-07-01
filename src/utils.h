@@ -25,6 +25,8 @@ inline std::string EscapeStringContent(const std::string &content) {
             oss << "\\v";
         } else if (c == '"') {
             oss << "\\\"";
+        } else if (c == '\\') {
+            oss << "\\\\";
         } else if (c == '\0') {
             oss << "\\0";
         } else {
@@ -32,6 +34,32 @@ inline std::string EscapeStringContent(const std::string &content) {
         }
     }
     return oss.str();
+}
+
+inline std::string EscapeCharContent(char content) {
+    if (content == '\a') {
+        return "\\a";
+    } else if (content == '\b') {
+        return "\\b";
+    } else if (content == '\f') {
+        return "\\f";
+    } else if (content == '\n') {
+        return "\\n";
+    } else if (content == '\r') {
+        return "\\r";
+    } else if (content == '\t') {
+        return "\\t";
+    } else if (content == '\v') {
+        return "\\v";
+    } else if (content == '\'') {
+        return "\\'";
+    } else if (content == '\\') {
+        return "\\\\";
+    } else if (content == '\0') {
+        return "\\0";
+    } else {
+        return std::string(1, content);
+    }
 }
 
 }  // namespace mini
