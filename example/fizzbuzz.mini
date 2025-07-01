@@ -6,7 +6,7 @@ function main() -> usize {
     scanf("%ld", &n);
 
     if (n == 0) {
-        printf("input must be more than 0\n");
+        printf("input must be greater than 0\n");
         return 1;
     }
 
