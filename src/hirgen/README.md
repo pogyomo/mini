@@ -6,3 +6,4 @@ This module provides a function which does following:
 - Translate names in AST to make each different.
 - Infer array size.
 - Check control flow
+- Remove unused variables
