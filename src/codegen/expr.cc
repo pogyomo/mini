@@ -1904,8 +1904,10 @@ bool ImplicitlyConvertValueInStack(
         if (to->ToPointer()) {
             auto from_of = from->ToPointer()->of();
             auto to_of = to->ToPointer()->of();
-            if (from_of->IsBuiltin() &&
-                from_of->ToBuiltin()->kind() == hir::BuiltinType::Void) {
+            if ((from_of->IsBuiltin() &&
+                 from_of->ToBuiltin()->kind() == hir::BuiltinType::Void) ||
+                (to_of->IsBuiltin() &&
+                 to_of->ToBuiltin()->kind() == hir::BuiltinType::Void)) {
                 return true;
             } else if (*from_of == *to_of) {
                 return true;
