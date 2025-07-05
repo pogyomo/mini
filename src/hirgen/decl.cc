@@ -11,13 +11,9 @@ void DeclVarReg::Visit(const ast::FunctionDeclaration &decl) {
     ctx_.translator().RegNameRaw(decl.name().name());
 }
 
-void DeclVarReg::Visit(const ast::StructDeclaration &decl) {
-    ctx_.translator().RegNameRaw(decl.name().name());
-}
+void DeclVarReg::Visit(const ast::StructDeclaration &) {}
 
-void DeclVarReg::Visit(const ast::EnumDeclaration &decl) {
-    ctx_.translator().RegNameRaw(decl.name().name());
-}
+void DeclVarReg::Visit(const ast::EnumDeclaration &) {}
 
 void DeclHirGen::Visit(const ast::FunctionDeclaration &decl) {
     hir::FunctionDeclarationName name(
@@ -88,9 +84,8 @@ void DeclHirGen::Visit(const ast::StructDeclaration &decl) {
         fields.emplace_back(gen.type(), std::move(name), field.span());
     }
 
-    hir::StructDeclarationName name(
-        std::string(ctx_.translator().Translate(decl.name().name())),
-        decl.name().span());
+    hir::StructDeclarationName name(std::string(decl.name().name()),
+                                    decl.name().span());
     decl_ = std::make_unique<hir::StructDeclaration>(
         std::move(name), std::move(fields), decl.span());
     success_ = true;
@@ -133,9 +128,8 @@ void DeclHirGen::Visit(const ast::EnumDeclaration &decl) {
         base_type.emplace(type);
     }
 
-    hir::EnumDeclarationName name(
-        std::string(ctx_.translator().Translate(decl.name().name())),
-        decl.name().span());
+    hir::EnumDeclarationName name(std::string(decl.name().name()),
+                                  decl.name().span());
     decl_ = std::make_unique<hir::EnumDeclaration>(
         std::move(name), base_type.value(), std::move(fields), decl.span());
     success_ = true;

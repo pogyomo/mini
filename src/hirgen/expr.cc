@@ -227,13 +227,8 @@ void ExprHirGen::Visit(const ast::StructExpression &expr) {
         inits.emplace_back(std::move(name), std::move(gen.expr_));
     }
 
-    if (!ctx_.translator().Translatable(expr.name().name())) {
-        ReportInfo info(expr.span(), "no such name exists", "");
-        Report(ctx_.ctx(), ReportLevel::Error, info);
-        return;
-    }
-    auto translated = ctx_.translator().Translate(expr.name().name());
-    hir::StructExpressionName name(std::move(translated), expr.name().span());
+    hir::StructExpressionName name(std::string(expr.name().name()),
+                                   expr.name().span());
 
     expr_ = std::make_unique<hir::StructExpression>(
         std::move(name), std::move(inits), expr.span());
