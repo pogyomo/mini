@@ -66,14 +66,8 @@ void TypeHirGen::Visit(const ast::ArrayType &type) {
 }
 
 void TypeHirGen::Visit(const ast::NameType &type) {
-    if (!ctx_.translator().Translatable(type.name())) {
-        ReportInfo info(type.span(), "no such name exists", "");
-        Report(ctx_.ctx(), ReportLevel::Error, info);
-        return;
-    }
-
-    type_ = std::make_shared<hir::NameType>(
-        std::string(ctx_.translator().Translate(type.name())), type.span());
+    type_ =
+        std::make_shared<hir::NameType>(std::string(type.name()), type.span());
     success_ = true;
 }
 
