@@ -1,6 +1,5 @@
 #include "unused.h"
 
-#include <iostream>
 #include <set>
 
 #include "../context.h"
