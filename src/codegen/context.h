@@ -527,7 +527,6 @@ public:
         : ctx_(ctx),
           string_table_(string_table),
           printer_(os, should_output_),
-          loop_depth_(0),
           should_output_(true),
           suppress_output_count_(0) {}
     inline Context &ctx() { return ctx_; }
@@ -544,13 +543,22 @@ public:
     }
     inline void SetCurrFuncName(std::string &&name) { curr_func_name_ = name; }
     inline const std::string &CurrFuncName() const { return curr_func_name_; }
-    inline bool IsInLoop() const { return loop_depth_ != 0; }
-    inline void EnterLoop() { loop_depth_++; }
+    inline bool IsInLoop() const { return !loop_id_stack_.empty(); }
+    inline void EnterLoop() {
+        loop_id_stack_.push(label_id_generator_.GenNewId());
+    }
     inline void LeaveLoop() {
-        if (loop_depth_ == 0) {
+        if (loop_id_stack_.empty()) {
             FatalError("leave from non-loop");
         } else {
-            loop_depth_--;
+            loop_id_stack_.pop();
+        }
+    }
+    inline uint64_t CurrLoopId() {
+        if (loop_id_stack_.empty()) {
+            FatalError("outside of loop");
+        } else {
+            return loop_id_stack_.top();
         }
     }
     inline bool ShouldOutput() const { return should_output_; }
@@ -572,7 +580,7 @@ private:
     FuncInfoTable func_info_table_;
     LabelIdGenerator label_id_generator_;
     std::string curr_func_name_;
-    uint64_t loop_depth_;
+    std::stack<uint64_t> loop_id_stack_;
     bool should_output_;
     uint64_t suppress_output_count_;
 };

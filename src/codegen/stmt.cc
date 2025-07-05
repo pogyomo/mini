@@ -82,8 +82,7 @@ void StmtCodeGen::Visit(const hir::BreakStatement &expr) {
         return;
     }
 
-    auto id = ctx_.label_id_generator().CurrId();
-    ctx_.printer().PrintLn("    jmp .L.END.{}", id);
+    ctx_.printer().PrintLn("    jmp .L.END.{}", ctx_.CurrLoopId());
     success_ = true;
 }
 
@@ -94,17 +93,14 @@ void StmtCodeGen::Visit(const hir::ContinueStatement &expr) {
         return;
     }
 
-    auto id = ctx_.label_id_generator().CurrId();
-    ctx_.printer().PrintLn("    jmp .L.START.{}", id);
+    ctx_.printer().PrintLn("    jmp .L.START.{}", ctx_.CurrLoopId());
     success_ = true;
 }
 
 void StmtCodeGen::Visit(const hir::WhileStatement &stmt) {
-    auto id = ctx_.label_id_generator().GenNewId();
-
     ctx_.EnterLoop();
 
-    ctx_.printer().PrintLn(".L.START.{}:", id);
+    ctx_.printer().PrintLn(".L.START.{}:", ctx_.CurrLoopId());
 
     ExprRValGen cond_gen(ctx_);
     stmt.cond()->Accept(cond_gen);
@@ -120,14 +116,14 @@ void StmtCodeGen::Visit(const hir::WhileStatement &stmt) {
     ctx_.lvar_table().SubCalleeSize(8);
     ctx_.printer().PrintLn("    popq %rax");
     ctx_.printer().PrintLn("    test %ax, %ax");
-    ctx_.printer().PrintLn("    je .L.END.{}", id);
+    ctx_.printer().PrintLn("    je .L.END.{}", ctx_.CurrLoopId());
 
     StmtCodeGen body_gen(ctx_);
     stmt.body()->Accept(body_gen);
     if (!body_gen) return;
-    ctx_.printer().PrintLn("    jmp .L.START.{}", id);
+    ctx_.printer().PrintLn("    jmp .L.START.{}", ctx_.CurrLoopId());
 
-    ctx_.printer().PrintLn(".L.END.{}:", id);
+    ctx_.printer().PrintLn(".L.END.{}:", ctx_.CurrLoopId());
 
     ctx_.LeaveLoop();
 
