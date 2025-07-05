@@ -1,5 +1,6 @@
 #include "hirgen.h"
 
+#include "../hiropt/hiropt.h"
 #include "../parser/parser.h"
 #include "cflow.h"
 #include "decl.h"
@@ -29,7 +30,11 @@ HirGenResult HirGenFile(Context &ctx, const std::string &path) {
         if (!check) return std::nullopt;
         decls.emplace_back(std::move(gen.decl()));
     }
-    return hir::Root(std::move(table), std::move(decls));
+
+    // Optimize generated hir
+    auto root = hir::Root(std::move(table), std::move(decls));
+    mini::hiropt::OptimizeHirRoot(ctx, root);
+    return root;
 }
 
 }  // namespace mini

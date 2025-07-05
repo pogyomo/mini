@@ -81,6 +81,7 @@ public:
     const std::vector<std::unique_ptr<hir::Declaration>> &decls() const {
         return decls_;
     }
+    std::vector<std::unique_ptr<hir::Declaration>> &decls() { return decls_; }
 
 private:
     StringTable string_table_;

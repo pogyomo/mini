@@ -27,6 +27,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     src/hirgen/item.cc
     src/hirgen/stmt.cc
     src/hirgen/type.cc
+    src/hiropt/hiropt.cc
+    src/hiropt/unused.cc
     src/lexer.cc
     src/main.cc
     src/parser/decl.cc

@@ -28,10 +28,19 @@ public:
     virtual void Visit(const FunctionDeclaration &decl) = 0;
 };
 
+class DeclarationVisitorMut {
+public:
+    virtual ~DeclarationVisitorMut() {}
+    virtual void Visit(StructDeclaration &decl) = 0;
+    virtual void Visit(EnumDeclaration &decl) = 0;
+    virtual void Visit(FunctionDeclaration &decl) = 0;
+};
+
 class Declaration : public Printable {
 public:
     Declaration(Span span) : span_(span) {}
     virtual void Accept(DeclarationVisitor &visitor) const = 0;
+    virtual void Accept(DeclarationVisitorMut &visitor) = 0;
     inline Span span() const { return span_; }
 
 private:
@@ -85,6 +94,9 @@ public:
           name_(std::move(name)),
           fields_(std::move(fields)) {}
     inline void Accept(DeclarationVisitor &visitor) const override {
+        visitor.Visit(*this);
+    }
+    inline void Accept(DeclarationVisitorMut &visitor) override {
         visitor.Visit(*this);
     }
     void Print(PrintableContext &ctx) const override;
@@ -160,6 +172,9 @@ public:
     inline void Accept(DeclarationVisitor &visitor) const override {
         visitor.Visit(*this);
     }
+    inline void Accept(DeclarationVisitorMut &visitor) override {
+        visitor.Visit(*this);
+    }
     void Print(PrintableContext &ctx) const override;
     inline const EnumDeclarationName &name() const { return name_; }
     inline const std::shared_ptr<Type> &base_type() const { return base_type_; }
@@ -231,6 +246,7 @@ public:
         : type_(type), name_(std::move(name)) {}
     inline const std::shared_ptr<Type> &type() const { return type_; }
     inline const VariableDeclarationName &name() const { return name_; }
+    inline Span span() const { return type_->span() + name_.span(); }
 
 private:
     std::shared_ptr<Type> type_;
@@ -264,6 +280,9 @@ public:
     inline void Accept(DeclarationVisitor &visitor) const override {
         visitor.Visit(*this);
     }
+    inline void Accept(DeclarationVisitorMut &visitor) override {
+        visitor.Visit(*this);
+    }
     void Print(PrintableContext &ctx) const override;
     inline const FunctionDeclarationName &name() const { return name_; }
     inline const std::vector<FunctionDeclarationParam> &params() const {
@@ -276,7 +295,9 @@ public:
     inline const std::vector<VariableDeclaration> &decls() const {
         return decls_;
     }
+    inline std::vector<VariableDeclaration> &decls() { return decls_; }
     inline const std::optional<BlockStatement> &body() const { return body_; }
+    inline std::optional<BlockStatement> &body() { return body_; }
 
 private:
     FunctionDeclarationName name_;
